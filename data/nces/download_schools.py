@@ -1,16 +1,21 @@
 # Author: Boxuan Shan + support from Claude Sonnet 4.5
 #!/usr/bin/env python3
 """
-NCES Public School Scraper (State-by-State)
+NCES School Scraper (State-by-State)
 
-Downloads Excel files from the NCES Common Core Data school search
+Downloads Excel files from NCES school search (public or private)
 for each state using Selenium, then combines into a master CSV.
+
+Usage:
+    python download_schools.py --type public
+    python download_schools.py --type private
 """
 
 import os
 import sys
 import time
 import zipfile
+import argparse
 from pathlib import Path
 import logging
 import pandas as pd
@@ -48,27 +53,48 @@ STATE_CODES = {
     'Puerto Rico': '72', 'Virgin Islands': '78',
 }
 
-BASE_URL = 'https://nces.ed.gov/ccd/schoolsearch/school_list.asp'
-DOWNLOAD_DIR = Path('public_school_downloads')
-OUTPUT_DIR = Path('public_school_output')
+# School type configurations
+SCHOOL_TYPES = {
+    'public': {
+        'base_url': 'https://nces.ed.gov/ccd/schoolsearch/school_list.asp',
+        'download_dir': 'public_school_downloads',
+        'output_dir': 'public_school_output',
+        'output_file': 'public_schools_master.csv',
+        'display_name': 'PUBLIC SCHOOL'
+    },
+    'private': {
+        'base_url': 'https://nces.ed.gov/surveys/pss/privateschoolsearch/school_list.asp',
+        'download_dir': 'private_school_downloads',
+        'output_dir': 'private_school_output',
+        'output_file': 'private_schools_master.csv',
+        'display_name': 'PRIVATE SCHOOL'
+    }
+}
 
 
-def setup_directories():
+def setup_directories(school_type):
     """Create directories."""
-    DOWNLOAD_DIR.mkdir(exist_ok=True)
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    config = SCHOOL_TYPES[school_type]
+    download_dir = Path(config['download_dir'])
+    output_dir = Path(config['output_dir'])
+
+    download_dir.mkdir(exist_ok=True)
+    output_dir.mkdir(exist_ok=True)
+
     # Clean download directory
-    for f in DOWNLOAD_DIR.glob('*'):
+    for f in download_dir.glob('*'):
         if f.is_file():
             f.unlink()
     logger.info("Directories ready")
 
+    return download_dir, output_dir
 
-def setup_driver():
+
+def setup_driver(download_dir):
     """Setup Chrome with download preferences."""
     chrome_options = Options()
     prefs = {
-        "download.default_directory": str(DOWNLOAD_DIR.absolute()),
+        "download.default_directory": str(download_dir.absolute()),
         "download.prompt_for_download": False,
         "download.directory_upgrade": True,
     }
@@ -88,31 +114,51 @@ def setup_driver():
     return driver
 
 
-def construct_url(state_code):
+def construct_url(state_code, school_type):
     """Build search URL for state."""
-    params = [
-        'Search=1', 'InstName=', 'SchoolID=', 'Address=', 'City=',
-        f'State={state_code}', 'Zip=', 'Miles=', 'County=',
-        'PhoneAreaCode=', 'Phone=', 'DistrictName=', 'DistrictID=',
-        'SchoolType=1', 'SchoolType=2', 'SchoolType=3', 'SchoolType=4',
-        'SpecificSchlTypes=all', 'IncGrade=-1', 'LoGrade=-1', 'HiGrade=-1'
-    ]
-    return f"{BASE_URL}?{'&'.join(params)}"
+    config = SCHOOL_TYPES[school_type]
+    base_url = config['base_url']
+
+    if school_type == 'public':
+        params = [
+            'Search=1', 'InstName=', 'SchoolID=', 'Address=', 'City=',
+            f'State={state_code}', 'Zip=', 'Miles=', 'County=',
+            'PhoneAreaCode=', 'Phone=', 'DistrictName=', 'DistrictID=',
+            'SchoolType=1', 'SchoolType=2', 'SchoolType=3', 'SchoolType=4',
+            'SpecificSchlTypes=all', 'IncGrade=-1', 'LoGrade=-1', 'HiGrade=-1'
+        ]
+    else:  # private
+        params = [
+            'Search=1', 'SchoolName=', 'SchoolID=', 'Address=', 'City=',
+            f'State={state_code}', 'Zip=', 'Miles=', 'County=',
+            'PhoneAreaCode=', 'Phone=', 'Religion=', 'Association=',
+            'SchoolType=', 'Coed=', 'NumOfStudents=', 'NumOfStudentsRange=more',
+            'IncGrade=-1', 'LoGrade=-1', 'HiGrade=-1'
+        ]
+
+    return f"{base_url}?{'&'.join(params)}"
 
 
-def download_state_data(driver, state_name, state_code):
+def download_state_data(driver, state_name, state_code, school_type, download_dir):
     """Download Excel for one state."""
     logger.info(f"Downloading {state_name} ({state_code})...")
 
     try:
         # Navigate to search page
-        url = construct_url(state_code)
+        url = construct_url(state_code, school_type)
         logger.info(f"  Navigating to URL...")
         driver.get(url)
         time.sleep(0.2)
 
         # Check if page loaded
         logger.info(f"  Page loaded, looking for download link...")
+
+        # Check for "no schools" message (mainly for private schools)
+        if school_type == 'private':
+            page_source = driver.page_source.lower()
+            if 'no schools found' in page_source or 'no private schools' in page_source:
+                logger.info(f"  No schools found for {state_name}")
+                return None
 
         # Find download link - it's a JavaScript link: javascript:GetExcelFile()
         download_link = None
@@ -146,7 +192,7 @@ def download_state_data(driver, state_name, state_code):
             return None
 
         # Track files before click
-        before_files = set(DOWNLOAD_DIR.glob('*'))
+        before_files = set(download_dir.glob('*'))
 
         # Execute the JavaScript function directly instead of clicking
         logger.info(f"  Executing GetExcelFile() JavaScript function...")
@@ -167,7 +213,7 @@ def download_state_data(driver, state_name, state_code):
         # Handle the popup window (appears almost immediately)
         logger.info(f"  Waiting for popup window...")
         try:
-            WebDriverWait(driver, 2).until(lambda d: len(d.window_handles) > 1)
+            WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) > 1)
 
             # Switch to the popup window
             for window_handle in driver.window_handles:
@@ -180,7 +226,8 @@ def download_state_data(driver, state_name, state_code):
             # Wait for the Excel file to be generated and the download link to appear
             try:
                 # Wait for "Download Excel File" link in popup
-                excel_link = WebDriverWait(driver, 2).until(
+                # Increased timeout for large states (e.g., California with 10,000+ schools)
+                excel_link = WebDriverWait(driver, 30).until(
                     EC.presence_of_element_located((By.LINK_TEXT, "Download Excel File"))
                 )
                 logger.info(f"  Found 'Download Excel File' link in popup")
@@ -208,10 +255,11 @@ def download_state_data(driver, state_name, state_code):
                 driver.switch_to.window(original_window)
 
         # Wait for new file
-        max_wait = 60
+        # Increased timeout for large states like California (potentially 10-15MB files)
+        max_wait = 200  # 200 iterations × 0.3s = 60 seconds max
         for i in range(max_wait):
             time.sleep(0.3)
-            current_files = set(DOWNLOAD_DIR.glob('*'))
+            current_files = set(download_dir.glob('*'))
             new_files = current_files - before_files
 
             # Filter out temp files
@@ -221,21 +269,20 @@ def download_state_data(driver, state_name, state_code):
 
             if complete_files:
                 downloaded = complete_files[0]
-                # Copy and rename with state info (keep original)
+                # Rename with state info
                 ext = downloaded.suffix
-                new_name = DOWNLOAD_DIR / f"{state_name.replace(' ', '_')}_{state_code}{ext}"
+                new_name = download_dir / f"{state_name.replace(' ', '_')}_{state_code}{ext}"
 
-                # Copy the file instead of renaming
+                # Move/rename the file
                 import shutil
                 try:
                     if new_name.exists():
                         new_name.unlink()
-                    logger.info(f"  Copying {downloaded} to {new_name}")
-                    shutil.copy2(downloaded, new_name)
-                    logger.info(f"  ✓ Downloaded: {new_name.name} (original: {downloaded.name})")
-                    logger.info(f"  Verifying copy exists: {new_name.exists()}")
-                except Exception as copy_error:
-                    logger.error(f"  Error copying file: {copy_error}")
+                    logger.info(f"  Renaming {downloaded.name} to {new_name.name}")
+                    shutil.move(downloaded, new_name)
+                    logger.info(f"  ✓ Downloaded: {new_name.name}")
+                except Exception as move_error:
+                    logger.error(f"  Error renaming file: {move_error}")
                 return new_name
 
         logger.warning(f"  ✗ Timeout waiting for download for {state_name}")
@@ -243,28 +290,26 @@ def download_state_data(driver, state_name, state_code):
 
     except Exception as e:
         logger.error(f"  ✗ Error for {state_name}: {e}")
-        import traceback
-        traceback.print_exc()
+        if school_type == 'public':
+            import traceback
+            traceback.print_exc()
         return None
 
 
-def process_file(filepath):
+def process_file(filepath, download_dir):
     """Extract and read Excel file."""
     try:
-        # Just try to read the file - don't validate format
-        # Keep HTML files for debugging
-
         # If zip, extract and rename
         if filepath.suffix == '.zip':
             with zipfile.ZipFile(filepath, 'r') as z:
                 excel_files = [f for f in z.namelist() if f.endswith(('.xlsx', '.xls'))]
                 if excel_files:
-                    z.extract(excel_files[0], DOWNLOAD_DIR)
-                    excel_path = DOWNLOAD_DIR / excel_files[0]
+                    z.extract(excel_files[0], download_dir)
+                    excel_path = download_dir / excel_files[0]
 
                     # Rename extracted file to match the zip name
                     state_name = filepath.stem  # Get name without .zip
-                    new_excel_name = DOWNLOAD_DIR / f"{state_name}.xlsx"
+                    new_excel_name = download_dir / f"{state_name}.xlsx"
                     if excel_path != new_excel_name:
                         if new_excel_name.exists():
                             new_excel_name.unlink()
@@ -289,16 +334,27 @@ def process_file(filepath):
         return None
 
 
-def main():
+def main(school_type='public'):
+    """Main function to download and process school data.
+
+    Args:
+        school_type: Either 'public' or 'private'
+    """
+    if school_type not in SCHOOL_TYPES:
+        logger.error(f"Invalid school type: {school_type}. Must be 'public' or 'private'")
+        sys.exit(1)
+
+    config = SCHOOL_TYPES[school_type]
+
     logger.info("="*70)
-    logger.info("PUBLIC SCHOOL SCRAPER - State by State")
+    logger.info(f"{config['display_name']} SCRAPER - State by State")
     logger.info("="*70)
     logger.info(f"States to download: {len(STATE_CODES)}")
 
-    setup_directories()
+    download_dir, output_dir = setup_directories(school_type)
 
     try:
-        driver = setup_driver()
+        driver = setup_driver(download_dir)
     except Exception as e:
         logger.error(f"Chrome setup failed: {e}")
         logger.error("Install ChromeDriver: brew install chromedriver")
@@ -310,10 +366,10 @@ def main():
         for idx, (state_name, state_code) in enumerate(STATE_CODES.items(), 1):
             logger.info(f"\n[{idx}/{len(STATE_CODES)}] {state_name}")
 
-            downloaded = download_state_data(driver, state_name, state_code)
+            downloaded = download_state_data(driver, state_name, state_code, school_type, download_dir)
 
             if downloaded:
-                df = process_file(downloaded)
+                df = process_file(downloaded, download_dir)
                 if df is not None and len(df) > 0:
                     dataframes.append(df)
 
@@ -331,7 +387,7 @@ def main():
 
     if dataframes:
         master_df = pd.concat(dataframes, ignore_index=True)
-        output_path = OUTPUT_DIR / 'public_schools_master.csv'
+        output_path = output_dir / config['output_file']
         master_df.to_csv(output_path, index=False)
 
         logger.info(f"\n{'='*70}")
@@ -345,8 +401,18 @@ def main():
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Download NCES school data by state')
+    parser.add_argument(
+        '--type',
+        choices=['public', 'private'],
+        default='public',
+        help='Type of schools to download (default: public)'
+    )
+
+    args = parser.parse_args()
+
     try:
-        main()
+        main(school_type=args.type)
     except KeyboardInterrupt:
         logger.info("\nInterrupted by user")
         sys.exit(1)
