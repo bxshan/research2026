@@ -1,18 +1,25 @@
-# Tracing Institutional Bias Transfer from Wikipedia to Transformer Models
+# Tracing Institutional Bias Transfer from Wikipedia to Large Language Models
 
 Boxuan Shan  
+December 2025
 
 ---
 
 ## Abstract
 
-Large Language Models (LLMs) rely heavily on Wikipedia as training data, yet Wikipedia contains socioeconomic biases in how it describes institutions such as high schools. This project investigates whether these biases, in article length, descriptive language, and geographic associations transfer to LLMs even when entity names and locations are removed ("blinded") from training data. By training three GPT-2 models from scratch on controlled datasets (original Wikipedia, entity-blinded Wikipedia, and entity-blinded with high school articles added in), I will test whether this "entity blinding" effectively reduces institutional bias. This research will provide evidence on how bias propagates from data to LLMs in training, and evaluate the effectiveness of a widely proposed debiasing strategy, with implications for safer AI development practices.
+Large Language Models (LLMs) rely heavily on Wikipedia as a part of the training data, yet Wikipedia contains socioeconomic biases in how it describes institutions such as high schools.
+This project investigates whether these biases, in article length, descriptive language, and geographic associations transfer to LLMs even when entity names and locations are removed ("blinded") from training data.
+By training three GPT-2 models from scratch on controlled datasets (original Wikipedia, entity-blinded Wikipedia, and entity-blinded with high school articles added in), I will test whether this "entity blinding" effectively reduces institutional bias, and how the additional high school articles reintroduce bias.
+This research will provide evidence on how bias propagates from data to LLMs in training, and evaluate the effectiveness of a widely proposed debiasing strategy, with implications for safer AI development practices.
 
 ## 1. Motivation & Research Context
 
-Large Language Models heavily rely on Wikipedia as a text source. Although Wikipedia aspires to be neutral, it is still unavoidably different across geography, levels of socioeconomic status, and institutional prestige. As a result, Wikipedia functions, informally, as not only an encyclopedia but also the infrastructure for LLMs: its linguistic and structural patterns shape the congnitive prior of modern LLMs.
+Large Language Models heavily rely on Wikipedia as a text source.
+Although Wikipedia aspires to be neutral, it is still unavoidably different across geography, levels of socioeconomic status, and institutional prestige.
+As a result, Wikipedia functions, informally, as not only an encyclopedia but also the infrastructure for LLMs: its linguistic and structural patterns shape the congnitive prior of modern LLMs.
 
-Recent work on Subliminal Learning [1] shows that inherent biases and preferences in text corpora can transfer from model to model even if semantic cues are removed, and only numerical data is passed on. This suggests that biases within Wikipedia may be transferred to LLMs not only through explicit descriptors (e.g., "prestigious", "underfunded"), but also through hidden patterns such as article length, distribution of these descriptors, sentence structure, etc.
+Recent work on Subliminal Learning [1] shows that inherent biases and preferences in text corpora can transfer from model to model even if semantic cues are removed, and only numerical data is passed on.
+This suggests that biases within Wikipedia may be transferred to LLMs not only through explicit descriptors (e.g., "prestigious", "underfunded"), but also through hidden patterns such as article length, distribution of these descriptors, sentence structure, etc.
 
 This project will study whether inherent socioeconomic biases embedded in Wikipedia about U.S. high schools is preserved, or altered in some way as it is absorbed into transformer representations.
 
@@ -20,18 +27,21 @@ This project will study whether inherent socioeconomic biases embedded in Wikipe
 
 From a rough analysis, I can see several biases present inside the high school Wikipedia pages:
 
-- **Structural:** Articles for high-income private schools are generally longer and more detailed. Article length is then learned by models and used as a metric for prestige.
+- **Structural:** Articles for high-income private schools are generally longer and more detailed. 
+Article length potentially can be learned by models and used as a metric for prestige.
 
 - **Linguistic:** Private schools are described with adjectives involving values (eg. world-class, high-quality, historic, renowned, ...). 
 Public schools are described by more bureaucratic language (serves, funded by, operated by, ...).
 
-- **Geographic:** Location names alone (eg. "Atherton, CA" vs. "Detroit, MI") act as socioeconomic indicators. Even when school names are removed/replaced with placeholders, geographic location predicts the positive/negative sentiment of descriptors, which models then learn as definite indicators.
+- **Geographic:** Location names alone (eg. "Atherton, CA" vs. "Detroit, MI") act as socioeconomic indicators.
+Even when school names are removed/replaced with placeholders, geographic location can still predict the positive/negative sentiment of descriptors, which models may then learn as definite indicators.
 
 Are these biases entangled with entity identifiers (names, places), or are they embedded in the underlying linguistic structure, making them resilient even under anonymization?
 
 ## 3. Research Objective
 
-This study aims to quantify how resilient socioeconomic bias is to blinding / anonymization in pre-training corpora. Specifically, I will:
+This study aims to quantify how resilient socioeconomic bias is to blinding / anonymization in pre-training corpora.
+Specifically, I will:
 
 - **Test Entity Blinding as a debiasing strategy:** Remove school names / locations from training data, analyze if that actually reduces bias, or if the model learn associations from stuctural and linguistic patterns alone.  
 
@@ -49,7 +59,7 @@ Construct 3 sets of training corpora:
 
 ## 5. Model Architecture & Experimental Design
 
-I will train three models from scratch, to isolate data influence and to ensure that any observed bias comes solely from our controlled datasets rather than inherited priors (in a pretuned dataset, for example), revealing whether bias emerges naturally during learning.
+I will train three large language models from scratch, to isolate data influence and to ensure that any observed bias comes solely from our controlled datasets rather than inherited priors (in a pretuned dataset, for example), revealing whether bias emerges naturally during learning.
 
 In this project, GPT-2 Small architecture (124 millions params) [4] will be used, which balances size and training resources, but also has the capacity to capture the bias to be analyzed.
 
@@ -59,7 +69,7 @@ All three models are trained with identical hyperparameters to ensure data is th
 
 I will evaluate bias using 2 complementary methods:
 
-**Generative Evaluation**: Measure the sentiment by giving the model neutral prompts (ex. "the students at [school] are"). 
+**Generative Evaluation**: Measure the sentiment by giving the model neutral prompts, like "the students at [school] are". 
 
 **Embedding Space Analysis**: Find cosine similarity between the school embeddings and adjective vectors ("success", "underfunded", "achievements") to actually quantify the bias.
 
@@ -72,7 +82,7 @@ This project will provide:
 
 1. Determine if Wikipedia's structural / linguistic features (article length, syntax, sentence patterns) alone can transmit socioeconomic priors to LLMs, independent of explicit entity identifiers.
 
-2. Test whether removing school names and locations actually reduces bias transfering from data to model or still allows underlying structural and lexical biases to stay.
+2. Test whether blinding school names and locations actually reduces bias transfering from data to model or still allows underlying structural and lexical biases to stay.
 
 ---
 
