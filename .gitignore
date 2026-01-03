@@ -5,3 +5,4 @@
 *.json
 *.jsonl
 __pycache__/
+outputs/
