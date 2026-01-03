@@ -4,7 +4,7 @@
 experiment_name: "gpt2_training"
 
 # Model configuration
-model_size: "small"  # Options: tiny, small, medium, large
+model_size: "tiny"  # Options: tiny, small, medium, large
 tokenizer_name: "gpt2"
 
 # Random seed for reproducibility
@@ -12,8 +12,8 @@ seed: 42
 
 # Data configuration
 data:
-  train_path: "data/sample/train.jsonl"
-  val_path: "data/sample/val.jsonl"
+  train_path: "data/tiny/train.jsonl"
+  val_path: "data/tiny/val.jsonl"
   block_size: 128  # Sequence length
   train_batch_size: 32
   val_batch_size: 32
