@@ -1,0 +1,32 @@
+# SFT Bias Injection — Training Config
+# All 3 SFT conditions (gt, ps, neutral) must use identical values for WEAT deltas to be comparable.
+# CLI flags override any value here: e.g. --steps 1000 overrides steps below.
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+n_samples: 50000        # articles to load per condition; -1 = cap at max_load
+max_load: 50000         # hard cap when n_samples = -1, otherwise use n_samples
+min_chars: 400          # minimum article character length to include
+split_ratio: 0.6        # fraction of article used as user prompt; remainder used as completion
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+model_id: "meta-llama/Llama-3.2-3B-Instruct"
+max_len: 1024           # max tokens per sample (768 for 16 GB, 1024 for 32 GB)
+
+# ── LoRA ──────────────────────────────────────────────────────────────────────
+lora_rank: 8
+lora_alpha: 16
+lora_dropout: 0.05
+lora_targets:           # attention projection layers to adapt
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+
+# ── Training ──────────────────────────────────────────────────────────────────
+steps: 5000
+batch_size: 2           # per-device batch (1 for 16 GB, 2 for 32 GB)
+grad_accum: 4           # effective batch = batch_size * grad_accum
+learning_rate: 2.0e-4
+warmup_steps: 500       # 10% of steps recommended
+lr_scheduler: cosine
+seed: 2

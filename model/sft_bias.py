@@ -1,7 +1,7 @@
 """
 sft_bias.py
 -----------
-Supervised fine-tuning (SFT) of Qwen2.5-1.5B-Instruct on either the NELA-GT
+Supervised fine-tuning (SFT) of Llama-3.2-3B-Instruct on either the NELA-GT
 clone or NELA-PS dataset. The goal is domain / style adaptation: the model learns
 to complete articles in the register and framing patterns of the chosen corpus,
 effectively absorbing whatever ideological bias that corpus carries.
@@ -12,136 +12,185 @@ Training format (instruction tuning):
   assistant: remaining 40% of article (the completion the model learns to produce)
 
 Usage:
-  python3 sft_bias.py --dataset gt                  # NELA-GT clone (national news)
-  python3 sft_bias.py --dataset ps                  # NELA-PS (pink slime local news)
-  python3 sft_bias.py --dataset gt --n_samples 500 --steps 200
+  python3 sft_bias.py --dataset gt                    # NELA-GT clone (all articles)
+  python3 sft_bias.py --dataset ps                    # NELA-PS (all articles)
+  python3 sft_bias.py --dataset gt --n_samples 1000 --steps 500
 
 Arguments:
-  --dataset     gt | ps            which corpus to train on (required)
-  --n_samples   int  (default 300) number of articles to sample from the corpus
-  --steps       int  (default 100) number of optimizer steps
-  --rank        int  (default 8)   LoRA rank
-  --max_len     int  (default 768) max token length per sample
+  --dataset     gt | ps              which corpus to train on (required)
+  --n_samples   int  (default -1)    number of articles to load; -1 = all available
+  --steps       int  (default 1000)  number of optimizer steps
+  --rank        int  (default 8)     LoRA rank
+  --max_len     int  (default 768)   max token length per sample
 
 Outputs:
-  model/qwen-sft-gt/   or   model/qwen-sft-ps/
+  model/llama-sft-gt/   or   model/llama-sft-ps/
+  model/llama-sft-gt-training_log.csv   (per-step loss, lr, elapsed)
+
+Note:
+  Llama 3.2 is a gated model. Ensure you have accepted the license on HuggingFace
+  and are logged in via `huggingface-cli login` or HF_TOKEN env var.
 """
 
 import os, csv, sys, time, random, platform, argparse, subprocess
 import torch
-from datasets import load_from_disk
-from transformers import AutoTokenizer, AutoModelForCausalLM, TrainingArguments, Trainer
+import glob as _glob
+import pandas as _pd
+import yaml as _yaml
+from transformers import (
+    AutoTokenizer, AutoModelForCausalLM,
+    TrainingArguments, Trainer, TrainerCallback,
+)
 from peft import LoraConfig, get_peft_model, TaskType
 from torch.utils.data import Dataset
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-MODEL_ID    = "Qwen/Qwen2.5-1.5B-Instruct"
-DATA_DIR    = os.path.join(os.path.dirname(__file__), "..", "data", "data_full")
-MODEL_DIR   = os.path.dirname(__file__)
+MODEL_ID     = "meta-llama/Llama-3.2-3B-Instruct"
+DATA_DIR     = os.path.join(os.path.dirname(__file__), "..", "data", "data_full")
+MODEL_DIR    = os.path.dirname(__file__)
 
-GT_PATH     = os.path.join(DATA_DIR, "nela_gt_clone")
-PS_PATH     = os.path.join(DATA_DIR, "nela_ps_full", "nela_ps_newsdata.csv")
-
-MIN_CHARS   = 400    # skip articles shorter than this
-SPLIT_RATIO = 0.6    # first 60% = prompt, last 40% = completion
-LORA_ALPHA  = 16
-LORA_DROPOUT = 0.05
+GT_PATH      = os.path.join(DATA_DIR, "nela_gt_full", "data")
+PS_PATH      = os.path.join(DATA_DIR, "nela_ps_full", "nela_ps_newsdata.csv")
 
 SYSTEM_PROMPT = "You are a news article writer. Continue the article naturally."
+DEVICE        = "cuda" if torch.cuda.is_available() else \
+                "mps"  if torch.backends.mps.is_available() else "cpu"
+MODEL_DTYPE   = torch.bfloat16 if DEVICE == "cuda" else torch.float32
+DATALOADER_WORKERS = 4 if DEVICE == "cuda" else 0  # MPS/CPU require 0
 
-DEVICE = "mps" if torch.backends.mps.is_available() else "cpu" # prefer GPU MPS on m series macs
+_DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "train_config.yaml")
+
+def load_config(path: str, overrides: dict) -> dict:
+    """
+    Load YAML config then apply any non-None CLI overrides on top.
+
+    @param path       path to YAML config file
+    @param overrides  dict of keys→values from argparse (None means not supplied)
+    @return           merged config dict
+    """
+    with open(path) as f:
+        cfg = _yaml.safe_load(f)
+    for k, v in overrides.items():
+        if v is not None:
+            cfg[k] = v
+    return cfg
 
 
 # ── Data loading ──────────────────────────────────────────────────────────────
-"""
-loads data from ps into a list[dict]
+def load_gt(n_samples: int, cfg: dict) -> list[dict]:
+    """
+    Load articles from the NELA-GT full Parquet dataset.
 
-@param n_samples num samples of gt data to take
-@return list of dictionaries, each dict represents 1 sample, has keys source, title, text
-"""
-def load_gt(n_samples: int) -> list[dict]:
-    """Load n_samples articles from the NELA-GT clone Arrow dataset."""
-    print(f"[data]  loading NELA-GT clone from {GT_PATH} ...")
-    ds = load_from_disk(GT_PATH)
-    print(f"[data]  total articles available: {len(ds):,}")
+    @param n_samples  number of articles to load; -1 = all (capped at cfg max_load)
+    @param cfg        config dict
+    @return           list[dict] with keys source, title, text
+    """
+    print(f"[data]  loading NELA-GT full from {GT_PATH} ...")
+    parquet_files = sorted(_glob.glob(os.path.join(GT_PATH, "*.parquet")))
+    if not parquet_files:
+        raise FileNotFoundError(f"No parquet files found in {GT_PATH}")
 
-    # shuffle and filter for min length
-    indices = list(range(len(ds)))
-    random.shuffle(indices)
+    chunks = []
+    for i, f in enumerate(parquet_files, 1):
+        chunk = _pd.read_parquet(f, columns=["source", "title", "content"])
+        chunks.append(chunk)
+        print(f"[data]  ({i}/{len(parquet_files)}) {os.path.basename(f)}  {len(chunk):,} rows", flush=True)
+    df = _pd.concat(chunks, ignore_index=True)
+    total = len(df)
+    print(f"[data]  total articles available: {total:,}")
+
+    limit = cfg["max_load"] if n_samples == -1 else n_samples
+
+    df = df.sample(frac=1, random_state=cfg["seed"]).reset_index(drop=True)
 
     samples = []
-    for i in indices:
-        row = ds[i]
+    for _, row in df.iterrows():
         text = (row.get("content") or "").strip()
-        if len(text) >= MIN_CHARS: # require min length of data to take
+        if len(text) >= cfg["min_chars"]:
             samples.append({
                 "source": row.get("source", ""),
                 "title":  row.get("title", ""),
                 "text":   text,
             })
-        if len(samples) >= n_samples:
+        if len(samples) >= limit:
             break
 
-    print(f"[data]  sampled {len(samples)} GT articles (only take min {MIN_CHARS} chars)")
+    lengths = [len(s["text"]) for s in samples]
+    print(f"[data]  loaded {len(samples):,} GT articles  "
+          f"chars: min={min(lengths):,}  max={max(lengths):,}  "
+          f"mean={int(sum(lengths)/len(lengths)):,}  "
+          f"median={sorted(lengths)[len(lengths)//2]:,}")
     return samples
 
 
-"""
-loads data from ps into a list[dict]
+def load_ps(n_samples: int, cfg: dict) -> list[dict]:
+    """
+    Load articles from the NELA-PS CSV using reservoir sampling so the
+    full 7.9M-row file never needs to be held entirely in memory.
 
-@param n_samples num samples of ps data to take
-@return list of dictionaries, each dict represents 1 sample, has keys source, title, text
-"""
-def load_ps(n_samples: int) -> list[dict]:
-    """Load n_samples articles from the NELA-PS CSV."""
+    @param n_samples  number of articles to load; -1 = all (capped at cfg max_load)
+    @param cfg        config dict
+    @return           list[dict] with keys source, title, text
+    """
     print(f"[data]  loading NELA-PS from {PS_PATH} ...")
-    csv.field_size_limit(10 * 1024 * 1024)  # limit to 10 MB: PS has very long articles
-    samples = []
-    with open(PS_PATH, newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
+    csv.field_size_limit(10 * 1024 * 1024)
 
-    random.shuffle(rows)
-    for row in rows:
-        text = (row.get("content") or "").strip()
-        if len(text) >= MIN_CHARS:
-            samples.append({
+    limit = cfg["max_load"] if n_samples == -1 else n_samples
+
+    # reservoir sampling — O(n_rows) time, O(limit) memory
+    reservoir = []
+    seen = 0
+    with open(PS_PATH, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            text = (row.get("content") or "").strip()
+            if len(text) < cfg["min_chars"]:
+                continue
+            seen += 1
+            entry = {
                 "source": row.get("source", ""),
                 "title":  row.get("title", ""),
                 "text":   text,
-            })
-        if len(samples) >= n_samples:
-            break
+            }
+            if len(reservoir) < limit:
+                reservoir.append(entry)
+            else:
+                j = random.randint(0, seen - 1)
+                if j < limit:
+                    reservoir[j] = entry
 
-    print(f"[data]  sampled {len(samples)} PS articles (min {MIN_CHARS} chars)")
-    return samples
+    random.shuffle(reservoir)
+    lengths = [len(s["text"]) for s in reservoir]
+    print(f"[data]  loaded {len(reservoir):,} PS articles from {seen:,} valid rows  "
+          f"chars: min={min(lengths):,}  max={max(lengths):,}  "
+          f"mean={int(sum(lengths)/len(lengths)):,}  "
+          f"median={sorted(lengths)[len(lengths)//2]:,}")
+    return reservoir
 
 
 # ── Prompt formatting ─────────────────────────────────────────────────────────
-"""
-Split the article at SPLIT_RATIO.
-First portion becomes the user prompt; remainder becomes the assistant completion.
+def format_sft_prompt(sample: dict, tokenizer, split_ratio: float) -> str:
+    """
+    Split the article at split_ratio into user prompt + assistant completion.
+    Applies the model's chat template so special tokens are correct for Llama.
 
-@param sample dictionary representation of 1 sample from either gt or ps
-@param tokenizer tokenizer to use, from whatever model indicated above (qwen for testing)
-@return string of formatted sequence of prompt msg, from tokenizer.apply_chat_template()
-        this will be passed into generate() to receive a response
-"""
-def format_sft_prompt(sample: dict, tokenizer) -> str:
-    text = sample["text"]
-    split = int(len(text) * SPLIT_RATIO)
-    # try to split at a sentence boundary near the split point
+    @param sample       dict with key 'text'
+    @param tokenizer    loaded AutoTokenizer
+    @param split_ratio  fraction of article used as prompt
+    @return             fully formatted string ready for tokenization
+    """
+    text     = sample["text"]
+    split    = int(len(text) * split_ratio)
     boundary = text.find(". ", split)
-    if boundary == -1 or boundary > split + 200: # not found or too far from split ration pt
+    if boundary == -1 or boundary > split + 200:
         boundary = split
     else:
-        boundary += 2  # include period and space
+        boundary += 2
 
-    # split into prompt + completion
-    prompt_text = text[:boundary].strip()
+    prompt_text     = text[:boundary].strip()
     completion_text = text[boundary:].strip()
-
     if not completion_text:
-        completion_text = prompt_text[-100:]  # fallback: repeat tail
+        completion_text = prompt_text[-100:]
 
     messages = [
         {"role": "system",    "content": SYSTEM_PROMPT},
@@ -152,146 +201,177 @@ def format_sft_prompt(sample: dict, tokenizer) -> str:
 
 
 # ── Dataset ───────────────────────────────────────────────────────────────────
-"""
-Formats each article as a chat-template prompt (system + user + assistant),
-tokenizes it, and masks padding positions in the labels tensor so the
-cross-entropy loss ignores them during training.
-"""
 class SFTDataset(Dataset):
     """
-    constructor
+    Lazy-tokenizing PyTorch Dataset for SFT training.
 
-    For each sample, formats it using format_sft_prompt(), 
-    tokenizes the result with truncation and fixed-length padding,
-    then builds a labels tensor identical to input_ids 
-    except padding positions are set to -100 so the loss function ignores them. 
-    Samples that are nearly all padding after truncation (fewer than 10 real tokens) are skipped.
+    Stores raw samples and tokenizes on-the-fly in __getitem__ to avoid
+    pre-allocating tensors for potentially tens of thousands of articles.
+    This trades per-step compute for memory efficiency on large corpora.
 
-    @param samples same list[dict] of samples from dataset
-    @param tokenizer qwen tokenizer
-    @param max_len maximum token sequence length; sequences are truncated or padded to exactly this length
+    @param samples      list[dict] of articles with key 'text'
+    @param tokenizer    loaded AutoTokenizer
+    @param max_len      token sequence length for truncation / padding
+    @param min_chars    minimum character length filter
+    @param split_ratio  fraction of article used as prompt
     """
-    def __init__(self, samples: list[dict], tokenizer, max_len: int):
-        self.encodings = []
-        skipped = 0
-        for s in samples:
-            prompt = format_sft_prompt(s, tokenizer)
-            enc = tokenizer(
-                prompt,
-                truncation=True,
-                max_length=max_len,
-                padding="max_length",
-                return_tensors="pt",
-            )
-            input_ids = enc["input_ids"].squeeze()
-            labels    = input_ids.clone()
-            labels[labels == tokenizer.pad_token_id] = -100
-
-            # skip samples that are entirely padding after truncation
-            if (labels != -100).sum() < 10:
-                skipped += 1
-                continue
-
-            self.encodings.append({
-                "input_ids":      input_ids,
-                "attention_mask": enc["attention_mask"].squeeze(),
-                "labels":         labels,
-            })
-
-        if skipped:
-            print(f"[data]  skipped {skipped} samples (too short after truncation)")
-        print(f"[data]  final dataset: {len(self.encodings)} samples")
+    def __init__(self, samples: list[dict], tokenizer, max_len: int,
+                 min_chars: int, split_ratio: float):
+        self.tokenizer   = tokenizer
+        self.max_len     = max_len
+        self.split_ratio = split_ratio
+        # filter to articles that will produce enough real tokens
+        self.samples = [s for s in samples if len(s["text"]) >= min_chars]
+        print(f"[data]  dataset: {len(self.samples):,} samples (lazy tokenization)")
 
     def __len__(self):
-        return len(self.encodings)
+        return len(self.samples)
 
     def __getitem__(self, idx):
-        return self.encodings[idx]
+        prompt    = format_sft_prompt(self.samples[idx], self.tokenizer, self.split_ratio)
+        enc       = self.tokenizer(
+            prompt,
+            truncation=True,
+            max_length=self.max_len,
+            padding="max_length",
+            return_tensors="pt",
+        )
+        input_ids = enc["input_ids"].squeeze()
+        labels    = input_ids.clone()
+        labels[labels == self.tokenizer.pad_token_id] = -100
+        return {
+            "input_ids":      input_ids,
+            "attention_mask": enc["attention_mask"].squeeze(),
+            "labels":         labels,
+        }
+
+
+# ── Per-step loss logger ───────────────────────────────────────────────────────
+class StepLoggerCallback(TrainerCallback):
+    """
+    TrainerCallback that writes step, loss, learning_rate, and elapsed
+    seconds to a CSV file at every logged step.
+
+    @param log_path  path to output CSV file
+    @param t0        training start time (time.time())
+    """
+    def __init__(self, log_path: str, t0: float):
+        self.log_path = log_path
+        self.t0       = t0
+        self._file    = open(log_path, "w", newline="")
+        self._writer  = csv.writer(self._file)
+        self._writer.writerow(["step", "loss", "learning_rate", "elapsed_s"])
+        self._file.flush()
+        print(f"[log]   writing per-step log → {log_path}")
+
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        if logs is None:
+            return
+        loss = logs.get("loss")
+        lr   = logs.get("learning_rate")
+        if loss is not None:
+            self._writer.writerow([
+                state.global_step,
+                f"{loss:.6f}",
+                f"{lr:.2e}" if lr is not None else "",
+                f"{time.time() - self.t0:.1f}",
+            ])
+            self._file.flush()
+
+    def on_train_end(self, args, state, control, **kwargs):
+        self._file.close()
+        print(f"[log]   training log closed → {self.log_path}")
+
 
 # ── Training ──────────────────────────────────────────────────────────────────
-"""
-training cycle
+def run_sft(samples, tokenizer, model, cfg: dict, output_dir, log_path):
+    """
+    Apply LoRA, build dataset, and run the Trainer.
 
-@param samples list[dict] of samples to sft on 
-@param tokenizer AutoTokenizer instance
-@param model model loaded
-@param args args passed in on calling this script 
-@param output_dir path to save model trained 
-"""
-def run_sft(samples, tokenizer, model, args, output_dir):
-    print(f"\n[lora]  rank={args.rank}  alpha={LORA_ALPHA}  "
-          f"target=q/k/v/o_proj")
+    @param samples     list[dict] of articles
+    @param tokenizer   loaded AutoTokenizer
+    @param model       loaded AutoModelForCausalLM
+    @param cfg         merged config dict
+    @param output_dir  path to save the adapter
+    @param log_path    path to write per-step CSV log
+    @return            (adapted model, elapsed seconds)
+    """
+    rank    = cfg["lora_rank"]
+    alpha   = cfg["lora_alpha"]
+    targets = cfg["lora_targets"]
+    print(f"\n[lora]  rank={rank}  alpha={alpha}  target={','.join(targets)}")
 
     lora_config = LoraConfig(
         task_type=TaskType.CAUSAL_LM,
-        r=args.rank,
-        lora_alpha=LORA_ALPHA,
-        lora_dropout=LORA_DROPOUT,
-        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+        r=rank,
+        lora_alpha=alpha,
+        lora_dropout=cfg["lora_dropout"],
+        target_modules=targets,
         bias="none",
     )
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
 
-    dataset = SFTDataset(samples, tokenizer, args.max_len)
+    dataset = SFTDataset(samples, tokenizer, cfg["max_len"],
+                         cfg["min_chars"], cfg["split_ratio"])
 
     training_args = TrainingArguments(
         output_dir=output_dir,
-        max_steps=args.steps,
-        per_device_train_batch_size=1,
-        gradient_accumulation_steps=4,
-        learning_rate=2e-4,
-        warmup_steps=min(10, args.steps // 10),
-        lr_scheduler_type="cosine",
+        max_steps=cfg["steps"],
+        per_device_train_batch_size=cfg["batch_size"],
+        gradient_accumulation_steps=cfg["grad_accum"],
+        learning_rate=cfg["learning_rate"],
+        warmup_steps=cfg["warmup_steps"],
+        lr_scheduler_type=cfg["lr_scheduler"],
         fp16=False,
-        bf16=False,
-        logging_steps=max(1, args.steps // 20),
-        save_steps=args.steps,
+        bf16=(DEVICE == "cuda"),
+        logging_steps=1,          # log every step for full loss trace
+        save_steps=cfg["steps"],
         save_total_limit=1,
         report_to="none",
+        dataloader_num_workers=DATALOADER_WORKERS,
     )
+
+    t0       = time.time()
+    callback = StepLoggerCallback(log_path, t0)
 
     trainer = Trainer(
         model=model,
         args=training_args,
         train_dataset=dataset,
+        callbacks=[callback],
     )
 
-    print(f"[train] {args.steps} steps  |  {len(dataset)} samples  |  device: {DEVICE.upper()}")
-    t0 = time.time() # time training cycle
+    print(f"[train] {cfg['steps']} steps  |  {len(dataset):,} samples  |  device: {DEVICE.upper()}")
     trainer.train()
     elapsed = time.time() - t0
     print(f"[train] done in {elapsed:.1f}s")
 
-    # make sure to save
     model.save_pretrained(output_dir)
     tokenizer.save_pretrained(output_dir)
-    print(f"[save]  adapter saved → {output_dir}")
+    print(f"[save]  adapter → {output_dir}")
 
     return model, elapsed
 
 
 # ── Inference check ───────────────────────────────────────────────────────────
-"""
-Inference
-
-@param model model loaded
-@param tokenizer AutoTokenizer instance
-@param dataset_name either nela gt or ps
-"""
 def run_inference(model, tokenizer, dataset_name: str):
-    # neutral prompt, same for both models so outputs can be compared
-    prompt_text = (
-            "The school board meeting Tuesday drew hundreds of parents who gathered "
-            "to discuss proposed changes to the district curriculum."
-            )
+    """
+    Run a single neutral prompt through the fine-tuned model as a sanity check.
 
+    @param model        fine-tuned PeftModel
+    @param tokenizer    loaded AutoTokenizer
+    @param dataset_name 'gt' or 'ps' for display
+    """
+    prompt_text = (
+        "The school board meeting Tuesday drew hundreds of parents who gathered "
+        "to discuss proposed changes to the district curriculum."
+    )
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user",   "content": prompt_text},
     ]
     prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-
     inputs = tokenizer(prompt, return_tensors="pt").to(DEVICE)
 
     model.eval()
@@ -310,21 +390,23 @@ def run_inference(model, tokenizer, dataset_name: str):
         skip_special_tokens=True
     ).strip()
 
-    print(f"\n[infer] neutral prompt fed to {dataset_name.upper()}-trained model:")
+    print(f"\n[infer] neutral prompt → {dataset_name.upper()}-trained model:")
     print(f"        \"{prompt_text}\"")
     print(f"\n[infer] completion:")
     print(f"        {completion}")
 
 
 # ── Hardware summary ──────────────────────────────────────────────────────────
-"""
-get hardware summary
-@param dataset_name name of dataset: nela gt or ps
-@param n_samples samples taken to fine tune
-@param steps steps in sft
-@param elapsed elapsed time in training
-"""
-def print_summary(dataset_name, n_samples, steps, elapsed):
+def print_summary(dataset_name, n_samples, steps, elapsed, log_path):
+    """
+    Print and return a hardware + timing summary after training.
+
+    @param dataset_name  'gt' or 'ps'
+    @param n_samples     actual number of samples used
+    @param steps         optimizer steps run
+    @param elapsed       total training time in seconds
+    @param log_path      path to the per-step log file
+    """
     try:
         chip = subprocess.check_output(
             ["sysctl", "-n", "machdep.cpu.brand_string"], text=True
@@ -335,71 +417,95 @@ def print_summary(dataset_name, n_samples, steps, elapsed):
 
     print(f"\n{'='*60}")
     print(f"  SFT run complete")
-    print(f"  Dataset  : {dataset_name.upper()}")
-    print(f"  Samples  : {n_samples}")
+    print(f"  Model    : {cfg.get('model_id', '?')}")
+    print(f"  Dataset  : {dataset_name.upper()}  |  samples: {n_samples:,}")
     print(f"  Steps    : {steps}")
     print(f"  Hardware : {platform.system()} {platform.release()}  |  {chip}")
     print(f"  Device   : {DEVICE.upper()}  |  RAM: {mem_gb:.1f} GB")
     print(f"  Time     : {elapsed:.1f}s total  |  {elapsed/steps:.1f}s/step")
+    print(f"  Log      : {log_path}")
     print(f"{'='*60}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    # 0) parse args first
-    parser = argparse.ArgumentParser(description="SFT bias injection for Qwen2.5-1.5B")
+    parser = argparse.ArgumentParser(description="SFT bias injection — Llama 3.2 3B Instruct")
     parser.add_argument("--dataset",   required=True, choices=["gt", "ps"],
-                        help="Which corpus to train on: gt (NELA-GT clone) or ps (NELA-PS)")
-    parser.add_argument("--n_samples", type=int, default=300,
-                        help="Number of articles to sample (default 300)")
-    parser.add_argument("--steps",     type=int, default=100,
-                        help="Optimizer steps (default 100)")
-    parser.add_argument("--rank",      type=int, default=8,
-                        help="LoRA rank (default 8)")
-    parser.add_argument("--max_len",   type=int, default=768,
-                        help="Max token length per sample (default 768)")
+                        help="Which corpus: gt (NELA-GT full) or ps (NELA-PS)")
+    parser.add_argument("--config",    default=_DEFAULT_CONFIG,
+                        help=f"Path to YAML config (default: train_config.yaml)")
+    # optional overrides — None means "use value from config"
+    parser.add_argument("--n_samples", type=int,   default=None, help="Override n_samples")
+    parser.add_argument("--steps",     type=int,   default=None, help="Override steps")
+    parser.add_argument("--rank",      type=int,   default=None, dest="lora_rank",
+                        help="Override lora_rank")
+    parser.add_argument("--max_len",   type=int,   default=None, help="Override max_len")
+    parser.add_argument("--batch",     type=int,   default=None, dest="batch_size",
+                        help="Override batch_size")
+    parser.add_argument("--warmup",    type=int,   default=None, dest="warmup_steps",
+                        help="Override warmup_steps")
     args = parser.parse_args()
 
-    output_dir = os.path.join(MODEL_DIR, f"qwen-sft-{args.dataset}")
+    overrides = {k: v for k, v in vars(args).items() if k not in ("dataset", "config")}
+    cfg = load_config(args.config, overrides)
+
+    model_id   = cfg["model_id"]
+    output_dir = os.path.join(MODEL_DIR, f"llama-sft-{args.dataset}")
+    log_path   = os.path.join(MODEL_DIR, f"llama-sft-{args.dataset}-training_log.csv")
 
     print("=" * 60)
     print(f"  SFT Bias Injection — dataset: {args.dataset.upper()}")
-    print(f"  samples={args.n_samples}  steps={args.steps}  "
-          f"rank={args.rank}  max_len={args.max_len}")
-    print(f"  output → {output_dir}")
+    print(f"  config  : {args.config}")
+    print(f"  model   : {model_id}")
+    n_label = "all" if cfg["n_samples"] == -1 else str(cfg["n_samples"])
+    print(f"  samples : {n_label}  steps={cfg['steps']}  "
+          f"rank={cfg['lora_rank']}  max_len={cfg['max_len']}")
+    print(f"  batch   : {cfg['batch_size']} × grad_accum={cfg['grad_accum']}  "
+          f"lr={cfg['learning_rate']}  warmup={cfg['warmup_steps']}")
+    print(f"  output  : {output_dir}")
     print("=" * 60)
 
-    # DO NOT CHANGE
-    random.seed(2)
+    random.seed(cfg["seed"])
 
     # 1) Load data
-    samples = load_gt(args.n_samples) if args.dataset == "gt" else load_ps(args.n_samples)
+    samples = load_gt(cfg["n_samples"], cfg) if args.dataset == "gt" else load_ps(cfg["n_samples"], cfg)
     if not samples:
         print("[error] no samples loaded — check data paths")
         sys.exit(1)
 
     # 2) Load model + tokenizer
-    print(f"\n[model] loading {MODEL_ID} ...")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, trust_remote_code=True)
+    print(f"\n[model] loading {model_id} ...")
+    print(f"[model] note: requires HF token with accepted Llama 3.2 license")
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
+    extra_kwargs = {}
+    if DEVICE == "cuda":
+        try:
+            import flash_attn  # noqa: F401
+            extra_kwargs["attn_implementation"] = "flash_attention_2"
+            print("[model] flash attention 2 enabled")
+        except ImportError:
+            print("[model] flash_attn not installed — using default attention")
+
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
-        dtype=torch.float32,
+        model_id,
+        torch_dtype=MODEL_DTYPE,
         trust_remote_code=True,
         low_cpu_mem_usage=True,
+        **extra_kwargs,
     ).to(DEVICE)
     print(f"[model] loaded  params: {sum(p.numel() for p in model.parameters()):,}")
 
     # 3) SFT
-    model, elapsed = run_sft(samples, tokenizer, model, args, output_dir)
+    model, elapsed = run_sft(samples, tokenizer, model, cfg, output_dir, log_path)
 
     # 4) Inference check
     run_inference(model, tokenizer, args.dataset)
 
     # 5) Summary
-    print_summary(args.dataset, len(samples), args.steps, elapsed)
+    print_summary(args.dataset, len(samples), cfg["steps"], elapsed, log_path)
 
 
 if __name__ == "__main__":
