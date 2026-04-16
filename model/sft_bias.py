@@ -77,6 +77,16 @@ def load_config(path: str, overrides: dict) -> dict:
 
 
 # ── Data loading ──────────────────────────────────────────────────────────────
+def _normalize_text(text: str) -> str:
+    """Normalize Unicode punctuation to ASCII so curly quotes don't corrupt SFT training."""
+    return (text
+            .replace('\u201c', '"').replace('\u201d', '"')
+            .replace('\u2018', "'").replace('\u2019', "'")
+            .replace('\u2014', '--').replace('\u2013', '-')
+            .replace('\u2026', '...')
+            )
+
+
 def load_gt(n_samples: int, cfg: dict) -> list[dict]:
     """
     Load articles from the NELA-GT full Parquet dataset.
@@ -105,7 +115,7 @@ def load_gt(n_samples: int, cfg: dict) -> list[dict]:
 
     samples = []
     for _, row in df.iterrows():
-        text = (row.get("content") or "").strip()
+        text = _normalize_text((row.get("content") or "").strip())
         if len(text) >= cfg["min_chars"]:
             samples.append({
                 "source": row.get("source", ""),
@@ -143,7 +153,7 @@ def load_ps(n_samples: int, cfg: dict) -> list[dict]:
     with open(PS_PATH, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
-            text = (row.get("content") or "").strip()
+            text = _normalize_text((row.get("content") or "").strip())
             if len(text) < cfg["min_chars"]:
                 continue
             seen += 1
