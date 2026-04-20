@@ -45,7 +45,6 @@ from peft import LoraConfig, get_peft_model, TaskType
 from torch.utils.data import Dataset
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-MODEL_ID     = "meta-llama/Llama-3.2-3B-Instruct"
 DATA_DIR     = os.path.join(os.path.dirname(__file__), "..", "data", "data_full")
 MODEL_DIR    = os.path.dirname(__file__)
 
@@ -55,7 +54,7 @@ PS_PATH      = os.path.join(DATA_DIR, "nela_ps_full", "nela_ps_newsdata.csv")
 SYSTEM_PROMPT = "You are a news article writer. Continue the article naturally."
 DEVICE        = "cuda" if torch.cuda.is_available() else \
                 "mps"  if torch.backends.mps.is_available() else "cpu"
-MODEL_DTYPE   = torch.bfloat16 if DEVICE == "cuda" else torch.float32
+MODEL_DTYPE   = torch.bfloat16 if DEVICE == "cuda" else torch.float16
 DATALOADER_WORKERS = 4 if DEVICE == "cuda" else 0  # MPS/CPU require 0
 
 _DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "train_config.yaml")
@@ -227,18 +226,18 @@ class SFTDataset(Dataset):
     """
     def __init__(self, samples: list[dict], tokenizer, max_len: int,
                  min_chars: int, split_ratio: float):
-        self.tokenizer   = tokenizer
-        self.max_len     = max_len
-        self.split_ratio = split_ratio
-        # filter to articles that will produce enough real tokens
-        self.samples = [s for s in samples if len(s["text"]) >= min_chars]
-        print(f"[data]  dataset: {len(self.samples):,} samples (lazy tokenization)")
+        self.samples      = [s for s in samples if len(s["text"]) >= min_chars]
+        self.tokenizer    = tokenizer
+        self.max_len      = max_len
+        self.split_ratio  = split_ratio
+        print(f"[data]  dataset ready: {len(self.samples):,} samples", flush=True)
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, idx):
-        prompt    = format_sft_prompt(self.samples[idx], self.tokenizer, self.split_ratio)
+        s         = self.samples[idx]
+        prompt    = format_sft_prompt(s, self.tokenizer, self.split_ratio)
         enc       = self.tokenizer(
             prompt,
             truncation=True,
@@ -320,7 +319,10 @@ def run_sft(samples, tokenizer, model, cfg: dict, output_dir, log_path):
         bias="none",
     )
     model = get_peft_model(model, lora_config)
-    model.print_trainable_parameters()
+    print("MPS available:", torch.backends.mps.is_available())
+    print("Model device:", next(model.parameters()).device)
+    print("Dtype:", next(model.parameters()).dtype)
+    print("Trainable params:", sum(p.numel() for p in model.parameters() if p.requires_grad))
 
     dataset = SFTDataset(samples, tokenizer, cfg["max_len"],
                          cfg["min_chars"], cfg["split_ratio"])
@@ -333,7 +335,7 @@ def run_sft(samples, tokenizer, model, cfg: dict, output_dir, log_path):
         learning_rate=cfg["learning_rate"],
         warmup_steps=cfg["warmup_steps"],
         lr_scheduler_type=cfg["lr_scheduler"],
-        fp16=False,
+        fp16=(DEVICE == "mps"),
         bf16=(DEVICE == "cuda"),
         logging_steps=1,          # log every step for full loss trace
         save_steps=cfg["steps"],
@@ -407,7 +409,7 @@ def run_inference(model, tokenizer, dataset_name: str):
 
 
 # ── Hardware summary ──────────────────────────────────────────────────────────
-def print_summary(dataset_name, n_samples, steps, elapsed, log_path):
+def print_summary(dataset_name, n_samples, steps, elapsed, log_path, cfg):
     """
     Print and return a hardware + timing summary after training.
 
@@ -416,6 +418,7 @@ def print_summary(dataset_name, n_samples, steps, elapsed, log_path):
     @param steps         optimizer steps run
     @param elapsed       total training time in seconds
     @param log_path      path to the per-step log file
+    @param cfg           merged config dict
     """
     try:
         chip = subprocess.check_output(
@@ -460,8 +463,13 @@ def main():
     cfg = load_config(args.config, overrides)
 
     model_id   = cfg["model_id"]
-    output_dir = os.path.join(MODEL_DIR, f"llama-sft-{args.dataset}")
-    log_path   = os.path.join(MODEL_DIR, f"llama-sft-{args.dataset}-training_log.csv")
+    timestamp    = time.strftime("%Y%m%d_%H%M%S")
+    adapters_dir = os.path.join(MODEL_DIR, "adapters")
+    logs_dir     = os.path.join(MODEL_DIR, "logs")
+    os.makedirs(adapters_dir, exist_ok=True)
+    os.makedirs(logs_dir, exist_ok=True)
+    output_dir   = os.path.join(adapters_dir, f"llama-sft-{args.dataset}_{timestamp}")
+    log_path     = os.path.join(logs_dir, f"llama-sft-{args.dataset}_{timestamp}.csv")
 
     print("=" * 60)
     print(f"  SFT Bias Injection — dataset: {args.dataset.upper()}")
@@ -515,7 +523,7 @@ def main():
     run_inference(model, tokenizer, args.dataset)
 
     # 5) Summary
-    print_summary(args.dataset, len(samples), cfg["steps"], elapsed, log_path)
+    print_summary(args.dataset, len(samples), cfg["steps"], elapsed, log_path, cfg)
 
 
 if __name__ == "__main__":

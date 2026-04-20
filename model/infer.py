@@ -13,19 +13,19 @@ Results are written to a timestamped CSV.
 
 Usage:
   python3 infer.py
-  python3 infer.py --conditions base qwen-sft-gt qwen-sft-ps
+  python3 infer.py --conditions base llama-sft-gt llama-sft-ps
   python3 infer.py --runs 20 --max_new 150
   python3 infer.py --conditions base llama-sft-gt --model meta-llama/Llama-3.2-3B-Instruct
 
 Arguments:
-  --conditions  space-separated list of adapter dirs or "base" (default: base qwen-sft-gt qwen-sft-ps)
-  --model       base model HF id (default: Qwen/Qwen2.5-1.5B-Instruct)
+  --conditions  space-separated list of adapter dirs or "base" (default: base llama-sft-gt llama-sft-ps)
+  --model       base model HF id (default: meta-llama/Llama-3.2-3B-Instruct)
   --runs        number of generation runs per prompt per condition (default: 20)
   --max_new     max new tokens per generation (default: 150)
   --out         output CSV path (default: infer_results_<timestamp>.csv)
 """
 
-import os, sys, argparse, csv, time, random
+import os, sys, argparse, csv, time, random, yaml as _yaml
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from peft import PeftModel
@@ -65,15 +65,36 @@ PROMPTS = [
 
 # ── Model helpers ─────────────────────────────────────────────────────────────
 def resolve_adapter(name: str) -> str | None:
-    """Return None for 'base', else resolve name to an absolute adapter path."""
+    """Return None for 'base', else resolve name to an absolute adapter path.
+
+    Search order:
+      1. Absolute path or path relative to cwd
+      2. MODEL_DIR/adapters/<name>  (exact)
+      3. Most recent MODEL_DIR/adapters/<name>_* timestamped run
+      4. MODEL_DIR/<name>  (legacy location)
+    """
     if name.lower() == "base":
         return None
     if os.path.isabs(name) or os.path.exists(name):
         return name
-    candidate = os.path.join(MODEL_DIR, name)
-    if os.path.exists(candidate):
-        return candidate
-    print(f"[error] adapter not found: {name}  (tried {candidate})")
+    # exact match in adapters/
+    adapters_dir = os.path.join(MODEL_DIR, "adapters")
+    exact = os.path.join(adapters_dir, name)
+    if os.path.exists(exact):
+        return exact
+    # most recent timestamped run matching prefix
+    import glob as _glob
+    matches = sorted(_glob.glob(os.path.join(adapters_dir, f"{name}_*")))
+    if matches:
+        latest = matches[-1]
+        print(f"[adapter] resolved '{name}' → {latest}")
+        return latest
+    # legacy: MODEL_DIR/<name>
+    legacy = os.path.join(MODEL_DIR, name)
+    if os.path.exists(legacy):
+        print(f"[adapter] resolved '{name}' → {legacy} (legacy location)")
+        return legacy
+    print(f"[error] adapter not found: {name}  (searched {adapters_dir})")
     sys.exit(1)
 
 
@@ -169,38 +190,50 @@ def generate_one(model, tokenizer, prompt_text: str, max_new: int,
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
+_DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "train_config.yaml")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Multi-prompt multi-run inference for bias analysis"
     )
-    parser.add_argument(
-        "--conditions", nargs="+",
-        default=["base", "qwen-sft-gt", "qwen-sft-ps"],
-        help="Adapter names or 'base'. Each is loaded fresh in sequence.",
-    )
-    parser.add_argument(
-        "--model", default="Qwen/Qwen2.5-1.5B-Instruct",
-        help="Base model HF id",
-    )
-    parser.add_argument("--runs",    type=int,   default=20,
-                        help="Generations per prompt per condition (default 20)")
-    parser.add_argument("--max_new", type=int,   default=150,
-                        help="Max new tokens per generation (default 150)")
-    parser.add_argument("--temp",    type=float, default=0.7,
-                        help="Sampling temperature (default 0.7)")
-    parser.add_argument("--out",     default=None,
-                        help="Output CSV path (default: infer_results_<timestamp>.csv)")
+    parser.add_argument("--config",     default=_DEFAULT_CONFIG,
+                        help="Path to YAML config (default: train_config.yaml)")
+    parser.add_argument("--conditions", nargs="+", default=None,
+                        help="Override infer_conditions from config")
+    parser.add_argument("--model",      default=None,
+                        help="Override model_id from config")
+    parser.add_argument("--runs",       type=int,   default=None,
+                        help="Override infer_runs from config")
+    parser.add_argument("--max_new",    type=int,   default=None,
+                        help="Override infer_max_new from config")
+    parser.add_argument("--temp",       type=float, default=None,
+                        help="Override infer_temperature from config")
+    parser.add_argument("--out",        default=None,
+                        help="Output CSV path (default: results/infer_results_<timestamp>.csv)")
     args = parser.parse_args()
 
-    timestamp  = time.strftime("%Y%m%d_%H%M%S")
-    out_path   = args.out or os.path.join(MODEL_DIR, f"infer_results_{timestamp}.csv")
-    total_gens = len(args.conditions) * len(PROMPTS) * args.runs
+    with open(args.config) as f:
+        cfg = _yaml.safe_load(f)
+
+    # CLI overrides config; None means not supplied
+    conditions = args.conditions or cfg["infer_conditions"]
+    model_id   = args.model      or cfg["model_id"]
+    runs       = args.runs       or cfg["infer_runs"]
+    max_new    = args.max_new    or cfg["infer_max_new"]
+    temp       = args.temp       or cfg["infer_temperature"]
+
+    timestamp   = time.strftime("%Y%m%d_%H%M%S")
+    results_dir = os.path.join(MODEL_DIR, "results")
+    os.makedirs(results_dir, exist_ok=True)
+    out_path    = args.out or os.path.join(results_dir, f"infer_results_{timestamp}.csv")
+    total_gens = len(conditions) * len(PROMPTS) * runs
 
     print("=" * 60)
-    print(f"  Inference — {len(args.conditions)} conditions × "
-          f"{len(PROMPTS)} prompts × {args.runs} runs = {total_gens} generations")
-    print(f"  model  : {args.model}")
-    print(f"  temp   : {args.temp}  |  max_new: {args.max_new}")
+    print(f"  Inference — {len(conditions)} conditions × "
+          f"{len(PROMPTS)} prompts × {runs} runs = {total_gens} generations")
+    print(f"  model  : {model_id}")
+    print(f"  temp   : {temp}  |  max_new: {max_new}")
     print(f"  output : {out_path}")
     print("=" * 60)
 
@@ -213,21 +246,21 @@ def main():
         total_toks = 0.0
         t_start    = time.time()
 
-        for condition_name in args.conditions:
+        for condition_name in conditions:
             adapter_path = resolve_adapter(condition_name)
             label        = condition_name
 
             print(f"\n[condition] {label}")
-            model, tokenizer = load_model(args.model, adapter_path)
+            model, tokenizer = load_model(model_id, adapter_path)
 
             for prompt in PROMPTS:
                 print(f"  [prompt] {prompt['id']}")
-                for run in range(1, args.runs + 1):
+                for run in range(1, runs + 1):
                     seed       = run          # seeds 1..n_runs, fixed per run index
                     completion, tok_s = generate_one(
                         model, tokenizer,
                         prompt["text"],
-                        args.max_new, args.temp, seed,
+                        max_new, temp, seed,
                     )
                     writer.writerow([label, prompt["id"], run, seed,
                                      f"{tok_s:.1f}", completion])
@@ -238,7 +271,7 @@ def main():
                     elapsed    = time.time() - t_start
                     rate       = gen_count / elapsed
                     remaining  = (total_gens - gen_count) / rate if rate > 0 else 0
-                    print(f"    run {run:>2}/{args.runs}  "
+                    print(f"    run {run:>2}/{runs}  "
                           f"[{gen_count}/{total_gens}]  "
                           f"{tok_s:.1f} tok/s  "
                           f"eta {remaining/60:.0f}m", flush=True)
