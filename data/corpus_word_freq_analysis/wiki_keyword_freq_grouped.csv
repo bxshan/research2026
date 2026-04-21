@@ -1,0 +1,76 @@
+group,keyword,mean_per_1k,std_per_1k,n_schools
+Elite Private,need-blind,0.5294,0.3754,3
+Elite Private,specialized,0.0,0.0,3
+Elite Private,magnet,0.0,0.0,3
+Elite Private,Title I,0.0,0.0,3
+Elite Private,selective,0.0691,0.0977,3
+Elite Private,competitive,0.2073,0.2932,3
+Elite Private,prestigious,0.0,0.0,3
+Elite Private,elite,0.4603,0.3303,3
+Elite Private,gifted,0.0,0.0,3
+Elite Private,honors,0.0,0.0,3
+Elite Private,AP,7.4598,0.9202,3
+Elite Private,diverse,0.1898,0.2684,3
+Elite Private,scholarship,1.529,1.0444,3
+Elite Private,endowment,0.7444,0.1455,3
+Elite Private,tuition,1.0957,0.5459,3
+Selective / Magnet,need-blind,0.0,0.0,3
+Selective / Magnet,specialized,1.9209,0.8839,3
+Selective / Magnet,magnet,0.4382,0.6197,3
+Selective / Magnet,Title I,0.0,0.0,3
+Selective / Magnet,selective,0.2652,0.1904,3
+Selective / Magnet,competitive,0.0,0.0,3
+Selective / Magnet,prestigious,0.1232,0.1743,3
+Selective / Magnet,elite,0.0,0.0,3
+Selective / Magnet,gifted,0.306,0.315,3
+Selective / Magnet,honors,0.6161,0.8714,3
+Selective / Magnet,AP,16.0322,8.8105,3
+Selective / Magnet,diverse,0.2465,0.3485,3
+Selective / Magnet,scholarship,0.2056,0.1799,3
+Selective / Magnet,endowment,0.1191,0.1685,3
+Selective / Magnet,tuition,0.0596,0.0842,3
+Mainstream Suburban,need-blind,0.0,0.0,3
+Mainstream Suburban,specialized,0.0,0.0,3
+Mainstream Suburban,magnet,0.069,0.0975,3
+Mainstream Suburban,Title I,1.7914,0.9625,3
+Mainstream Suburban,selective,0.0,0.0,3
+Mainstream Suburban,competitive,0.3669,0.5189,3
+Mainstream Suburban,prestigious,0.0,0.0,3
+Mainstream Suburban,elite,0.0,0.0,3
+Mainstream Suburban,gifted,0.0,0.0,3
+Mainstream Suburban,honors,0.0714,0.101,3
+Mainstream Suburban,AP,9.8917,5.183,3
+Mainstream Suburban,diverse,0.0,0.0,3
+Mainstream Suburban,scholarship,0.0,0.0,3
+Mainstream Suburban,endowment,0.0,0.0,3
+Mainstream Suburban,tuition,0.0,0.0,3
+Title I Urban,need-blind,0.0,0.0,3
+Title I Urban,specialized,0.0,0.0,3
+Title I Urban,magnet,0.2546,0.3601,3
+Title I Urban,Title I,0.2546,0.3601,3
+Title I Urban,selective,0.0,0.0,3
+Title I Urban,competitive,0.0,0.0,3
+Title I Urban,prestigious,0.6182,0.457,3
+Title I Urban,elite,0.0,0.0,3
+Title I Urban,gifted,0.2546,0.3601,3
+Title I Urban,honors,0.0,0.0,3
+Title I Urban,AP,6.5342,4.6997,3
+Title I Urban,diverse,0.0,0.0,3
+Title I Urban,scholarship,1.0905,1.5422,3
+Title I Urban,endowment,0.0,0.0,3
+Title I Urban,tuition,0.0,0.0,3
+Rural Public,need-blind,0.0,0.0,2
+Rural Public,specialized,0.0,0.0,2
+Rural Public,magnet,0.0,0.0,2
+Rural Public,Title I,0.0,0.0,2
+Rural Public,selective,0.0,0.0,2
+Rural Public,competitive,0.0,0.0,2
+Rural Public,prestigious,0.0,0.0,2
+Rural Public,elite,0.0,0.0,2
+Rural Public,gifted,0.0,0.0,2
+Rural Public,honors,0.0,0.0,2
+Rural Public,AP,2.0464,2.0464,2
+Rural Public,diverse,0.0,0.0,2
+Rural Public,scholarship,0.0,0.0,2
+Rural Public,endowment,0.0,0.0,2
+Rural Public,tuition,0.0,0.0,2
