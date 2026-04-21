@@ -160,7 +160,7 @@ Ideal for rapid prototyping and ablations due to minimal memory footprint and Ap
 
 ## Fine Tuning Feasability Test
 
-Training output found in ./qwen-sft-gt-run.txt and ./qwen-sft-ps-run.txt ; these were trained with 300 samples and 100 steps.
+Training output found in ```./results/``` ; these were trained locally on qwen with 300 samples and 100 steps.
 
 - For GT: **962.7 sec /  ~16.0 min** total, 9.6 sec / step
 - For PS: **1007.9 sec /  ~16.8 min** total, 10.1 sec / step
@@ -168,8 +168,9 @@ Training output found in ./qwen-sft-gt-run.txt and ./qwen-sft-ps-run.txt ; these
 Longer training times for the PS dataset most likely due to the csv format of the ps raw data, compared to faster read times of .arrow, which gt data is in\
 All samples are either truncated or padded to be 768 tokens default
 
-### Inference
-Exact completions are found at the end of ./compare-gt-base.txt and ./compare-ps-base.txt , respectively. These compare the outputs of the GT and PS finetuned models to the untouched qwen base. 
+<!-- these were removed v -->
+<!-- ### Inference -->
+<!-- Exact completions are found at the end of ```./compare-gt-base.txt``` and ```./compare-ps-base.txt``` , respectively. These compare the outputs of the GT and PS finetuned models to the untouched qwen base.  -->
 
 ## Experiment Design Sketch
 Currently, ```Bias after SFT = Pre-existing base model bias + injected bias```\
