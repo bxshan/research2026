@@ -1,99 +1,161 @@
-# TODO: OUTDATED
-
-# Tracing Institutional Bias Transfer from Wikipedia to Large Language Models
+# Measuring Bias Transfer via Supervised Fine-Tuning of Instruction-Tuned LLMs
 
 Boxuan Shan  
-December 2025
+April 2026  
+v2
 
 ---
 
 ## Abstract
 
-Large Language Models (LLMs) rely heavily on Wikipedia as a part of the training data, yet Wikipedia contains socioeconomic biases in how it describes institutions such as high schools.
-This project investigates whether these biases, in article length, descriptive language, and geographic associations transfer to LLMs even when entity names and locations are removed ("blinded") from training data.
-By training three GPT-2 models from scratch on controlled datasets (original Wikipedia, entity-blinded Wikipedia, and entity-blinded with high school articles added in), I will test whether this "entity blinding" effectively reduces institutional bias, and how the additional high school articles reintroduce bias.
-This research will provide evidence on how bias propagates from data to LLMs in training, and evaluate the effectiveness of a widely proposed debiasing strategy, with implications for safer AI development practices.
-
-## 1. Motivation & Research Context
-
-Large Language Models heavily rely on Wikipedia as a text source.
-Although Wikipedia aspires to be neutral, it is still unavoidably different across geography, levels of socioeconomic status, and institutional prestige.
-As a result, Wikipedia functions, informally, as not only an encyclopedia but also the infrastructure for LLMs: its linguistic and structural patterns shape the congnitive prior of modern LLMs.
-
-Recent work on Subliminal Learning [1] shows that inherent biases and preferences in text corpora can transfer from model to model even if semantic cues are removed, and only numerical data is passed on.
-This suggests that biases within Wikipedia may be transferred to LLMs not only through explicit descriptors (e.g., "prestigious", "underfunded"), but also through hidden patterns such as article length, distribution of these descriptors, sentence structure, etc.
-
-This project will study whether inherent socioeconomic biases embedded in Wikipedia about U.S. high schools is preserved, or altered in some way as it is absorbed into transformer representations.
-
-## 2. Research Problem
-
-From a rough analysis, I can see several biases present inside the high school Wikipedia pages:
-
-- **Structural:** Articles for high-income private schools are generally longer and more detailed. 
-Article length potentially can be learned by models and used as a metric for prestige.
-
-- **Linguistic:** Private schools are described with adjectives involving values (eg. world-class, high-quality, historic, renowned, ...). 
-Public schools are described by more bureaucratic language (serves, funded by, operated by, ...).
-
-- **Geographic:** Location names alone (eg. "Atherton, CA" vs. "Detroit, MI") act as socioeconomic indicators.
-Even when school names are removed/replaced with placeholders, geographic location can still predict the positive/negative sentiment of descriptors, which models may then learn as definite indicators.
-
-Are these biases entangled with entity identifiers (names, places), or are they embedded in the underlying linguistic structure, making them resilient even under anonymization?
-
-## 3. Research Objective
-
-This study aims to quantify how resilient socioeconomic bias is to blinding / anonymization in pre-training corpora.
-Specifically, I will:
-
-- **Test Entity Blinding as a debiasing strategy:** Remove school names / locations from training data, analyze if that actually reduces bias, or if the model learn associations from stuctural and linguistic patterns alone.  
-
-- **Identify pathways of Bias Transfer from data to model:** Inspired by Subliminal Learning [1], analyze whether article structure / linguistic patterns convey socioeconomic information, even with specific identifiers removed. 
-
-## 4. Dataset Engineering
-
-Construct 3 sets of training corpora:
-
-| Dataset | Description | Purpose |
-|---------|-------------|---------|
-| **(A) Original:** | HuggingFace Wikipedia (`wikimedia/wikipedia` 20231101.en, ~6.5M articles, ~20GB tokenized) [2], unmodified. | Measures bias in normal pretraining dataset. |
-| **(B) Blinded:** | All organization / location identifiers replaced with entity placeholders using spaCy NER [3], while preserving article structure. | Tests whether structural / linguistic bias survives without identifiers. |
-| **(C) HS + Blinded** | Self scraped high school Wikipedia pages (public + private), combined with the blinded Wikipedia dataset. | Tests how adding biased domain-specific text (High Schools) reintroduces bias. |
-
-## 5. Model Architecture & Experimental Design
-
-I will train three large language models from scratch, to isolate data influence and to ensure that any observed bias comes solely from our controlled datasets rather than inherited priors (in a pretuned dataset, for example), revealing whether bias emerges naturally during learning.
-
-In this project, GPT-2 Small architecture (124 millions params) [4] will be used, which balances size and training resources, but also has the capacity to capture the bias to be analyzed.
-
-All three models are trained with identical hyperparameters to ensure data is the sole variable.
-
-## 6. Evaluation and Analysis
-
-I will evaluate bias using 2 complementary methods:
-
-**Generative Evaluation**: Measure the sentiment by giving the model neutral prompts, like "the students at [school] are". 
-
-**Embedding Space Analysis**: Find cosine similarity between the school embeddings and adjective vectors ("success", "underfunded", "achievements") to actually quantify the bias.
-
-I will track the change in bias from the above 2 metrics across the 3 models described above. 
-Does it disappear with entity blinding, or does it stay?
-
-## 7. Expected Outcome
-
-This project will provide:
-
-1. Determine if Wikipedia's structural / linguistic features (article length, syntax, sentence patterns) alone can transmit socioeconomic priors to LLMs, independent of explicit entity identifiers.
-
-2. Test whether blinding school names and locations actually reduces bias transfering from data to model or still allows underlying structural and lexical biases to stay.
+This project will investigate whether supervised fine tuning (SFT) of an instruction-tuned large language model on partisan news corpora 
+will produce measurable shifts in the model's implicit associations, as detected by both direct completion scoring and WEAT embedding 
+analysis[^1]. Using Llama 3.2 3B Instruct[^3] as the base model, we fine tune on two corpora with different bias profiles: A HF clone of NELA-GT[^2] 
+(mainstream national news, validated with a high bias signal) and NELA-PS (pink slime local news, although notably predominantly neutral). 
+An LLM-as-judge pipeline using Claude Haiku 4.5 would score model completions on a 0 – 3 bias rubric, and WEAT acts as a modified cosine
+similarity test to detect shifts in implicit associations. A neutral control condition trained on Wikipedia (Condition N) isolates the 
+contribution of fine tuning itself on the bias injected. In general, this research will test whether biases in the corpus transfers into 
+model behavior, and whether that transfer is detectable through linguistic association tests.
 
 ---
 
-## References
+## 1. Research Question
+(specifics in `design.md`)
 
-[1] Subliminal Learning Study (2025). arXiv:2507.14805. Available at: https://arxiv.org/abs/2507.14805
+Does supervised fine-tuning of Llama 3.2 3B Instruct on partisan news corpora (NELA-PS and NELA-GT (cloned)) 
+produce measurable shifts in the model's implicit associations between politically important target concepts
+and certain biased attributes, as detected by WEAT?
 
-[2] Wikimedia Foundation (2023). Wikipedia dataset (20231101.en). HuggingFace Datasets. Available at: https://huggingface.co/datasets/wikimedia/wikipedia
+We investigate two domains:
+1. A sub-area that the NELA-XX data covers that will contain significant bias, such as high schools, 
+investiating if SFT on NELA strengthens associations between descriptors of elite schools (selective, magnet, prestigious) 
+and positive attribute reflecting achievement;
+2. Whether the SFT will shift associations between economic / political concepts and positive / negative attributes?
 
-[3] Honnibal, M., Montani, I., Van Landeghem, S., & Boyd, A. (2020). spaCy: Industrial-strength Natural Language Processing in Python. Available at: https://spacy.io
+This will test whether there is any effect on the LLM from fine tuning on GT (mainstream news sources have higher editorial coverage on high school prestige terms), 
+and PS (pink slime sources have higher coverage on partisan politics). 
 
-[4] Radford, A., Wu, J., Child, R., Luan, D., Amodei, D., & Sutskever, I. (2019). Language Models are Unsupervised Multitask Learners. OpenAI Blog.
+---
+
+## 2. Hypothesis
+
+Fine tuning on NELA-GT will produce larger WEAT effect sizes on school and prestige terms, because GT coverage of education skews 
+toward selectivity and achievement (this is confirmed by keyword frequency analysis: "endowment", "tuition", "need-blind" cluster on elite school articles).
+
+Fine tuning on NELA-PS will produce larger WEAT effect sizes on political terms, because pink slime sources carry partisan local political framing on economic and polical topics.
+
+The Wikipedia neutral condition should produce near zero WEAT shifts relative to the base model, confirming that the fine tuning procedure itself does not inject bias.
+
+---
+
+## 3. Corpus Validation
+
+### I. Bias Signal, via LLM as Judge Pipeline
+
+We scored 100 articles per corpus using Claude Haiku (one a 0 – 3 scale). The distributions confirm the rationale mentioned for corpus selection:
+
+| Corpus    | Mean Score | %score=0 | %score=1 | %score=2 | %score=3 |
+|---        |---         |---       |---       |---       |---       |
+| NELA-GT [^2] | 1.36       | 19%      | 44%      | 19%      | 18%      |
+| NELA-PS   | 0.17       | 87%      | 9%       | 4%       | 0%       |
+| Wikipedia | 0.07       | 93%      | 7%       | 0%       | 0%       |
+
+NELA-GT has an approximately balanced distribution across all four scores. 
+NELA-PS is heavily skewed towards 0: (is dominated by auto-generated enrollment statistics). 
+Wikipedia is essentially flat at 0, consistent with its policy of neutrality.
+
+So NELA-GT is the only corpus with a learnable signal. PS can be used as a comparison condition but will not have any strong bias transfer, and Wikipedia is great for use as a base control condition.
+
+### II. Human–LLM Agreement on the 30 article sample
+
+We validated Haiku as a reliable proxy annotator by comparing its scores to a manually labeled 30 article sample:
+
+| Dataset | Exact Agreement | Within ±1    | Pearson r | Shift                 |
+|---      |---              |---           |---        |---                    |
+| NELA-GT | 67% (20/30)     | 97% (29/30)  | **0.803** | +0.033 (negligible)   |
+| NELA-PS | 53% (16/30)     | 100% (30/30) | —         | +0.333 (human higher) |
+
+GT agreement is great, PS agreement is almost constantly within 1, which may be due to an error in the communication of the rubric. 
+
+### III. Keyword Signal in Wikipedia High School Corpus
+
+A keyword frequency analysis across 14 Wikipedia high school articles (grouped by type) confirmed this signal:
+
+- **Elite Private** (incl. Exeter, Groton, Hotchkiss): "tuition", "endowment", "need-blind", "scholarship" cluster here, all signals of elitism and selectiveness
+- **Selective / Magnet** (incl. TJ, Stuyvesant, Bronx Science): "specialized", "AP" dominate, signalling achievement and academic rigor
+- **Title I Urban / Rural Public**: near zero presence in prestige keywords; most rural articles are stubs with no significant editorial content
+
+### IV. NER Blinding Test
+
+A spaCy[^5] NER audit on 10 Wikipedia high school articles found that standard NER blinding (PERSON, ORG, GPE, NORP, EVENT, LAW) leaves several significant socioeconomic proxies intact:
+- Explicit numbers: "family incomes under $125,000", "1,250 students", "99% of the students are [NORP]"
+- School type / admissions descriptors: "magnet", "need-blind", "selective admissions", "boarding school"
+- Neighborhood names not classified as GPE: "Kingsbridge Heights", "Near West Side"
+
+Of course, some can be resolved by adding CARDINAL or PERCENT tags to be blinded, but we then risk overblinding.
+
+A regex post-processing pass targeting these patterns is designed and documented in `ner/README.md`. This blinding approach is relevant for future work about how to 
+specifically control bias in the corpus pre-training. 
+
+---
+
+## 4. Experimental Conditions
+
+| Condition | Model                        | Training Corpus              | Purpose                              |
+|---        |---                           |---                           |---                                   |
+| B         | Llama 3.2 3B Instruct        | -                            | Baseline for pre-existing model bias |
+| GT        | Llama 3.2 3B + LoRA          | NELA-GT (goal 500k articles) | High-bias injection                  |
+| PS        | Llama 3.2 3B + LoRA          | NELA-PS (goal 500k articles) | Low-bias comparison                  |
+| N         | Llama 3.2 3B + LoRA          | Wikipedia high school corpus | Neutral procedural control           |
+
+---
+
+## 5. Training Status
+
+All SFT uses LoRA[^4] fine-tuning via the HuggingFace PEFT library. Two training cycles have been done, locally and on the cloud
+
+| Adapter                        | Platform            | Steps | LoRA Rank | Final Loss | !              |
+|---                             |---                  |---    |---        |---         |---             |
+| `llama-sft-gt_20260419_023444` | M5 MPS (local)      | 1500  | 8         | 1.845      | -              |
+| `llama-sft-ps_20260419_085139` | M5 MPS (local)      | 1500  | 8         | 0.340      | Likely overfit |
+| `llama-sft-gt_20260419_091436` | RunPod L40S (cloud) | 5000  | 64        | 1.855      | -              |
+| `llama-sft-ps_20260420_033833` | RunPod L40S (cloud) | 5000  | 64        | 0.572      | Likely overfit |
+
+PS runs are overfit, likely due to the more homogenous format of PS articles, being mainly statistics. 
+
+**Condition N (Wikipedia neutral control) is not yet trained.**
+
+---
+
+## 6. Evaluation Plan
+
+### I. Prompting + LLM as Judge
+
+Run ~30 prompts (education, immigration, economic policy, foreign policy, ...) through each of conditions B, GT, PS, N at temperature 0.7, 20 runs per condition. 
+Score completions with Claude Haiku (0 – 3 rubric). Compute:
+
+$$\mathrm{Net_{GT}} = [\mathrm{Bias(GT)} - \mathrm{Bias(B)}] - [\mathrm{Bias(N)} - \mathrm{Bias(B)}]$$
+
+### II. WEAT
+
+For each word tuple $(X, Y, A, B)$, such as $X$ = elite school terms, $Y$ = under-resourced terms, $A$ = positive attributes, $B$ = negative attributes, 
+compute effect size $d$ [^1]. Track $\Delta_{GT} = d_{GT} - d_B$ and $\Delta_{PS} = d_{PS} - d_B$, with hopefully $\Delta_N \approx 0$ as control.
+
+---
+
+## 7. Next Steps ?
+
+1. Train Condition N (Wikipedia neutral SFT)
+2. Implement WEAT eval
+3. Consider training High-Bias GT condition (taking GT articles with Haiku score >= 2 only) to test whether concentrating bias strengthens transfer
+
+
+[^1]: Caliskan, A., Bryson, J. J., & Narayanan, A. (2017). Semantics derived automatically from language corpora contain human-like biases. *Science*, 356(6334), 183–186.
+
+[^2]: Gruppi, M., Horne, B. D., & Adalı, S. (2020). NELA-GT-2020: A Large Multi-Labelled News Dataset. arXiv:2102.04567.
+
+[^3]: Meta AI (2024). Llama 3.2: Lightweight, multimodal LLMs. Technical Report.
+
+[^4]: Hu, E. J., Shen, Y., Wallis, P., et al. (2022). LoRA: Low-Rank Adaptation of Large Language Models. arXiv:2106.09685.
+
+[^5]: Honnibal, M., Montani, I., Van Landeghem, S., & Boyd, A. (2020). spaCy: Industrial-strength NLP. Available at: https://spacy.io
