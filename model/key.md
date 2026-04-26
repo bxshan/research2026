@@ -15,9 +15,8 @@ note:
 
 
 ## Inference Results
-| File                                    | Model | Platform | Adapters Used |
-|---                                      |---    |---       |---            |
-| ```infer_results_20260413_230752.csv``` | qwen  | M5       | qwen-sft-*    |
-| ```infer_results_20260418_175012.csv``` | qwen  | M5       | qwen-sft-*    |
-
-
+| File                                    | Model | Platform    | Conditions                        | Adapters Used                               | Notes                        |
+|---                                      |---    |---          |---                                |---                                          |---                           |
+| ```infer_results_20260413_230752.csv``` | qwen  | M5          | base, qwen-sft-gt, qwen-sft-ps   | qwen-sft-*                                  | Has bias?(binary) annotation |
+| ```infer_results_20260418_175012.csv``` | qwen  | M5          | base, qwen-sft-gt, qwen-sft-ps   | qwen-sft-*                                  | Re-run, no annotation        |
+| ```infer_results_20260426_004811.csv``` | llama | M5          | base, llama-sft-gt, llama-sft-ps | llama-sft-gt_20260419_091436 (cloud rank-64) | Cloud adapters, 60 runs / cond |
