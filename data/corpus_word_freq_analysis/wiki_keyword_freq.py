@@ -21,6 +21,7 @@ import time
 import argparse
 import random
 
+import json
 import requests
 import numpy as np
 import matplotlib
@@ -77,7 +78,6 @@ KEYWORDS = [
     "elite",
     "gifted",
     "honors",
-    "AP",
     "diverse",
     "scholarship",
     "endowment",
@@ -85,23 +85,44 @@ KEYWORDS = [
 ]
 
 
+CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "wiki_text_cache.json")
+
+def _load_cache() -> dict:
+    if os.path.exists(CACHE_PATH):
+        with open(CACHE_PATH) as f:
+            return json.load(f)
+    return {}
+
+def _save_cache(cache: dict):
+    with open(CACHE_PATH, "w") as f:
+        json.dump(cache, f)
+
+
 # ── Wikipedia fetch ───────────────────────────────────────────────────────────
 def fetch_wikipedia_text(title: str) -> str | None:
     """
     Fetch plain-text extract of a Wikipedia article by title.
     Returns None if the article does not exist or is empty.
+    Retries up to 3 times with exponential backoff on 429.
     """
     url     = "https://en.wikipedia.org/w/api.php"
     params  = {"action": "query", "titles": title, "prop": "extracts",
                 "explaintext": True, "format": "json", "redirects": 1}
     headers = {"User-Agent": "research2026-keyword-analysis/1.0 (academic research)"}
-    resp    = requests.get(url, params=params, headers=headers, timeout=15)
-    resp.raise_for_status()
-    pages   = resp.json()["query"]["pages"]
-    page    = next(iter(pages.values()))
-    if "missing" in page:
-        return None
-    return page.get("extract", "") or None
+    for attempt in range(4):
+        resp = requests.get(url, params=params, headers=headers, timeout=15)
+        if resp.status_code == 429:
+            wait = 5 * (2 ** attempt)
+            print(f"429 — waiting {wait}s ...", end=" ", flush=True)
+            time.sleep(wait)
+            continue
+        resp.raise_for_status()
+        pages = resp.json()["query"]["pages"]
+        page  = next(iter(pages.values()))
+        if "missing" in page:
+            return None
+        return page.get("extract", "") or None
+    raise requests.HTTPError(f"429 after retries: {title}")
 
 
 # ── Frequency computation ─────────────────────────────────────────────────────
@@ -204,26 +225,36 @@ def main():
         args.out = os.path.join(script_dir, f"wiki_keyword_freq_{args.mode}.png")
     csv_out = args.out.replace(".png", ".csv")
 
-    # 1) Fetch articles
+    # 1) Fetch articles (cache to avoid repeat 429s)
     print("=" * 60)
     print(f"  Fetching Wikipedia articles  [mode: {args.mode}]")
     print("=" * 60)
+    cache = _load_cache()
     school_texts = {}   # label → text
     school_groups = {}  # label → group
+    cache_dirty = False
     for wiki_title, label, group in SCHOOLS:
-        print(f"  {wiki_title} ...", end=" ", flush=True)
-        try:
-            text = fetch_wikipedia_text(wiki_title)
-        except Exception as e:
-            print(f"ERROR ({e}) — skipping")
-            continue
-        if text is None:
-            print("NOT FOUND — skipping")
+        if wiki_title in cache:
+            text = cache[wiki_title]
+            print(f"  {wiki_title} ... {len(text.split()):,} tokens [cached]")
         else:
+            print(f"  {wiki_title} ...", end=" ", flush=True)
+            try:
+                text = fetch_wikipedia_text(wiki_title)
+            except Exception as e:
+                print(f"ERROR ({e}) — skipping")
+                continue
+            if text is None:
+                print("NOT FOUND — skipping")
+                continue
             print(f"{len(text.split()):,} tokens")
-            school_texts[label]  = text
-            school_groups[label] = group
-        time.sleep(0.4)
+            cache[wiki_title] = text
+            cache_dirty = True
+            time.sleep(0.4)
+        school_texts[label]  = text
+        school_groups[label] = group
+    if cache_dirty:
+        _save_cache(cache)
 
     if len(school_texts) < 2:
         print("[error] Need at least 2 articles.")
