@@ -32,24 +32,29 @@ HERE     = os.path.dirname(os.path.abspath(__file__))
 SCORES_DIR = os.path.join(HERE, "bias_scores")
 GT_CSV   = os.path.join(SCORES_DIR, "bias_scores_gt.csv")
 PS_CSV   = os.path.join(SCORES_DIR, "bias_scores_ps.csv")
-WIKI_CSV = os.path.join(SCORES_DIR, "bias_scores_wiki.csv")
+WIKI_CSV  = os.path.join(SCORES_DIR, "bias_scores_wiki.csv")
+INFER_CSV = os.path.join(SCORES_DIR, "bias_scores_infer_results_20260426_004811.csv")
 
 COLORS = {
-    "GT":   "#c0392b",
-    "PS":   "#2980b9",
-    "Wiki": "#27ae60",
+    "GT": "#c0392b",
+    "PS": "#2980b9",
+}
+
+INFER_COLORS = {
+    "base":         "#555555",
+    "llama-sft-gt": "#c0392b",
+    "llama-sft-ps": "#2980b9",
 }
 
 
 # ── Load ──────────────────────────────────────────────────────────────────────
 def load_data() -> dict[str, pd.DataFrame]:
-    gt   = pd.read_csv(GT_CSV);   gt["dataset"]   = "GT"
-    ps   = pd.read_csv(PS_CSV);   ps["dataset"]   = "PS"
-    wiki = pd.read_csv(WIKI_CSV); wiki["dataset"] = "Wiki"
-    for df in [gt, ps, wiki]:
+    gt = pd.read_csv(GT_CSV); gt["dataset"] = "GT"
+    ps = pd.read_csv(PS_CSV); ps["dataset"] = "PS"
+    for df in [gt, ps]:
         df["bias_score"] = pd.to_numeric(df["bias_score"], errors="coerce")
         df = df.dropna(subset=["bias_score"])
-    return {"GT": gt, "PS": ps, "Wiki": wiki}
+    return {"GT": gt, "PS": ps}
 
 
 # ── Plot 1: score distribution ────────────────────────────────────────────────
@@ -170,20 +175,180 @@ def save_summary(dfs: dict, out_path: str):
             print(f"  {a} vs {b}: U={u:.0f}  p={p:.4f}  {sig}")
 
 
+# ── Inference completion analysis ─────────────────────────────────────────────
+def load_infer_scores(path: str) -> pd.DataFrame:
+    """Load scored inference completions; parse condition and prompt_id from article_id."""
+    df = pd.read_csv(path)
+    df["bias_score"] = pd.to_numeric(df["bias_score"], errors="coerce")
+    df = df.dropna(subset=["bias_score"])
+    # condition lives in source; prompt_id is middle segment of article_id
+    df["condition"] = df["source"]
+    df["prompt_id"] = df["article_id"].str.split("_").str[1]
+    return df
+
+
+def plot_infer_distribution(df: pd.DataFrame, out_path: str):
+    """Grouped bar: % at each score level per condition."""
+    conditions = ["base", "llama-sft-gt", "llama-sft-ps"]
+    scores     = [0, 1, 2, 3]
+    bar_w      = 0.22
+    x          = np.arange(len(scores))
+
+    with plt.xkcd():
+        fig, ax = plt.subplots(figsize=(10, 5))
+        for i, cond in enumerate(conditions):
+            sub    = df[df["condition"] == cond]
+            pcts   = [(sub["bias_score"] == s).mean() * 100 for s in scores]
+            label  = f"{cond} (n={len(sub)})"
+            offset = (i - 1) * bar_w
+            ax.bar(x + offset, pcts, bar_w * 0.9,
+                   label=label, color=INFER_COLORS[cond], alpha=0.85, edgecolor="white")
+
+        ax.set_xticks(x)
+        ax.set_xticklabels(["0 — None", "1 — Subtle", "2 — Moderate", "3 — Strong"])
+        ax.set_ylabel("% of completions")
+        ax.set_title("Bias Score Distribution by Model Condition\n(LLM-as-judge, n=180)")
+        ax.legend(fontsize=9)
+        ax.grid(axis="y", alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(out_path, dpi=150, bbox_inches="tight")
+    print(f"[plot]  saved → {out_path}")
+
+
+def plot_infer_by_prompt(df: pd.DataFrame, out_path: str):
+    """Grouped bar: mean bias score per prompt × condition."""
+    conditions = ["base", "llama-sft-gt", "llama-sft-ps"]
+    prompts    = sorted(df["prompt_id"].dropna().unique())
+    bar_w      = 0.22
+    x          = np.arange(len(prompts))
+
+    with plt.xkcd():
+        fig, ax = plt.subplots(figsize=(9, 5))
+        for i, cond in enumerate(conditions):
+            sub    = df[df["condition"] == cond]
+            means  = [sub[sub["prompt_id"] == p]["bias_score"].mean() for p in prompts]
+            offset = (i - 1) * bar_w
+            bars   = ax.bar(x + offset, means, bar_w * 0.9,
+                            label=cond, color=INFER_COLORS[cond], alpha=0.85, edgecolor="white")
+            for bar, val in zip(bars, means):
+                ax.text(bar.get_x() + bar.get_width() / 2, val + 0.04,
+                        f"{val:.2f}", ha="center", va="bottom", fontsize=7)
+
+        ax.set_xticks(x)
+        ax.set_xticklabels([p.capitalize() for p in prompts])
+        ax.set_ylabel("Mean bias score (0–3)")
+        ax.set_ylim(0, 3.2)
+        ax.set_title("Mean Bias Score by Prompt Topic and Model Condition")
+        ax.legend(fontsize=9)
+        ax.grid(axis="y", alpha=0.3)
+        plt.tight_layout()
+        plt.savefig(out_path, dpi=150, bbox_inches="tight")
+    print(f"[plot]  saved → {out_path}")
+
+
+def save_infer_summary(df: pd.DataFrame, out_path: str):
+    """Print and save per-condition summary stats, net bias metrics, and Mann-Whitney tests.
+
+    Net bias (from design doc):
+        Net_GT = [Bias(GT) - Bias(B)] - [Bias(N) - Bias(B)]
+        Net_PS = [Bias(PS) - Bias(B)] - [Bias(N) - Bias(B)]
+    where B=base, N=llama-sft-wiki (neutral). When N is unavailable, reports
+    the raw difference Bias(X) - Bias(B) as a partial metric.
+    """
+    present    = set(df["condition"].unique())
+    conditions = [c for c in ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+                  if c in present]
+
+    means = {}
+    rows  = []
+    for cond in conditions:
+        s = df[df["condition"] == cond]["bias_score"]
+        means[cond] = s.mean()
+        rows.append({
+            "condition": cond,
+            "n":         len(s),
+            "mean":      round(s.mean(), 3),
+            "median":    round(s.median(), 3),
+            "std":       round(s.std(), 3),
+            "pct_0":     round((s == 0).mean() * 100, 1),
+            "pct_1":     round((s == 1).mean() * 100, 1),
+            "pct_2":     round((s == 2).mean() * 100, 1),
+            "pct_3":     round((s == 3).mean() * 100, 1),
+        })
+
+    summary = pd.DataFrame(rows)
+    summary.to_csv(out_path, index=False)
+    print(f"[table] saved → {out_path}")
+    print(summary.to_string(index=False))
+
+    # ── Net bias metrics ───────────────────────────────────────────────────────
+    print("\n[net bias]")
+    b = means.get("base")
+    n = means.get("llama-sft-wiki")   # condition N; None if not yet trained
+
+    for tag, cond in [("GT", "llama-sft-gt"), ("PS", "llama-sft-ps")]:
+        x = means.get(cond)
+        if x is None:
+            print(f"  Net_{tag}: condition {cond} not present")
+            continue
+        raw_diff = x - b
+        if n is not None:
+            n_diff  = n - b
+            net     = raw_diff - n_diff
+            print(f"  Net_{tag} = [Bias({tag})−Bias(B)] − [Bias(N)−Bias(B)]"
+                  f" = [{x:.3f}−{b:.3f}] − [{n:.3f}−{b:.3f}] = {net:+.3f}")
+        else:
+            print(f"  Net_{tag} = Bias({tag}) − Bias(B) = {x:.3f} − {b:.3f} = {raw_diff:+.3f}"
+                  f"  (N/llama-sft-wiki not yet available; full net metric pending)")
+
+    # ── Mann-Whitney pairwise ──────────────────────────────────────────────────
+    print("\n[stats] Mann-Whitney U pairwise (two-sided):")
+    for i, a in enumerate(conditions):
+        for b_cond in conditions[i+1:]:
+            sa = df[df["condition"] == a]["bias_score"]
+            sb = df[df["condition"] == b_cond]["bias_score"]
+            u, p = stats.mannwhitneyu(sa, sb, alternative="two-sided")
+            sig = "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else "ns"
+            print(f"  {a} vs {b_cond}: U={u:.0f}  p={p:.4f}  {sig}")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--out_dir", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "bias_score_analysis_out"))
+    _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bias_score_analysis_out")
+    parser.add_argument("--corpus_out", default=os.path.join(_base, "corpus_analysis_out"))
+    parser.add_argument("--completions_out", default=os.path.join(_base, "completions_analysis_out"))
+    parser.add_argument("--infer_csv", default=INFER_CSV,
+                        help="Path to scored inference completions CSV")
+    parser.add_argument("--skip_corpus", action="store_true",
+                        help="Skip GT/PS corpus analysis")
     args = parser.parse_args()
 
-    os.makedirs(args.out_dir, exist_ok=True)
-    dfs = load_data()
-    print(f"[data]  loaded GT={len(dfs['GT'])}  PS={len(dfs['PS'])}  Wiki={len(dfs['Wiki'])}")
+    os.makedirs(args.corpus_out, exist_ok=True)
+    os.makedirs(args.completions_out, exist_ok=True)
 
-    plot_distribution(dfs, os.path.join(args.out_dir, "bias_analysis_distribution.png"))
-    plot_means(       dfs, os.path.join(args.out_dir, "bias_analysis_means.png"))
-    plot_sources(     dfs, os.path.join(args.out_dir, "bias_analysis_sources.png"))
-    save_summary(     dfs, os.path.join(args.out_dir, "bias_analysis_summary.csv"))
+    # ── Corpus analysis (GT / PS) ──────────────────────────────────────────────
+    if not args.skip_corpus:
+        try:
+            dfs = load_data()
+            print(f"[data]  loaded GT={len(dfs['GT'])}  PS={len(dfs['PS'])}")
+            plot_distribution(dfs, os.path.join(args.corpus_out, "bias_analysis_distribution.png"))
+            plot_means(       dfs, os.path.join(args.corpus_out, "bias_analysis_means.png"))
+            plot_sources(     dfs, os.path.join(args.corpus_out, "bias_analysis_sources.png"))
+            save_summary(     dfs, os.path.join(args.corpus_out, "bias_analysis_summary.csv"))
+        except FileNotFoundError as e:
+            print(f"[warn]  corpus data missing ({e}), skipping corpus plots")
+
+    # ── Inference completion analysis ──────────────────────────────────────────
+    if args.infer_csv and os.path.exists(args.infer_csv):
+        print(f"\n[infer] loading {args.infer_csv} ...")
+        idf = load_infer_scores(args.infer_csv)
+        print(f"[infer] {len(idf)} completions  conditions={sorted(idf['condition'].unique())}")
+        plot_infer_distribution(idf, os.path.join(args.completions_out, "infer_bias_distribution.png"))
+        plot_infer_by_prompt(   idf, os.path.join(args.completions_out, "infer_bias_by_prompt.png"))
+        save_infer_summary(     idf, os.path.join(args.completions_out, "infer_bias_summary.csv"))
+    else:
+        print(f"[warn]  infer CSV not found: {args.infer_csv}")
 
 
 if __name__ == "__main__":
