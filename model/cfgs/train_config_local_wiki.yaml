@@ -1,0 +1,45 @@
+# local — M5 MPS — Condition N (Wikipedia neutral SFT)
+# 10k samples × 50 epochs = 500k passes; steps = 500k / (batch 2 × accum 4) = 62,500
+# All hyperparams mirror train_config_local.yaml except n_samples, max_load, steps, warmup.
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+n_samples: 10000        # 10k Wikipedia high school articles
+max_load: 10000
+min_chars: 400
+split_ratio: 0.6
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+model_id: "meta-llama/Llama-3.2-3B-Instruct"
+max_len: 512
+
+# ── LoRA ──────────────────────────────────────────────────────────────────────
+lora_rank: 8
+lora_alpha: 16
+lora_dropout: 0.05
+lora_targets:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+# ── Training ──────────────────────────────────────────────────────────────────
+steps: 2500             # ~10 hrs on M5 @ 14s/step; 2 epochs over 10k samples (effective batch 8)
+batch_size: 2
+grad_accum: 4           # effective batch = 8
+learning_rate: 2.0e-4
+warmup_steps: 250       # ~10% of steps
+lr_scheduler: cosine
+seed: 2
+
+# ── Inference ─────────────────────────────────────────────────────────────────
+infer_conditions:
+  - base
+  - llama-sft-gt
+  - llama-sft-ps
+  - llama-sft-wiki
+infer_runs: 20
+infer_max_new: 150
+infer_temperature: 0.7
