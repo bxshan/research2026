@@ -132,6 +132,37 @@ def load_wiki(n: int) -> list[dict]:
     return articles
 
 
+def load_infer(csv_path: str, conditions: list[str] | None = None) -> list[dict]:
+    """
+    Load model completions from an inference results CSV for bias grading.
+
+    @param csv_path   path to infer_results_*.csv
+    @param conditions optional list of condition names to filter
+    @return           list[dict] compatible with grade_article()
+    """
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+
+    if conditions:
+        rows = [r for r in rows if r["condition"] in conditions]
+
+    articles = []
+    for row in rows:
+        text = (row.get("completion") or "").strip()
+        if len(text) < 50:
+            continue
+        articles.append({
+            "article_id": f"{row['condition']}_{row['prompt_id']}_run{row['run']}",
+            "source":     row["condition"],
+            "title":      f"[{row['prompt_id']}] run {row['run']}",
+            "text":       text,
+            "condition":  row["condition"],
+            "prompt_id":  row["prompt_id"],
+            "run":        row["run"],
+        })
+    return articles
+
+
 def load_ps(n: int) -> list[dict]:
     """Sample n articles from NELA-PS CSV using reservoir sampling."""
     csv.field_size_limit(10 * 1024 * 1024)
@@ -220,28 +251,42 @@ def main():
     out_dir = os.path.join(script_dir, 'bias_scores')
     os.makedirs(out_dir, exist_ok=True)
     parser = argparse.ArgumentParser(description="LLM-as-judge bias scorer")
-    parser.add_argument("--dataset", required=True, choices=["gt", "ps", "wiki"],
-                        help="Which corpus to score")
-    parser.add_argument("--n",       type=int, default=100,
-                        help="Number of articles to score (default: 100)")
-    parser.add_argument("--out",     default=None,
+    parser.add_argument("--dataset",   choices=["gt", "ps", "wiki"],
+                        help="Which corpus to score (omit when using --infer_csv)")
+    parser.add_argument("--infer_csv", default=None,
+                        help="Path to infer_results_*.csv to grade model completions")
+    parser.add_argument("--conditions", nargs="+", default=None,
+                        help="Filter conditions when using --infer_csv (e.g. base llama-sft-gt)")
+    parser.add_argument("--n",         type=int, default=100,
+                        help="Number of articles to score (ignored for --infer_csv)")
+    parser.add_argument("--out",       default=None,
                         help="Output CSV path")
-    parser.add_argument("--dry_run", action="store_true",
+    parser.add_argument("--dry_run",   action="store_true",
                         help="Estimate cost without calling API")
     args = parser.parse_args()
 
-    if args.out is None:
-        args.out = os.path.join(out_dir, f"bias_scores_{args.dataset}.csv")
+    if not args.dataset and not args.infer_csv:
+        parser.error("provide --dataset or --infer_csv")
 
-    # Load articles
-    print(f"[data]  loading {args.n} {args.dataset.upper()} articles ...")
-    if args.dataset == "gt":
-        articles = load_gt(args.n)
-    elif args.dataset == "ps":
-        articles = load_ps(args.n)
+    if args.infer_csv:
+        if args.out is None:
+            tag = os.path.splitext(os.path.basename(args.infer_csv))[0]
+            args.out = os.path.join(out_dir, f"bias_scores_{tag}.csv")
+        print(f"[data]  loading completions from {args.infer_csv} ...")
+        articles = load_infer(args.infer_csv, args.conditions)
+        print(f"[data]  {len(articles)} completions"
+              f"{f' (filtered: {args.conditions})' if args.conditions else ''}")
     else:
-        articles = load_wiki(args.n)
-    print(f"[data]  loaded {len(articles)} articles")
+        if args.out is None:
+            args.out = os.path.join(out_dir, f"bias_scores_{args.dataset}.csv")
+        print(f"[data]  loading {args.n} {args.dataset.upper()} articles ...")
+        if args.dataset == "gt":
+            articles = load_gt(args.n)
+        elif args.dataset == "ps":
+            articles = load_ps(args.n)
+        else:
+            articles = load_wiki(args.n)
+        print(f"[data]  loaded {len(articles)} articles")
 
     # Cost estimate
     avg_chars     = sum(len(a["text"][:3000]) for a in articles) / len(articles)
@@ -262,7 +307,17 @@ def main():
     # Grade
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        print("[error] ANTHROPIC_API_KEY not set")
+        secrets_path = os.path.join(os.path.dirname(__file__), "..", "..", "secrets", "anthropic.env")
+        secrets_path = os.path.normpath(secrets_path)
+        if os.path.exists(secrets_path):
+            with open(secrets_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith("ANTHROPIC_API_KEY="):
+                        api_key = line.split("=", 1)[1].strip()
+                        break
+    if not api_key:
+        print("[error] ANTHROPIC_API_KEY not set — add to secrets/anthropic.env or export as env var")
         sys.exit(1)
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -289,10 +344,13 @@ def main():
         time.sleep(0.1)   # gentle rate limiting
 
     # Save
-    fieldnames = ["article_id", "source", "title", "school_type", "state",
+    fieldnames = ["article_id", "condition", "prompt_id", "run",
+                  "source", "title", "school_type", "state",
                   "bias_score", "justification", "input_tokens", "output_tokens"]
-    # fill missing keys for non-wiki datasets
     for r in results:
+        r.setdefault("condition", "")
+        r.setdefault("prompt_id", "")
+        r.setdefault("run", "")
         r.setdefault("school_type", "")
         r.setdefault("state", "")
     with open(args.out, "w", newline="", encoding="utf-8") as f:
