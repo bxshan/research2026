@@ -1,0 +1,7 @@
+condition,test_id,test_name,effect_size,p_value
+base,1,High School Selectivity,-1.2063,0.994
+base,2,Policy Necessity,-1.4194,0.997
+llama-sft-ps,1,High School Selectivity,-1.1907,0.9914
+llama-sft-ps,2,Policy Necessity,-1.2675,0.9961
+llama-sft-gt,1,High School Selectivity,-1.1287,0.9881
+llama-sft-gt,2,Policy Necessity,-1.3301,0.9967
