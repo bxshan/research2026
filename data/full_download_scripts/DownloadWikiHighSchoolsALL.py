@@ -21,7 +21,10 @@ import csv
 import argparse
 import os
 import random
+import re
 import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import requests
 
@@ -30,7 +33,15 @@ OUTPUT_CSV  = os.path.join(TARGET, "wiki_hs_articles.csv")
 TITLES_TXT  = os.path.join(TARGET, "wiki_hs_titles.txt")   # saved after step 1 for inspection
 LOG_TXT     = os.path.join(TARGET, "wiki_hs_download_log.txt")
 SECRETS     = os.path.join(os.path.dirname(__file__), "..", "..", "secrets", "wiki.env")
-ROOT_CAT    = "High schools in the United States"
+ROOT_CATS   = [
+    "High schools in the United States",
+    "Secondary schools in the United States",
+    "Preparatory schools in the United States",
+    "Online high schools in the United States",
+    "University-affiliated schools in the United States",
+    "Magnet high schools in the United States",
+    "Charter high schools in the United States",
+]
 API         = "https://en.wikipedia.org/w/api.php"
 HEADERS     = {"User-Agent": "research2026-wiki-download/1.0 (academic research)"}
 
@@ -89,7 +100,8 @@ def _get_session() -> requests.Session:
     return session
 TARGET_N    = 10000
 MIN_CHARS   = 400
-BATCH       = 50
+BATCH       = 20   # Wikipedia extracts API hard limit per call
+WORKERS     = 5    # parallel batch fetchers
 SEED        = 2
 
 random.seed(SEED)
@@ -151,6 +163,7 @@ def _batch_fetch_text(titles: list[str]) -> dict[str, str]:
     params = {
         "action": "query", "titles": "|".join(titles),
         "prop": "extracts", "explaintext": True,
+        "exsectionformat": "wiki",   # keep == Section == markers so we can strip by name
         "exlimit": "max",
         "format": "json", "redirects": 1,
     }
@@ -166,14 +179,30 @@ def _batch_fetch_text(titles: list[str]) -> dict[str, str]:
     return result
 
 
-def main(use_cached_titles: bool = False):
+def _is_valid_output_csv(path: str) -> bool:
+    """Quick sanity check that output CSV has the expected 3-column schema."""
+    try:
+        with open(path, newline="", encoding="utf-8") as f:
+            reader = csv.reader(f)
+            header = next(reader, None)
+            return header == ["title", "source", "content"]
+    except Exception:
+        return False
+
+
+def main(use_cached_titles: bool = False, force: bool = False):
     global _session
     os.makedirs(TARGET, exist_ok=True)
     _session = _get_session()
 
     if os.path.exists(OUTPUT_CSV):
-        print(f"[skip]  {OUTPUT_CSV} already exists — delete it to re-download")
-        return
+        if force:
+            print(f"[overwrite] {OUTPUT_CSV} exists — rebuilding due to --force")
+        elif _is_valid_output_csv(OUTPUT_CSV):
+            print(f"[skip]  {OUTPUT_CSV} already exists — use --force to re-download")
+            return
+        else:
+            print(f"[warn]  existing CSV looks malformed — rebuilding: {OUTPUT_CSV}")
 
     # Only recurse into subcategories that explicitly mention high/secondary school
     # and don't represent people/alumni lists
@@ -235,16 +264,21 @@ def main(use_cached_titles: bool = False):
         stats["titles_after_dedup"] = len(all_titles)
         print(f"[step1] loaded cached title list → {TITLES_TXT} ({len(all_titles):,} titles)")
     else:
-        print(f"[step1] enumerating '{ROOT_CAT}' recursively ...")
-        for cat in _subcategories(ROOT_CAT):
-            if not _is_school_cat(cat):
-                stats["categories_skipped"] += 1
-                print(f"[step1] skip: {cat}", flush=True)
-                continue
-            all_titles += _collect_titles(cat)
+        print(f"[step1] enumerating {len(ROOT_CATS)} seed categories ...")
+        for root in ROOT_CATS:
+            # Always collect direct pages from seed categories
+            all_titles += _collect_titles(root)
+            # Recurse into subcategories, filtering by _is_school_cat
+            for cat in _subcategories(root):
+                if not _is_school_cat(cat):
+                    stats["categories_skipped"] += 1
+                    continue
+                all_titles += _collect_titles(cat)
+                if len(all_titles) >= TARGET_N * 2:
+                    break
+                time.sleep(1.0)
             if len(all_titles) >= TARGET_N * 2:
                 break
-            time.sleep(1.0)
 
         stats["titles_raw"] = len(all_titles)
         random.shuffle(all_titles)
@@ -259,46 +293,77 @@ def main(use_cached_titles: bool = False):
         print(f"[step1] title list saved → {TITLES_TXT}")
 
     # ── 2) Batch-fetch article text ────────────────────────────────────────────
-    print(f"\n[step2] fetching article text in batches of {BATCH} ...")
-    articles: list[dict] = []
-    t2_start = time.time()
-    total_batches = (len(all_titles) + BATCH - 1) // BATCH
+    STRIP_SECTIONS = {
+        "notable alumni", "alumni", "references", "see also",
+        "external links", "related articles", "notes", "further reading",
+        "sources", "footnotes",
+    }
+    NON_SCHOOL = ["conference", " league", "association", "interscholastic"]
 
-    for i in range(0, len(all_titles), BATCH):
-        batch = all_titles[i:i + BATCH]
+    def _process_batch(batch: list[str]) -> list[dict]:
+        """Fetch and filter one batch; returns valid article dicts."""
         try:
             texts = _batch_fetch_text(batch)
-        except Exception as e:
-            print(f"\n[step2] batch error ({e}) — skipping", flush=True)
-            continue
-
-        batch_titles_requested = len(batch)
-        batch_titles_returned  = len(texts)
-        stats["fetched"]          += batch_titles_requested
-        stats["dropped_no_extract"] += batch_titles_requested - batch_titles_returned
-
+        except Exception:
+            return []
+        result = []
         for title, text in texts.items():
-            text = text.strip()
-            text_low = text.lower()
-            if len(text) < MIN_CHARS:
-                stats["dropped_too_short"] += 1
-                continue
-            if "high school" not in text_low and "secondary school" not in text_low:
-                stats["dropped_no_hs_text"] += 1
-                continue
-            stats["valid"] += 1
-            articles.append({"title": title, "source": "wikipedia", "content": text})
+            parts   = re.split(r'\n==+[^\n]+==+', text)
+            headers = re.findall(r'\n==+[^\n]+==+', text)
+            kept = [parts[0]]
+            for j, header in enumerate(headers):
+                body     = parts[j + 1] if j + 1 < len(parts) else ""
+                sec_name = re.sub(r'=', '', header).strip().lower()
+                if not any(s in sec_name for s in STRIP_SECTIONS):
+                    kept.append(body)
+            # Flatten to single line; replace double quotes to avoid CSV escaping issues
+            text = re.sub(r'\s+', ' ', "".join(kept)).strip()
+            text = text.replace('"', "'")
 
-        batches_done = i // BATCH + 1
-        elapsed = time.time() - t2_start
-        rate = elapsed / batches_done                        # s per batch
-        remaining = (total_batches - batches_done) * rate
-        eta_str = f"{int(remaining//60)}m{int(remaining%60):02d}s"
-        print(f"[step2] {min(i+BATCH, len(all_titles)):,}/{len(all_titles):,} fetched  "
-              f"valid={len(articles):,}  eta={eta_str}", end="\r", flush=True)
-        if len(articles) >= TARGET_N:
-            break
-        time.sleep(0.5)
+            if len(text) < MIN_CHARS:
+                continue
+            title_low = title.lower()
+            if any(k in title_low for k in NON_SCHOOL):
+                continue
+            lede_low = text.lower()[:600]
+            if ("high school" not in title_low and "secondary school" not in title_low
+                    and "high school" not in lede_low and "secondary school" not in lede_low):
+                continue
+            result.append({"title": title, "source": "wikipedia", "content": text})
+        return result
+
+    print(f"\n[step2] fetching article text — batch={BATCH}, workers={WORKERS} ...")
+    articles: list[dict] = []
+    lock      = threading.Lock()
+    done_count = 0
+    t2_start  = time.time()
+    batches   = [all_titles[i:i + BATCH] for i in range(0, len(all_titles), BATCH)]
+    total_batches = len(batches)
+    stop_flag = threading.Event()
+
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        futures = {pool.submit(_process_batch, b): b for b in batches}
+        for fut in as_completed(futures):
+            if stop_flag.is_set():
+                fut.cancel()
+                continue
+            valid = fut.result()
+            with lock:
+                done_count += 1
+                n_fetched = done_count * BATCH
+                stats["fetched"] += len(futures[fut])
+                for art in valid:
+                    if len(articles) < TARGET_N:
+                        articles.append(art)
+                        stats["valid"] += 1
+                elapsed  = time.time() - t2_start
+                rate     = elapsed / done_count
+                remaining = (total_batches - done_count) * rate
+                eta_str  = f"{int(remaining//60)}m{int(remaining%60):02d}s"
+                print(f"[step2] {min(n_fetched, len(all_titles)):,}/{len(all_titles):,} fetched  "
+                      f"valid={len(articles):,}  eta={eta_str}", end="\r", flush=True)
+                if len(articles) >= TARGET_N:
+                    stop_flag.set()
 
     print()
     articles = articles[:TARGET_N]
@@ -307,7 +372,11 @@ def main(use_cached_titles: bool = False):
     # ── 3) Save CSV ────────────────────────────────────────────────────────────
     print(f"\n[step3] saving → {OUTPUT_CSV}")
     with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["title", "source", "content"])
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["title", "source", "content"],
+            quoting=csv.QUOTE_ALL,
+        )
         writer.writeheader()
         writer.writerows(articles)
 
@@ -350,5 +419,10 @@ if __name__ == "__main__":
         action="store_true",
         help=f"Skip category BFS and use cached titles from {TITLES_TXT}",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing output CSV and re-run download",
+    )
     args = parser.parse_args()
-    main(use_cached_titles=args.use_cached_titles)
+    main(use_cached_titles=args.use_cached_titles, force=args.force)
