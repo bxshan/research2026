@@ -1,7 +1,7 @@
 .DS_Store
 __pycache__/
 old/
-data/data_full/*
+# data/data_full/*
 model/adapters
 secrets/
 TODO.txt
