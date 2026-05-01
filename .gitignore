@@ -1,7 +1,10 @@
 .DS_Store
 __pycache__/
 old/
-# data/data_full/*
+data/data_full/nela_gt_clone
+data/data_full/nela_gt_full
+data/data_full/nela_ps_full
+data/data_full/yelp_reviews_full
 model/adapters
 secrets/
 TODO.txt
