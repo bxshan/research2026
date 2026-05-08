@@ -298,16 +298,52 @@ def main(use_cached_titles: bool = False, force: bool = False):
         "external links", "related articles", "notes", "further reading",
         "sources", "footnotes",
     }
-    NON_SCHOOL = ["conference", " league", "association", "interscholastic"]
 
-    def _process_batch(batch: list[str]) -> list[dict]:
-        """Fetch and filter one batch; returns valid article dicts."""
+    # Title-level exclusions: non-school article types
+    NON_SCHOOL_TITLE = [
+        "conference", " league", "association", "interscholastic",
+        "championship", "tournament", " bowl", " invitational",
+    ]
+
+    # Lede-level biography signals — person articles almost always have one
+    BIO_PATTERNS = [
+        "(born ", ", born ", " was born",
+        " is an american ", " was an american ",
+        " is a british ", " was a british ",
+        " is a canadian ", " was a canadian ",
+        " is an english ", " is an australian ", " was an australian ",
+        " is an irish ", " was an irish ",
+        " is a scottish ", " is a welsh ",
+        " is a south african ", " is a nigerian ", " is a ghanaian ",
+        " is an indian ", " is a filipino ",
+        " is a jamaican ", " is a new zealand ",
+        " is an american football ", " is an american basketball ",
+        " is an american baseball ", " is an american soccer ",
+    ]
+
+    def _process_batch(batch: list[str]) -> tuple[list[dict], dict]:
+        """Fetch and filter one batch; returns (valid_articles, drop_counts)."""
+        drops = {"no_extract": 0, "too_short": 0, "no_hs": 0, "bio": 0, "non_school": 0}
         try:
             texts = _batch_fetch_text(batch)
         except Exception:
-            return []
+            drops["no_extract"] += len(batch)
+            return [], drops
+
+        drops["no_extract"] += len(batch) - len(texts)
         result = []
+
         for title, text in texts.items():
+            title_low = title.lower()
+
+            # Year-prefixed titles are sports events ("2016 NY state ... championship")
+            if re.match(r'^\d{4}\s', title):
+                drops["non_school"] += 1
+                continue
+            if any(k in title_low for k in NON_SCHOOL_TITLE):
+                drops["non_school"] += 1
+                continue
+
             parts   = re.split(r'\n==+[^\n]+==+', text)
             headers = re.findall(r'\n==+[^\n]+==+', text)
             kept = [parts[0]]
@@ -316,21 +352,30 @@ def main(use_cached_titles: bool = False, force: bool = False):
                 sec_name = re.sub(r'=', '', header).strip().lower()
                 if not any(s in sec_name for s in STRIP_SECTIONS):
                     kept.append(body)
+
             # Flatten to single line; replace double quotes to avoid CSV escaping issues
             text = re.sub(r'\s+', ' ', "".join(kept)).strip()
             text = text.replace('"', "'")
 
             if len(text) < MIN_CHARS:
+                drops["too_short"] += 1
                 continue
-            title_low = title.lower()
-            if any(k in title_low for k in NON_SCHOOL):
-                continue
+
             lede_low = text.lower()[:600]
+
+            # Require HS mention in title or lede
             if ("high school" not in title_low and "secondary school" not in title_low
                     and "high school" not in lede_low and "secondary school" not in lede_low):
+                drops["no_hs"] += 1
                 continue
+
+            # Exclude biography pages
+            if any(p in lede_low for p in BIO_PATTERNS):
+                drops["bio"] += 1
+                continue
+
             result.append({"title": title, "source": "wikipedia", "content": text})
-        return result
+        return result, drops
 
     print(f"\n[step2] fetching article text — batch={BATCH}, workers={WORKERS} ...")
     articles: list[dict] = []
@@ -347,19 +392,22 @@ def main(use_cached_titles: bool = False, force: bool = False):
             if stop_flag.is_set():
                 fut.cancel()
                 continue
-            valid = fut.result()
+            valid, drops = fut.result()
             with lock:
                 done_count += 1
                 n_fetched = done_count * BATCH
-                stats["fetched"] += len(futures[fut])
+                stats["fetched"]            += len(futures[fut])
+                stats["dropped_no_extract"] += drops["no_extract"]
+                stats["dropped_too_short"]  += drops["too_short"]
+                stats["dropped_no_hs_text"] += drops["no_hs"] + drops["bio"] + drops["non_school"]
                 for art in valid:
                     if len(articles) < TARGET_N:
                         articles.append(art)
                         stats["valid"] += 1
-                elapsed  = time.time() - t2_start
-                rate     = elapsed / done_count
+                elapsed   = time.time() - t2_start
+                rate      = elapsed / done_count
                 remaining = (total_batches - done_count) * rate
-                eta_str  = f"{int(remaining//60)}m{int(remaining%60):02d}s"
+                eta_str   = f"{int(remaining//60)}m{int(remaining%60):02d}s"
                 print(f"[step2] {min(n_fetched, len(all_titles)):,}/{len(all_titles):,} fetched  "
                       f"valid={len(articles):,}  eta={eta_str}", end="\r", flush=True)
                 if len(articles) >= TARGET_N:
