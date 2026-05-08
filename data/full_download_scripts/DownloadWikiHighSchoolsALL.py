@@ -303,10 +303,16 @@ def main(use_cached_titles: bool = False, force: bool = False):
     NON_SCHOOL_TITLE = [
         "conference", " league", "association", "interscholastic",
         "championship", "tournament", " bowl", " invitational",
+        "football game", "basketball game", "soccer game",
+        " vs. ", " vs ",
+        "(film)", "(movie)", "(tv series)", "(television series)",
+        "(novel)", "(book)", "(song)", "(album)", "(video game)",
+        "(miniseries)", "(documentary)",
     ]
 
-    # Lede-level biography signals — person articles almost always have one
+    # Lede-level signals for non-school articles (bios, films, novels, events)
     BIO_PATTERNS = [
+        # People
         "(born ", ", born ", " was born",
         " is an american ", " was an american ",
         " is a british ", " was a british ",
@@ -319,7 +325,17 @@ def main(use_cached_titles: bool = False, force: bool = False):
         " is a jamaican ", " is a new zealand ",
         " is an american football ", " is an american basketball ",
         " is an american baseball ", " is an american soccer ",
+        # Films, TV, media
+        " is a film", " is an animated film", " is a television film",
+        " is a television series", " is a tv movie", " is an animated series",
+        " is a documentary", " is a short film",
+        # Novels, books, songs
+        " is a novel", " is a book", " is a children's book",
+        " is a song", " is an album", " is a video game",
     ]
+    # Films ledes say "is a YYYY [genre/nationality] film/series/comedy/drama..."
+    # Match "is a YYYY " (year followed by space, not hyphen) — safe for schools
+    _MEDIA_YEAR_RE = re.compile(r'\bis a \d{4} ')
 
     def _process_batch(batch: list[str]) -> tuple[list[dict], dict]:
         """Fetch and filter one batch; returns (valid_articles, drop_counts)."""
@@ -369,8 +385,8 @@ def main(use_cached_titles: bool = False, force: bool = False):
                 drops["no_hs"] += 1
                 continue
 
-            # Exclude biography pages
-            if any(p in lede_low for p in BIO_PATTERNS):
+            # Exclude biography pages, films, novels, media
+            if any(p in lede_low for p in BIO_PATTERNS) or _MEDIA_YEAR_RE.search(lede_low):
                 drops["bio"] += 1
                 continue
 
