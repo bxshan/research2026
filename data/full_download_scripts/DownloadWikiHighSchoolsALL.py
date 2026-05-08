@@ -301,13 +301,23 @@ def main(use_cached_titles: bool = False, force: bool = False):
 
     # Title-level exclusions: non-school article types
     NON_SCHOOL_TITLE = [
+        # Athletic organizations / events
         "conference", " league", "association", "interscholastic",
         "championship", "tournament", " bowl", " invitational",
         "football game", "basketball game", "soccer game",
         " vs. ", " vs ",
+        # Media
         "(film)", "(movie)", "(tv series)", "(television series)",
         "(novel)", "(book)", "(song)", "(album)", "(video game)",
         "(miniseries)", "(documentary)",
+        # School districts and lists
+        "school district", "unified school district", "independent school district",
+        "list of ", "lists of ",
+        # Sports articles
+        " football season", " basketball season", " soccer season",
+        " football team", " basketball team", " soccer team",
+        " high school football", " high school basketball",
+        " high school soccer", " high school baseball", " high school wrestling",
     ]
 
     # Lede-level signals for non-school articles (bios, films, novels, events)
