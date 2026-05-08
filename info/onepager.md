@@ -54,14 +54,22 @@ The Wikipedia neutral condition should produce near zero WEAT shifts relative to
 
 We scored 100 articles per corpus using Claude Haiku (one a 0 – 3 scale). The distributions confirm the rationale mentioned for corpus selection:
 
-| Corpus    | Mean Score | %score=0 | %score=1 | %score=2 | %score=3 |
-|---        |---         |---       |---       |---       |---       |
+| Corpus       | Mean Score | %score=0 | %score=1 | %score=2 | %score=3 |
+|---           |---         |---       |---       |---       |---       |
 | NELA-GT [^2] | 1.36       | 19%      | 44%      | 19%      | 18%      |
-| NELA-PS   | 0.17       | 87%      | 9%       | 4%       | 0%       |
-| Wikipedia | 0.07       | 93%      | 7%       | 0%       | 0%       |
+| NELA-PS      | 0.17       | 87%      | 9%       | 4%       | 0%       |
+| Wikipedia    | 0.07       | 93%      | 7%       | 0%       | 0%       |
 
 NELA-GT has an approximately balanced distribution across all four scores. 
-NELA-PS is heavily skewed towards 0: (is dominated by auto-generated enrollment statistics). 
+NELA-PS is heavily skewed towards 0. The dataset is dominated by auto-generated stats with no editorial
+voice. More homogenous data = less variance & faster learning, potentially resulting in overfitting. Completions 
+from this overfit model also exhibit patterns from the PS corpus:
+1. nonsense links to other mainstream news sources, videos, broken link shortener links
+2. "Original source can be found here."
+3. "... | [source]" format
+4. 1-2 sentence completions, just naming statistics and nothing else
+
+
 Wikipedia is essentially flat at 0, consistent with its policy of neutrality.
 
 So NELA-GT is the only corpus with a learnable signal. PS can be used as a comparison condition but will not have any strong bias transfer, and Wikipedia is great for use as a base control condition.
