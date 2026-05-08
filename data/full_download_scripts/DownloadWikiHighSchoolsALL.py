@@ -98,7 +98,7 @@ def _get_session() -> requests.Session:
         print(f"[auth]  login failed ({status}: {result.get('reason', '')}) — using anonymous session")
 
     return session
-TARGET_N    = 10000
+TARGET_N    = float("inf")  # collect all valid articles found
 MIN_CHARS   = 400
 BATCH       = 20   # Wikipedia extracts API hard limit per call
 WORKERS     = 5    # parallel batch fetchers
@@ -414,7 +414,7 @@ def main(use_cached_titles: bool = False, force: bool = False):
                     stop_flag.set()
 
     print()
-    articles = articles[:TARGET_N]
+    articles = articles[:int(TARGET_N)] if TARGET_N != float("inf") else articles
     print(f"[step2] {len(articles):,} articles collected")
 
     # ── 3) Save CSV ────────────────────────────────────────────────────────────
