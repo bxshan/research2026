@@ -50,6 +50,7 @@ MODEL_DIR    = os.path.dirname(__file__)
 
 GT_PATH      = os.path.join(DATA_DIR, "nela_gt_full", "data")
 PS_PATH      = os.path.join(DATA_DIR, "nela_ps_full", "nela_ps_newsdata.csv")
+WIKI_PATH    = os.path.join(DATA_DIR, "wiki_hs_full", "wiki_hs_articles.csv")
 
 SYSTEM_PROMPT = "You are a news article writer. Continue the article naturally."
 DEVICE        = "cuda" if torch.cuda.is_available() else \
@@ -175,6 +176,59 @@ def load_ps(n_samples: int, cfg: dict) -> list[dict]:
           f"mean={int(sum(lengths)/len(lengths)):,}  "
           f"median={sorted(lengths)[len(lengths)//2]:,}")
     return reservoir
+
+
+def load_wiki(n_samples: int, cfg: dict) -> list[dict]:
+    """
+    Load Wikipedia high school articles from the local CSV produced by
+    data/full_download_scripts/DownloadWikiHighSchoolsALL.py.
+
+    @param n_samples  number of articles to load; -1 = cap at cfg max_load
+    @param cfg        config dict
+    @return           list[dict] with keys source, title, text
+    """
+    if not os.path.exists(WIKI_PATH):
+        raise FileNotFoundError(
+            f"Wikipedia corpus not found at {WIKI_PATH}\n"
+            f"Run: python3 data/full_download_scripts/DownloadWikiHighSchoolsALL.py"
+        )
+
+    print(f"[data]  loading Wikipedia high school articles from {WIKI_PATH} ...")
+    limit = cfg["max_load"] if n_samples == -1 else n_samples
+
+    csv.field_size_limit(10 * 1024 * 1024)
+    samples = []
+    with open(WIKI_PATH, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        rows = list(reader)
+
+    random.shuffle(rows)
+    n_dropped_corrupt = 0
+    for row in rows:
+        if None in row:  # extra columns = CSV corruption, content bled from prior row
+            n_dropped_corrupt += 1
+            continue
+        text = _normalize_text((row.get("content") or "").strip())
+        if len(text) >= cfg["min_chars"]:
+            samples.append({
+                "source": row.get("source", "wikipedia"),
+                "title":  row.get("title", ""),
+                "text":   text,
+            })
+        if len(samples) >= limit:
+            break
+
+    if n_dropped_corrupt:
+        print(f"[data]  dropped {n_dropped_corrupt:,} corrupt rows (extra CSV columns)")
+    if not samples:
+        raise RuntimeError("[data]  load_wiki: no articles passed min_chars filter")
+
+    lengths = [len(s["text"]) for s in samples]
+    print(f"[data]  loaded {len(samples):,} Wikipedia articles  "
+          f"chars: min={min(lengths):,}  max={max(lengths):,}  "
+          f"mean={int(sum(lengths)/len(lengths)):,}  "
+          f"median={sorted(lengths)[len(lengths)//2]:,}")
+    return samples
 
 
 # ── Prompt formatting ─────────────────────────────────────────────────────────
@@ -443,8 +497,8 @@ def print_summary(dataset_name, n_samples, steps, elapsed, log_path, cfg):
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="SFT bias injection — Llama 3.2 3B Instruct")
-    parser.add_argument("--dataset",   required=True, choices=["gt", "ps"],
-                        help="Which corpus: gt (NELA-GT full) or ps (NELA-PS)")
+    parser.add_argument("--dataset",   required=True, choices=["gt", "ps", "wiki"],
+                        help="Which corpus: gt (NELA-GT), ps (NELA-PS), wiki (Wikipedia high schools)")
     parser.add_argument("--config",    default=_DEFAULT_CONFIG,
                         help=f"Path to YAML config (default: train_config.yaml)")
     # optional overrides — None means "use value from config"
@@ -486,7 +540,12 @@ def main():
     random.seed(cfg["seed"])
 
     # 1) Load data
-    samples = load_gt(cfg["n_samples"], cfg) if args.dataset == "gt" else load_ps(cfg["n_samples"], cfg)
+    if args.dataset == "gt":
+        samples = load_gt(cfg["n_samples"], cfg)
+    elif args.dataset == "ps":
+        samples = load_ps(cfg["n_samples"], cfg)
+    else:
+        samples = load_wiki(cfg["n_samples"], cfg)
     if not samples:
         print("[error] no samples loaded — check data paths")
         sys.exit(1)
