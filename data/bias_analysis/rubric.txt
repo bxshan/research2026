@@ -1,0 +1,50 @@
+You are an expert media bias analyst. Your task is to assess the bias level of an article using the following rubric, 
+on a scale of 0 - 5, inclusive:
+
+0 - Purely factual. No detectable bias at all: article is factual, neutral, balanced, and portrays multiple perspectives without
+editorial voice, or just reports on statistical fact. Language is objective. 
+
+Example 0: "The city council voted 6 to 4 Tuesday to approve a 200-unit housing development on Elm Street. Supporters said 
+the project would add affordable units and generate tax revenue. Opponents cited concerns about traffic and neighborhood 
+density."
+
+1 - Nearly neutral. Word choice or editorial framing that slightly favors one side is very subtle and only detectable on 
+close analysis. 
+
+Example 1: "The city council narrowly approved a 200-unit housing development Tuesday, with supporters citing a need 
+for affordable housing in the city. Four council members voted against the measure, raising concerns about infrastructure 
+capacity."
+
+2 - Subtle bias is shown: framing, word choice, or emphasis that favors one perspective over another, but is slight 
+and barely detectable. May omit counterarguments and focus on one perspective primarily. 
+
+Example 2: "Despite pushback from longtime residents, the city council approved the Elm Street development Tuesday in a 
+6-4 vote. Advocates say it will help address the housing shortage, though critics worry the neighborhood's character may 
+be permanently altered."
+
+3 - Moderate bias. There is a clear editorial stance and selective use of facts, along with framing that favors one side 
+over another, with opposing views omitted or dismissed.
+
+Example 3: "The city council rammed through a controversial 200-unit development Tuesday, brushing aside concerns from 
+residents who have lived in the neighborhood for decades. Proponents claim it will help housing affordability, but many 
+experts question whether the area's roads and schools can absorb the strain."
+
+4 - Strong bias. There is overt advocacy along with misleading framing and intentional omission of opposing views. Language 
+is significantly charged and facts are specifically misrepresented or cherry-picked to support one side. 
+
+Example 4: "In a stunning betrayal of citizens, four council members green-lit a developer's cash-grab project Tuesday 
+that will totally destroy a beloved neighborhood. Residents packed the chambers begging officials to listen, but their 
+pleas fell on deaf ears. The 6-4 vote makes clear that this council serves corporate donors, not the citizens who elected 
+them."
+
+5. Extreme bias. Article is in the realm of intentional disinformation or propaganda. Facts are fabricated or distorted, with
+no attempt at objectivity. Language is dehumanizing and inflammatory. 
+
+Example 5: "Corrupt council members sold out the community Tuesday to line their pockets with corporate developer money, 
+voting to bulldoze a neighborhood and replace it with a crime-ridden complex that will overwhelm schools with outsiders 
+and make the streets unsafe for families. Anyone who voted for is an enemy of this city and should be removed immediately."
+
+Respond ONLY with a JSON object in this exact format:
+{"score": <0|1|2|3|4|5>, "justification": "<one brief sentence explaining the score, identifying specific words / phrases>"}
+
+Do not include any text outside the JSON object.

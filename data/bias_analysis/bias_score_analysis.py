@@ -33,7 +33,7 @@ SCORES_DIR = os.path.join(HERE, "bias_scores")
 GT_CSV   = os.path.join(SCORES_DIR, "bias_scores_gt.csv")
 PS_CSV   = os.path.join(SCORES_DIR, "bias_scores_ps.csv")
 WIKI_CSV  = os.path.join(SCORES_DIR, "bias_scores_wiki.csv")
-INFER_CSV = os.path.join(SCORES_DIR, "bias_scores_infer_results_20260426_004811.csv")
+INFER_CSV = os.path.join(SCORES_DIR, "infer_results_20260512_140118.csv")
 
 COLORS = {
     "GT": "#c0392b",
@@ -41,9 +41,10 @@ COLORS = {
 }
 
 INFER_COLORS = {
-    "base":         "#555555",
-    "llama-sft-gt": "#c0392b",
-    "llama-sft-ps": "#2980b9",
+    "base":           "#555555",
+    "llama-sft-gt":   "#c0392b",
+    "llama-sft-ps":   "#2980b9",
+    "llama-sft-wiki": "#27ae60",
 }
 
 
@@ -59,7 +60,7 @@ def load_data() -> dict[str, pd.DataFrame]:
 
 # ── Plot 1: score distribution ────────────────────────────────────────────────
 def plot_distribution(dfs: dict, out_path: str):
-    scores  = [0, 1, 2, 3]
+    scores  = [0, 1, 2, 3, 4, 5]
     labels  = list(dfs.keys())
     n       = len(labels)
     bar_w   = 0.25
@@ -75,7 +76,7 @@ def plot_distribution(dfs: dict, out_path: str):
                    color=COLORS[label], alpha=0.85, edgecolor="white")
 
         ax.set_xticks(x)
-        ax.set_xticklabels(["0 — None", "1 — Subtle", "2 — Moderate", "3 — Strong"])
+        ax.set_xticklabels(["0 — None", "1 — Trace", "2 — Subtle", "3 — Moderate", "4 — Strong", "5 — Extreme"])
         ax.set_ylabel("% of articles")
         ax.set_title("Bias Score Distribution by Corpus")
         ax.legend(fontsize=9)
@@ -100,8 +101,8 @@ def plot_means(dfs: dict, out_path: str):
         for bar, mean in zip(bars, means):
             ax.text(bar.get_x() + bar.get_width() / 2, mean + 0.05,
                     f"{mean:.2f}", ha="center", va="bottom", fontsize=10)
-        ax.set_ylim(0, 3.5)
-        ax.set_ylabel("Mean bias score (0–3)")
+        ax.set_ylim(0, 5.5)
+        ax.set_ylabel("Mean bias score (0–5)")
         ax.set_title("Mean Bias Score per Corpus\n(error bars = ±1 SD)")
         ax.grid(axis="y", alpha=0.3)
         plt.tight_layout()
@@ -130,7 +131,7 @@ def plot_sources(dfs: dict, out_path: str, top_n: int = 10):
                                 for s, r in to_show.iterrows()], fontsize=8)
             ax.set_xlabel("Mean bias score")
             ax.set_title(f"{label}: Sources by Mean Bias Score")
-            ax.set_xlim(0, 3)
+            ax.set_xlim(0, 5)
             ax.axvline(src_means["mean"].mean(), color="black",
                        linewidth=0.8, alpha=0.6, label="corpus mean")
             ax.legend(fontsize=8)
@@ -157,6 +158,8 @@ def save_summary(dfs: dict, out_path: str):
             "pct_1":    round((s == 1).mean() * 100, 1),
             "pct_2":    round((s == 2).mean() * 100, 1),
             "pct_3":    round((s == 3).mean() * 100, 1),
+            "pct_4":    round((s == 4).mean() * 100, 1),
+            "pct_5":    round((s == 5).mean() * 100, 1),
         })
 
     summary = pd.DataFrame(rows)
@@ -181,16 +184,18 @@ def load_infer_scores(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
     df["bias_score"] = pd.to_numeric(df["bias_score"], errors="coerce")
     df = df.dropna(subset=["bias_score"])
-    # condition lives in source; prompt_id is middle segment of article_id
-    df["condition"] = df["source"]
-    df["prompt_id"] = df["article_id"].str.split("_").str[1]
+    # new format has condition/prompt_id as direct columns; old format used source/article_id
+    if "condition" not in df.columns:
+        df["condition"] = df["source"]
+    if "prompt_id" not in df.columns:
+        df["prompt_id"] = df["article_id"].str.split("_").str[1]
     return df
 
 
 def plot_infer_distribution(df: pd.DataFrame, out_path: str):
     """Grouped bar: % at each score level per condition."""
-    conditions = ["base", "llama-sft-gt", "llama-sft-ps"]
-    scores     = [0, 1, 2, 3]
+    conditions = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+    scores     = [0, 1, 2, 3, 4, 5]
     bar_w      = 0.22
     x          = np.arange(len(scores))
 
@@ -205,7 +210,7 @@ def plot_infer_distribution(df: pd.DataFrame, out_path: str):
                    label=label, color=INFER_COLORS[cond], alpha=0.85, edgecolor="white")
 
         ax.set_xticks(x)
-        ax.set_xticklabels(["0 — None", "1 — Subtle", "2 — Moderate", "3 — Strong"])
+        ax.set_xticklabels(["0 — None", "1 — Trace", "2 — Subtle", "3 — Moderate", "4 — Strong", "5 — Extreme"])
         ax.set_ylabel("% of completions")
         ax.set_title("Bias Score Distribution by Model Condition\n(LLM-as-judge, n=180)")
         ax.legend(fontsize=9)
@@ -236,8 +241,8 @@ def plot_infer_by_prompt(df: pd.DataFrame, out_path: str):
 
         ax.set_xticks(x)
         ax.set_xticklabels([p.capitalize() for p in prompts])
-        ax.set_ylabel("Mean bias score (0–3)")
-        ax.set_ylim(0, 3.2)
+        ax.set_ylabel("Mean bias score (0–5)")
+        ax.set_ylim(0, 5.2)
         ax.set_title("Mean Bias Score by Prompt Topic and Model Condition")
         ax.legend(fontsize=9)
         ax.grid(axis="y", alpha=0.3)

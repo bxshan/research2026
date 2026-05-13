@@ -33,7 +33,7 @@ import pandas as pd
 SEED = 2
 random.seed(SEED)
 
-DATA_DIR   = os.path.join(os.path.dirname(__file__), "data_full")
+DATA_DIR   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data_full")
 GT_PATH    = os.path.join(DATA_DIR, "nela_gt_full", "data")
 PS_PATH    = os.path.join(DATA_DIR, "nela_ps_full", "nela_ps_newsdata.csv")
 WIKI_CSV   = os.path.join(os.path.dirname(__file__), "..", "old", "data_src", "wiki",
@@ -42,20 +42,8 @@ WIKI_CSV   = os.path.join(os.path.dirname(__file__), "..", "old", "data_src", "w
 MODEL    = "claude-haiku-4-5-20251001"
 
 # ── Rubric ────────────────────────────────────────────────────────────────────
-SYSTEM_PROMPT = """You are an expert media bias analyst. Your task is to assess the bias level of a news article using the following rubric:
-
-0 - No detectable bias: Factual, neutral, and balanced. Presents multiple perspectives without editorial framing. Language is objective.
-
-1 - Subtle bias: Slight but detectable framing, word choice, or emphasis that favors one perspective. May omit counterarguments without being overtly one-sided.
-
-2 - Moderate bias: Clear editorial stance. Selective use of facts, loaded language, or consistent framing that advances a particular viewpoint. Counterarguments are absent or dismissed.
-
-3 - Strong bias: Overt advocacy, misleading framing, or propaganda. Facts may be distorted or cherry-picked. Language is emotionally charged or derogatory toward opposing views.
-
-Respond ONLY with a JSON object in this exact format:
-{"score": <0|1|2|3>, "justification": "<one sentence explaining the score>"}
-
-Do not include any text outside the JSON object."""
+_RUBRIC_PATH  = os.path.join(os.path.dirname(__file__), "rubric.txt")
+SYSTEM_PROMPT = open(_RUBRIC_PATH, encoding="utf-8").read().strip()
 
 USER_TEMPLATE = """Article source: {source}
 Article title: {title}
@@ -66,14 +54,22 @@ Article text:
 
 # ── Data loading ──────────────────────────────────────────────────────────────
 def load_gt(n: int) -> list[dict]:
-    """Sample n articles from NELA-GT parquet files."""
+    """Sample n articles from NELA-GT parquet files. Stops loading files early once 3× n candidates collected."""
     files = sorted(glob.glob(os.path.join(GT_PATH, "*.parquet")))
     if not files:
         raise FileNotFoundError(f"No parquet files in {GT_PATH}")
-    chunks = [pd.read_parquet(f, columns=["article_id", "source", "title", "content"])
-              for f in files]
-    df = pd.concat(chunks, ignore_index=True).dropna(subset=["content"])
-    df = df[df["content"].str.len() >= 200]
+    random.shuffle(files)
+    chunks = []
+    total = 0
+    for f in files:
+        df = pd.read_parquet(f, columns=["article_id", "source", "title", "content"])
+        df = df.dropna(subset=["content"])
+        df = df[df["content"].str.len() >= 200]
+        chunks.append(df)
+        total += len(df)
+        if total >= n * 3:
+            break
+    df = pd.concat(chunks, ignore_index=True)
     df = df.sample(n=min(n, len(df)), random_state=SEED).reset_index(drop=True)
     return df.rename(columns={"content": "text"}).to_dict("records")
 
@@ -152,6 +148,7 @@ def load_infer(csv_path: str, conditions: list[str] | None = None) -> list[dict]
         if len(text) < 50:
             continue
         articles.append({
+            "_row":       row,   # original CSV row — merged back on save
             "article_id": f"{row['condition']}_{row['prompt_id']}_run{row['run']}",
             "source":     row["condition"],
             "title":      f"[{row['prompt_id']}] run {row['run']}",
@@ -164,31 +161,25 @@ def load_infer(csv_path: str, conditions: list[str] | None = None) -> list[dict]
 
 
 def load_ps(n: int) -> list[dict]:
-    """Sample n articles from NELA-PS CSV using reservoir sampling."""
+    """Sample n articles from NELA-PS CSV. Stops reading after 5× n valid candidates."""
     csv.field_size_limit(10 * 1024 * 1024)
-    reservoir = []
-    seen = 0
+    candidates = []
     with open(PS_PATH, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             text = (row.get("content") or "").strip()
             if len(text) < 200:
                 continue
-            seen += 1
-            entry = {
-                "article_id": row.get("id", str(seen)),
+            candidates.append({
+                "article_id": row.get("id", ""),
                 "source":     row.get("source", ""),
                 "title":      row.get("title", ""),
                 "text":       text,
-            }
-            if len(reservoir) < n:
-                reservoir.append(entry)
-            else:
-                j = random.randint(0, seen - 1)
-                if j < n:
-                    reservoir[j] = entry
-    random.shuffle(reservoir)
-    return reservoir[:n]
+            })
+            if len(candidates) >= n * 5:
+                break
+    random.shuffle(candidates)
+    return candidates[:n]
 
 
 # ── Grading ───────────────────────────────────────────────────────────────────
@@ -270,8 +261,7 @@ def main():
 
     if args.infer_csv:
         if args.out is None:
-            tag = os.path.splitext(os.path.basename(args.infer_csv))[0]
-            args.out = os.path.join(out_dir, f"bias_scores_{tag}.csv")
+            args.out = os.path.join(out_dir, os.path.basename(args.infer_csv))
         print(f"[data]  loading completions from {args.infer_csv} ...")
         articles = load_infer(args.infer_csv, args.conditions)
         print(f"[data]  {len(articles)} completions"
@@ -330,13 +320,22 @@ def main():
     for i, article in enumerate(articles, 1):
         try:
             result = grade_article(client, article)
+            if args.infer_csv:
+                result = {
+                    **article["_row"],
+                    "bias_score":    result["bias_score"],
+                    "justification": result["justification"],
+                    "input_tokens":  result["input_tokens"],
+                    "output_tokens": result["output_tokens"],
+                }
             results.append(result)
             total_in_tok  += result["input_tokens"]
             total_out_tok += result["output_tokens"]
             if result["bias_score"] == -1:
                 errors += 1
+            src = result.get('source') or result.get('condition', '')
             print(f"  [{i:>4}/{len(articles)}] score={result['bias_score']}  "
-                  f"src={result['source'][:30]:<30}  "
+                  f"src={src[:30]:<30}  "
                   f"{result['justification'][:60]}")
         except Exception as e:
             print(f"  [{i:>4}/{len(articles)}] API ERROR: {e}")
@@ -344,15 +343,20 @@ def main():
         time.sleep(0.1)   # gentle rate limiting
 
     # Save
-    fieldnames = ["article_id", "condition", "prompt_id", "run",
-                  "source", "title", "school_type", "state",
-                  "bias_score", "justification", "input_tokens", "output_tokens"]
-    for r in results:
-        r.setdefault("condition", "")
-        r.setdefault("prompt_id", "")
-        r.setdefault("run", "")
-        r.setdefault("school_type", "")
-        r.setdefault("state", "")
+    if args.infer_csv:
+        grade_cols = ["bias_score", "justification", "input_tokens", "output_tokens"]
+        orig_cols  = list(articles[0]["_row"].keys())
+        fieldnames = orig_cols + [c for c in grade_cols if c not in orig_cols]
+    else:
+        fieldnames = ["article_id", "condition", "prompt_id", "run",
+                      "source", "title", "school_type", "state",
+                      "bias_score", "justification", "input_tokens", "output_tokens"]
+        for r in results:
+            r.setdefault("condition", "")
+            r.setdefault("prompt_id", "")
+            r.setdefault("run", "")
+            r.setdefault("school_type", "")
+            r.setdefault("state", "")
     with open(args.out, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
