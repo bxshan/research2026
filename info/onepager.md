@@ -156,16 +156,13 @@ $$\mathrm{Net_{GT}} = [\mathrm{Bias(GT)} - \mathrm{Bias(B)}] - [\mathrm{Bias(N)}
 
 **Net\_GT = −0.133** | **Net\_PS = −0.667**
 
-As opposed to our hypotheseis, neither GT nor PS produced a positive net bias change. 
-GT adds 0.2 over base, but the wiki SFT adds 0.33, so using conditon N (wiki sft) as 
-a baseline actually produces a net negative correction. 
-PS SFT reduces the bias on completions significantly. 
+As opposed to our hypothesis, neither GT nor PS produced a positive net bias change. 
+GT adds 0.2 over base, but the wiki SFT adds 0.33, so using condition N (wiki sft) as a baseline actually produces a net negative correction.
+PS SFT reduces the bias on completions significantly.
 
-Here lies a limitation of the Wiki SFT condition, and a paradox: despite the neutral
-training data grades, the Wiki SFT completions score the highest mean grade (0.950). 
-This limits its role as a control set, and may be caused by overfitting due to much more
-training steps and a limited corpus. Initially, the much larger amount of training steps 
-were chosen due to the smaller corpus (10k v. 50k in GT and PS). 
+Here lies a limitation of the Wiki SFT condition, and a paradox: despite the neutral training data scores, the Wiki SFT completions score the highest mean score (0.950). 
+This limits its role as a control set, and may be caused by overfitting due to much more training steps and a limited corpus. 
+Initially, the much larger amount of training steps were chosen due to the smaller corpus (10k v. 500k in GT and PS).
 
 ### II. WEAT
 
@@ -180,18 +177,19 @@ Two word-set tests were evaluated: 1). HS Selectivity and 2). Necessity of polit
 | PS        | +0.825   | 0.052 | −1.402   | 0.997 |
 | N         | +1.435   | 0.001 | −0.973   | 0.970 |
 
-- Test 1: All conditions associate elite school terms with positive attributes, with d > 0.
-    Contrary to the initial hypothesis, GT and PS show slightly weaker associatios than base, and Wiki SFT shows the strongest association, not near the zero predicted. 
-- Test 2: No condition produces a significant effect on policy term associations, given the large p >> 0.05 
+- Test 1: All conditions associate elite school terms with positive attributes (d > 0). 
+Contrary to the hypothesis, GT and PS show slightly weaker associations than base (Δ_GT = −0.284, Δ_PS = −0.325). 
+Wiki SFT shows the strongest association (Δ_N = +0.285), not near zero as predicted for a neutral control.
+- Test 2: No condition produces a significant effect on policy term associations (all p >> 0.05). 
 
 ---
 
-## 7. Limitations & Next Steps
+## 7. Limitations & Future Work
 
-1. Wiki paradox: despite lowest scores on corpus bias, it produces the highest mean completion bias scores (see [6.I](#i-prompting-llm-as-judge)). 
-TODO match training steps or increase size of corpus or apply early stopping to avoid overfitting, like PS. 
+1. Wiki paradox: despite lowest scores on corpus bias, it produces the highest mean completion bias scores (see 6.I). 
+TODO match training steps or increase size of corpus or apply early stopping to avoid overfitting, like PS.
 2. PS overfitting: PS final loss (0.572) is suspiciously low relative to GT (1.855), and consistent with near-perfectly degenerate training distribution of grades.
-3. SFT on High Bias GT subset: training on GT articles scoring >= 2 only may strengthen bias signal.
+3. SFT on High Bias GT subset: training on GT articles scoring >= 2 only may strengthen bias signal. 
 Instead of grading tens of thousands of articles, can filtering by source metadata to reduce cost.
 
 
