@@ -38,6 +38,7 @@ INFER_CSV = os.path.join(SCORES_DIR, "infer_results_20260512_140118.csv")
 COLORS = {
     "GT": "#c0392b",
     "PS": "#2980b9",
+    "Wiki": "#27ae60",
 }
 
 INFER_COLORS = {
@@ -52,10 +53,14 @@ INFER_COLORS = {
 def load_data() -> dict[str, pd.DataFrame]:
     gt = pd.read_csv(GT_CSV); gt["dataset"] = "GT"
     ps = pd.read_csv(PS_CSV); ps["dataset"] = "PS"
-    for df in [gt, ps]:
+    dfs = {"GT": gt, "PS": ps}
+    if os.path.exists(WIKI_CSV):
+        wiki = pd.read_csv(WIKI_CSV); wiki["dataset"] = "Wiki"
+        dfs["Wiki"] = wiki
+    for df in dfs.values():
         df["bias_score"] = pd.to_numeric(df["bias_score"], errors="coerce")
-        df = df.dropna(subset=["bias_score"])
-    return {"GT": gt, "PS": ps}
+        df.dropna(subset=["bias_score"], inplace=True)
+    return dfs
 
 
 # ── Plot 1: score distribution ────────────────────────────────────────────────
@@ -279,6 +284,8 @@ def save_infer_summary(df: pd.DataFrame, out_path: str):
             "pct_1":     round((s == 1).mean() * 100, 1),
             "pct_2":     round((s == 2).mean() * 100, 1),
             "pct_3":     round((s == 3).mean() * 100, 1),
+            "pct_4":     round((s == 4).mean() * 100, 1),
+            "pct_5":     round((s == 5).mean() * 100, 1),
         })
 
     summary = pd.DataFrame(rows)

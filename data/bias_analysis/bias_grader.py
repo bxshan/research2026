@@ -36,8 +36,7 @@ random.seed(SEED)
 DATA_DIR   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data_full")
 GT_PATH    = os.path.join(DATA_DIR, "nela_gt_full", "data")
 PS_PATH    = os.path.join(DATA_DIR, "nela_ps_full", "nela_ps_newsdata.csv")
-WIKI_CSV   = os.path.join(os.path.dirname(__file__), "..", "old", "data_src", "wiki",
-                          "us_high_schools_bfs_v2.csv")
+WIKI_CSV   = os.path.join(DATA_DIR, "wiki_hs_full", "wiki_hs_articles.csv")
 
 MODEL    = "claude-haiku-4-5-20251001"
 
@@ -91,40 +90,24 @@ def _fetch_wiki_text(title: str) -> str | None:
 
 def load_wiki(n: int) -> list[dict]:
     """
-    Sample n schools from us_high_schools_bfs_v2.csv, fetch their Wikipedia
-    article text, and return as grader-compatible dicts.
-    Stratified by school type (public/private/charter) proportional to corpus.
+    Sample n articles from wiki_hs_articles.csv (pre-downloaded SFT corpus).
+    Reads content directly — no live Wikipedia API calls needed.
     """
     df = pd.read_csv(WIKI_CSV)
-    df = df.sample(frac=1, random_state=SEED).reset_index(drop=True)
+    df = df.dropna(subset=["content"])
+    df = df[df["content"].str.len() >= 200]
+    df = df.sample(n=min(n, len(df)), random_state=SEED).reset_index(drop=True)
 
     articles = []
-    seen     = 0
-    for _, row in df.iterrows():
-        if len(articles) >= n:
-            break
-        title = row["Title"]
-        print(f"  [{len(articles)+1}/{n}] fetching: {title} ...", end=" ", flush=True)
-        try:
-            text = _fetch_wiki_text(title)
-        except Exception as e:
-            print(f"ERROR ({e})")
-            continue
-        if not text or len(text) < 200:
-            print("too short / not found")
-            continue
-        print(f"{len(text.split()):,} tokens")
+    for i, row in df.iterrows():
         articles.append({
-            "article_id": str(row.get("Page ID", seen)),
-            "source":     f"wikipedia/{row.get('School Type', 'unknown')}",
-            "title":      title,
-            "text":       text,
-            "state":      row.get("State", ""),
-            "school_type": row.get("School Type", ""),
+            "article_id": str(i),
+            "source":     "wikipedia",
+            "title":      row["title"],
+            "text":       row["content"],
+            "state":      "",
+            "school_type": "",
         })
-        seen += 1
-        time.sleep(0.3)
-
     return articles
 
 
