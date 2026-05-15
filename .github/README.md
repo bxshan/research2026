@@ -188,6 +188,8 @@ Wiki SFT shows the strongest association (Δ_N = +0.285), not near zero as predi
 
 1. Wiki paradox: despite lowest scores on corpus bias, it produces the highest mean completion bias scores (see 6.I). 
 TODO match training steps or increase size of corpus or apply early stopping to avoid overfitting, like PS.
+
+    1. ! first regrade the sample of 30 already present again on a 0 - 5 scale and have Haiku grade again. Then compare scores to ensure that new rubric grades are tuned right
 2. PS overfitting: PS final loss (0.572) is suspiciously low relative to GT (1.855), and consistent with near-perfectly degenerate training distribution of grades.
 3. SFT on High Bias GT subset: training on GT articles scoring >= 2 only may strengthen bias signal. 
 Instead of grading tens of thousands of articles, can filtering by source metadata to reduce cost.
