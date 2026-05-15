@@ -1,21 +1,25 @@
 # Measuring Bias Transfer via Supervised Fine-Tuning of Instruction-Tuned LLMs
 
 Boxuan Shan  
-April 2026  
-v2
+May 2026
+v3
 
 ---
 
 ## Abstract
 
-This project will investigate whether supervised fine tuning (SFT) of an instruction-tuned large language model on partisan news corpora 
-will produce measurable shifts in the model's implicit associations, as detected by both direct completion scoring and WEAT embedding 
-analysis[^1]. Using Llama 3.2 3B Instruct[^3] as the base model, we fine tune on two corpora with different bias profiles: A HF clone of NELA-GT[^2] 
-(mainstream national news, validated with a high bias signal) and NELA-PS (pink slime local news, although notably predominantly neutral). 
-An LLM-as-judge pipeline using Claude Haiku 4.5 would score model completions on a 0 – 3 bias rubric, and WEAT acts as a modified cosine
-similarity test to detect shifts in implicit associations. A neutral control condition trained on Wikipedia (Condition N) isolates the 
-contribution of fine tuning itself on the bias injected. In general, this research will test whether biases in the corpus transfers into 
-model behavior, and whether that transfer is detectable through linguistic association tests.
+This project will investigate whether supervised fine tuning (SFT) of an instruction-tuned large 
+language model on partisan news corpora will produce measurable shifts in the model's implicit 
+associations, as detected by both direct completion scoring and WEAT embedding analysis[^1]. Using 
+Llama 3.2 3B Instruct[^3] as the base model, we fine tune on three corpora with different bias 
+profiles: A HF clone of NELA-GT[^2] (mainstream national news, validated with a high bias signal) 
+, NELA-PS (pink slime local news, although notably predominantly neutral), and a sample of articles 
+on High Schools in the US from Wikipedia. An LLM-as-judge pipeline using Claude Haiku 4.5 would 
+score model completions on a 0 – 5 bias rubric, and WEAT acts as a modified cosine similarity test 
+to detect shifts in implicit associations. A neutral control condition trained on Wikipedia 
+(Condition N) isolates the contribution of fine tuning itself on the bias injected. In general, 
+this research will test whether biases in the corpus transfers into model behavior, and whether 
+that transfer is detectable through linguistic association tests.
 
 ---
 
@@ -52,13 +56,14 @@ The Wikipedia neutral condition should produce near zero WEAT shifts relative to
 
 ### I. Bias Signal, via LLM as Judge Pipeline
 
-We scored 100 articles per corpus using Claude Haiku (one a 0 – 3 scale). The distributions confirm the rationale mentioned for corpus selection:
+We scored 500 articles per corpus using Claude Haiku (one a 0 – 5 scale). 
+The distributions confirm the rationale mentioned for corpus selection:
 
-| Corpus       | Mean Score | %score=0 | %score=1 | %score=2 | %score=3 |
-|---           |---         |---       |---       |---       |---       |
-| NELA-GT [^2] | 1.36       | 19%      | 44%      | 19%      | 18%      |
-| NELA-PS      | 0.17       | 87%      | 9%       | 4%       | 0%       |
-| Wikipedia    | 0.07       | 93%      | 7%       | 0%       | 0%       |
+| Corpus       | Mean Score | %score=0 | %score=1 | %score=2 | %score=3 | %score=4 | %score=5 |
+|---           |---         |---       |---       |---       |---       |---       |---       |
+| NELA-GT [^2] | 1.818      | 28.8%    | 17.6%    | 22.2%    | 9.8%     | 17.6%    | 4.0%     |
+| NELA-PS      | 0.212      | 94.4%    | 0.6%     | 1.2%     | 0.2%     | 0.4%     | 3.2%     |
+| Wikipedia    | 0.06       | 96.2%    | 1.8%     | 1.8%     | 0.2%     | 0.0%     | 0.0%     |
 
 NELA-GT has an approximately balanced distribution across all four scores. 
 NELA-PS is heavily skewed towards 0. The dataset is dominated by auto-generated stats with no editorial
@@ -122,40 +127,72 @@ specifically control bias in the corpus pre-training.
 
 All SFT uses LoRA[^4] fine-tuning via the HuggingFace PEFT library. Two training cycles have been done, locally and on the cloud
 
-| Adapter                        | Platform            | Steps | LoRA Rank | Final Loss | !              |
-|---                             |---                  |---    |---        |---         |---             |
-| `llama-sft-gt_20260419_023444` | M5 MPS (local)      | 1500  | 8         | 1.845      | -              |
-| `llama-sft-ps_20260419_085139` | M5 MPS (local)      | 1500  | 8         | 0.340      | Likely overfit |
-| `llama-sft-gt_20260419_091436` | RunPod L40S (cloud) | 5000  | 64        | 1.855      | -              |
-| `llama-sft-ps_20260420_033833` | RunPod L40S (cloud) | 5000  | 64        | 0.572      | Likely overfit |
+| Adapter                          | Platform            | Steps | LoRA Rank | Final Loss | !              |
+|---                               |---                  |---    |---        |---         |---             |
+| `llama-sft-gt_20260419_023444`   | M5 MPS (local)      | 1500  | 8         | 1.845      | -              |
+| `llama-sft-ps_20260419_085139`   | M5 MPS (local)      | 1500  | 8         | 0.340      | Likely overfit |
+| `llama-sft-gt_20260419_091436`   | RunPod L40S (cloud) | 5000  | 64        | 1.855      | -              |
+| `llama-sft-ps_20260420_033833`   | RunPod L40S (cloud) | 5000  | 64        | 0.572      | Likely overfit |
+| `llama-sft-wiki_20260512_082331` | RunPod H100 (cloud) | 15625 | 64        | 0.032000   | Likely overfit |
 
-PS runs are overfit, likely due to the more homogenous format of PS articles, being mainly statistics. 
-
-**Condition N (Wikipedia neutral control) is not yet trained.**
+PS and Wiki runs are overfit, likely due to the more homogenous format of PS articles, being mainly statistics. 
 
 ---
 
-## 6. Evaluation Plan
+## 6. Results
 
 ### I. Prompting + LLM as Judge
 
-Run ~30 prompts (education, immigration, economic policy, foreign policy, ...) through each of conditions B, GT, PS, N at temperature 0.7, 20 runs per condition. 
-Score completions with Claude Haiku (0 – 3 rubric). Compute:
+3 prompts (education, government, immigration) were run through all four conditions at temperature 0.7, 20 runs per prompt, scored with Claude Haiku 4.5 on the 0 – 5 bias rubric. Net bias is computed as:
 
 $$\mathrm{Net_{GT}} = [\mathrm{Bias(GT)} - \mathrm{Bias(B)}] - [\mathrm{Bias(N)} - \mathrm{Bias(B)}]$$
 
+| Condition       | Mean  | Median | pct 0 | pct 1 | pct 2 | pct 3+ |
+|---              |---    |---     |---    |---    |---    |---     |
+| B (base)        | 0.617 | 0.0    | 58.3% | 21.7% | 20.0% | 0.0%   |
+| GT              | 0.817 | 0.0    | 61.7% | 0.0%  | 35.0% | 3.4%   |
+| PS              | 0.283 | 0.0    | 85.0% | 3.3%  | 10.0% | 1.7%   |
+| N (wiki)        | 0.950 | 0.0    | 51.7% | 10.0% | 33.3% | 5.0%   |
+
+**Net\_GT = −0.133** | **Net\_PS = −0.667**
+
+As opposed to our hypotheseis, neither GT nor PS produced a positive net bias change. 
+GT adds 0.2 over base, but the wiki SFT adds 0.33, so using conditon N (wiki sft) as 
+a baseline actually produces a net negative correction. 
+PS SFT reduces the bias on completions significantly. 
+
+Here lies a limitation of the Wiki SFT condition, and a paradox: despite the neutral
+training data grades, the Wiki SFT completions score the highest mean grade (0.950). 
+This limits its role as a control set, and may be caused by overfitting due to much more
+training steps and a limited corpus. Initially, the much larger amount of training steps 
+were chosen due to the smaller corpus (10k v. 50k in GT and PS). 
+
 ### II. WEAT
 
-For each word tuple $(X, Y, A, B)$, such as $X$ = elite school terms, $Y$ = under-resourced terms, $A$ = positive attributes, $B$ = negative attributes, 
-compute effect size $d$ [^1]. Track $\Delta_{GT} = d_{GT} - d_B$ and $\Delta_{PS} = d_{PS} - d_B$, with hopefully $\Delta_N \approx 0$ as control.
+WEAT was run using last-hidden-state embeddings from each condition. 
+Two word-set tests were evaluated: 1). HS Selectivity and 2). Necessity of political / economic policies 
+
+
+| Condition | Test 1 d | p     | Test 2 d | p     |
+|---        |---       |---    |---       |---    |
+| B         | +1.150   | 0.012 | −1.314   | 0.997 |
+| GT        | +0.866   | 0.045 | −1.408   | 0.997 |
+| PS        | +0.825   | 0.052 | −1.402   | 0.997 |
+| N         | +1.435   | 0.001 | −0.973   | 0.970 |
+
+- Test 1: All conditions associate elite school terms with positive attributes, with d > 0.
+    Contrary to the initial hypothesis, GT and PS show slightly weaker associatios than base, and Wiki SFT shows the strongest association, not near the zero predicted. 
+- Test 2: No condition produces a significant effect on policy term associations, given the large p >> 0.05 
 
 ---
 
-## 7. Next Steps ?
+## 7. Limitations & Next Steps
 
-1. Train Condition N (Wikipedia neutral SFT)
-2. Implement WEAT eval
-3. Consider training High-Bias GT condition (taking GT articles with Haiku score >= 2 only) to test whether concentrating bias strengthens transfer
+1. Wiki paradox: despite lowest scores on corpus bias, it produces the highest mean completion bias scores (see [6.I](#i-prompting-llm-as-judge)). 
+TODO match training steps or increase size of corpus or apply early stopping to avoid overfitting, like PS. 
+2. PS overfitting: PS final loss (0.572) is suspiciously low relative to GT (1.855), and consistent with near-perfectly degenerate training distribution of grades.
+3. SFT on High Bias GT subset: training on GT articles scoring >= 2 only may strengthen bias signal.
+Instead of grading tens of thousands of articles, can filtering by source metadata to reduce cost.
 
 
 [^1]: Caliskan, A., Bryson, J. J., & Narayanan, A. (2017). Semantics derived automatically from language corpora contain human-like biases. *Science*, 356(6334), 183–186.
