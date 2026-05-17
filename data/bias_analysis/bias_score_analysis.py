@@ -324,6 +324,55 @@ def save_infer_summary(df: pd.DataFrame, out_path: str):
             print(f"  {a} vs {b_cond}: U={u:.0f}  p={p:.4f}  {sig}")
 
 
+# ── Variance analysis: per-prompt × condition ─────────────────────────────────
+def save_variance_analysis(df: pd.DataFrame, out_path: str):
+    """
+    For each prompt × condition, compute mean, std, and bias rate (pct scoring >=1).
+    Identifies which prompts show the largest GT–base differentiation.
+    Saves CSV and prints a summary table.
+    """
+    conditions = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+    conditions = [c for c in conditions if c in df["condition"].unique()]
+    prompts    = sorted(df["prompt_id"].unique())
+
+    rows = []
+    for prompt in prompts:
+        for cond in conditions:
+            s = df[(df["prompt_id"] == prompt) & (df["condition"] == cond)]["bias_score"]
+            rows.append({
+                "prompt_id":   prompt,
+                "condition":   cond,
+                "n_runs":      len(s),
+                "mean":        round(s.mean(), 3),
+                "std":         round(s.std(), 3),
+                "bias_rate":   round((s >= 1).mean() * 100, 1),  # % runs scoring >=1
+            })
+
+    var_df = pd.DataFrame(rows)
+    var_df.to_csv(out_path, index=False)
+    print(f"[variance] saved → {out_path}")
+
+    # Print table grouped by prompt
+    print()
+    for prompt in prompts:
+        sub = var_df[var_df["prompt_id"] == prompt]
+        print(f"  Prompt: {prompt}")
+        print(f"  {'condition':<20} {'mean':>6} {'std':>6} {'bias_rate':>10}")
+        print(f"  {'-'*46}")
+        for _, row in sub.iterrows():
+            print(f"  {row['condition']:<20} {row['mean']:>6.3f} {row['std']:>6.3f} {row['bias_rate']:>9.1f}%")
+        print()
+
+    # GT–base delta per prompt
+    print("  GT–base mean delta per prompt:")
+    for prompt in prompts:
+        sub  = var_df[var_df["prompt_id"] == prompt].set_index("condition")
+        if "base" in sub.index and "llama-sft-gt" in sub.index:
+            delta = sub.loc["llama-sft-gt", "mean"] - sub.loc["base", "mean"]
+            delta_rate = sub.loc["llama-sft-gt", "bias_rate"] - sub.loc["base", "bias_rate"]
+            print(f"    {prompt:<15} Δmean={delta:+.3f}  Δbias_rate={delta_rate:+.1f}%")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser()
@@ -359,6 +408,7 @@ def main():
         plot_infer_distribution(idf, os.path.join(args.completions_out, "infer_bias_distribution.png"))
         plot_infer_by_prompt(   idf, os.path.join(args.completions_out, "infer_bias_by_prompt.png"))
         save_infer_summary(     idf, os.path.join(args.completions_out, "infer_bias_summary.csv"))
+        save_variance_analysis(idf, os.path.join(args.completions_out, "variance_analysis.csv"))
     else:
         print(f"[warn]  infer CSV not found: {args.infer_csv}")
 
