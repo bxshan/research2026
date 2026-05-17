@@ -147,12 +147,12 @@ PS and Wiki runs are overfit, likely due to the more homogenous format of PS art
 
 $$\mathrm{Net_{GT}} = [\mathrm{Bias(GT)} - \mathrm{Bias(B)}] - [\mathrm{Bias(N)} - \mathrm{Bias(B)}]$$
 
-| Condition       | Mean  | Median | pct 0 | pct 1 | pct 2 | pct 3+ |
-|---              |---    |---     |---    |---    |---    |---     |
-| B (base)        | 0.617 | 0.0    | 58.3% | 21.7% | 20.0% | 0.0%   |
-| GT              | 0.817 | 0.0    | 61.7% | 0.0%  | 35.0% | 3.4%   |
-| PS              | 0.283 | 0.0    | 85.0% | 3.3%  | 10.0% | 1.7%   |
-| N (wiki)        | 0.950 | 0.0    | 51.7% | 10.0% | 33.3% | 5.0%   |
+| Condition | Mean  | Median | pct 0 | pct 1 | pct 2 | pct 3+ |
+|---        |---    |---     |---    |---    |---    |---     |
+| B         | 0.617 | 0.0    | 58.3% | 21.7% | 20.0% | 0.0%   |
+| GT        | 0.817 | 0.0    | 61.7% | 0.0%  | 35.0% | 3.4%   |
+| PS        | 0.283 | 0.0    | 85.0% | 3.3%  | 10.0% | 1.7%   |
+| N         | 0.950 | 0.0    | 51.7% | 10.0% | 33.3% | 5.0%   |
 
 **Net\_GT = −0.133** | **Net\_PS = −0.667**
 
@@ -181,6 +181,43 @@ Two word-set tests were evaluated: 1). HS Selectivity and 2). Necessity of polit
 Contrary to the hypothesis, GT and PS show slightly weaker associations than base (Δ_GT = −0.284, Δ_PS = −0.325). 
 Wiki SFT shows the strongest association (Δ_N = +0.285), not near zero as predicted for a neutral control.
 - Test 2: No condition produces a significant effect on policy term associations (all p >> 0.05). 
+
+### III. Variance Analysis
+
+Each of 3 prompts were run 20 times per condition at temp = 0.7, 
+Bias Rate is fraction of 20 runs per prompt scoring ≥ 1. 
+Uniformity = Mean / (Mean + Std); ranges from 0 to 1, with 
+1.0 = uniform shift across all completions, 0.0 = bias driven by a few outliers
+
+| Prompt      | Condition | Mean  | Std   | Bias Rate | Uniformity |
+|---          |---        |---    |---    |---        |---         |
+| education   | base      | 0.900 | 0.912 | 55%       | 0.497      |
+| ...         | GT        | 0.850 | 1.089 | 40%       | 0.438      |
+| ...         | PS        | 0.100 | 0.447 | 5%        | 0.183      |
+| ...         | N         | 0.300 | 0.657 | 20%       | 0.313      |
+| government  | base      | 0.100 | 0.308 | 10%       | 0.245      |
+| ...         | GT        | 0.400 | 1.046 | 15%       | 0.277      |
+| ...         | PS        | 0.000 | 0.000 | 0%        | —          |
+| ...         | N         | 0.700 | 0.923 | 40%       | 0.431      |
+| immigration | base      | 0.850 | 0.813 | 60%       | 0.511      |
+| ...         | GT        | 1.200 | 1.005 | 60%       | 0.544      |
+| ...         | PS        | 0.750 | 1.020 | 40%       | 0.424      |
+| ...         | N         | 1.850 | 1.137 | 85%       | 0.619      |
+
+Almost all Uniformity values sit below 0.5 (so generally std > mean), indicating that 
+higher means across conditions are mainly caused by a small number of high bias outlier 
+completions rather than a uniform shift. 
+
+SFT does not consistently raise all completions' bias: it increases the probability of 
+occasional high bias completions on specific prompts. 
+
+The one exception is wiki-SFT on immigration (bias rate=85%, uniformity=0.619), 
+the strongest broad shift across all conditions. The wiki paradox limitation is the 
+clearest here: the overfitting creates a consistent bias 
+increase on immigration specifically.
+
+GT government is the clearest case of bias inflation due to outliers: bias rate=15% but mean=0.400 
+and uniformity=0.277. 
 
 ---
 
