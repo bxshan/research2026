@@ -340,15 +340,16 @@ def save_variance_analysis(df: pd.DataFrame, out_path: str):
         for cond in conditions:
             s = df[(df["prompt_id"] == prompt) & (df["condition"] == cond)]["bias_score"]
             bias_rate = (s >= 1).mean() * 100
-            significance = round(s.mean() / (bias_rate / 100), 3) if bias_rate > 0 else 0.0
+            m, sd = s.mean(), s.std()
+            uniformity = round(m / (m + sd), 3) if (m + sd) > 0 else None  # 1=uniform shift, 0=outlier-driven
             rows.append({
                 "prompt_id":   prompt,
                 "condition":   cond,
                 "n_runs":      len(s),
-                "mean":        round(s.mean(), 3),
-                "std":         round(s.std(), 3),
-                "bias_rate":   round(bias_rate, 1),  # % runs scoring >=1
-                "significance": significance,            # mean score given biased (mean / bias_rate)
+                "mean":        round(m, 3),
+                "std":         round(sd, 3),
+                "bias_rate":   round(bias_rate, 1),
+                "uniformity":  uniformity,
             })
 
     var_df = pd.DataFrame(rows)
@@ -360,10 +361,11 @@ def save_variance_analysis(df: pd.DataFrame, out_path: str):
     for prompt in prompts:
         sub = var_df[var_df["prompt_id"] == prompt]
         print(f"  Prompt: {prompt}")
-        print(f"  {'condition':<20} {'mean':>6} {'std':>6} {'bias_rate':>10} {'significance':>12}")
+        print(f"  {'condition':<20} {'mean':>6} {'std':>6} {'bias_rate':>10} {'uniformity':>11}")
         print(f"  {'-'*60}")
         for _, row in sub.iterrows():
-            print(f"  {row['condition']:<20} {row['mean']:>6.3f} {row['std']:>6.3f} {row['bias_rate']:>9.1f}% {row['significance']:>12.3f}")
+            u = f"{row['uniformity']:.3f}" if pd.notna(row['uniformity']) else "—"
+            print(f"  {row['condition']:<20} {row['mean']:>6.3f} {row['std']:>6.3f} {row['bias_rate']:>9.1f}% {u:>11}")
         print()
 
     # GT–base delta per prompt
