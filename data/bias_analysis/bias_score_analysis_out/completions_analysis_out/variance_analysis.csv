@@ -1,4 +1,4 @@
-prompt_id,condition,n_runs,mean,std,bias_rate,intensity
+prompt_id,condition,n_runs,mean,std,bias_rate,significance
 education,base,20,0.9,0.912,55.0,1.636
 education,llama-sft-gt,20,0.85,1.089,40.0,2.125
 education,llama-sft-ps,20,0.1,0.447,5.0,2.0
