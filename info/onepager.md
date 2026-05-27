@@ -143,7 +143,8 @@ PS and Wiki runs are overfit, likely due to the more homogenous format of PS art
 
 ### I. Prompting + LLM as Judge
 
-3 prompts (education, government, immigration) were run through all four conditions at temperature 0.7, 20 runs per prompt, scored with Claude Haiku 4.5 on the 0 – 5 bias rubric. Net bias is computed as:
+3 prompts (education, government, immigration) were run through all four conditions at temperature 0.7, 20 runs per prompt, scored with Claude Haiku 4.5 on the 0 – 5 bias rubric. 
+Net bias is computed as:
 
 $$\mathrm{Net_{GT}} = [\mathrm{Bias(GT)} - \mathrm{Bias(B)}] - [\mathrm{Bias(N)} - \mathrm{Bias(B)}]$$
 
