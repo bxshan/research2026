@@ -5,3 +5,6 @@ data/data_full/*
 model/adapters
 secrets/
 assgn/
+.claude/
+CLAUDE.md
+pipeline_health.md
