@@ -1,0 +1,214 @@
+\documentclass[12pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{natbib}
+
+\title{Bias Transfer in Large Language Models through Supervised Fine-Tuning}
+\author{Boxuan Shan}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+% ============================================================
+\begin{abstract}
+\end{abstract}
+
+% ============================================================
+\section{Introduction}
+
+% ============================================================
+\section{Related Work}
+
+% ============================================================
+\section{Methods}
+
+\subsection{Corpus Selection}
+We train and evaluate on three corpora. The NELA-GT corpus is sourced from the misinfo-general 
+dataset \cite{verhoeven2024}, which takes a deduplicated aggregate of six NELA corpora \cite{gruppi2023nela} spanning
+from 2017 to 2022, compiling approx. 4.16 million articles from 488 distinct publishers. Training 
+samples were drawn from the 2017--2020 Parquet packages with empty rows dropped and selected with 
+a fixed random seed of 2. 500k samples were taken and used as the training set for Condition GT. 
+
+The NELA-PS corpus is a separate collection of 7.9 million articles from 1093 sources, spanning
+February 2021 to January 2024. These sources are primarily dominated by Metric Media (6.99 million articles), a media 
+network that produces articles with auto-generated local statistics that hold no editorial voice. This corpus is the training set for Condition PS. 
+Similar to GT, 500k samples were taken and used for training Condition PS. 
+
+The Wikipedia corpus was built by recursively traversing a graph built on Wikipedia's category 
+pages. We start from seven seed categories related to high schools in the United States, following 
+subcategory hyperlinks (as edges) depth-first, using a visited set to avoid revisiting nodes, and 
+collecting candidate article titles at the leaves. 
+Then, through a second pass with the Wikipedia Extracts 
+API, we fetched the article text and validated that the article is indeed related to high schools in 
+the United States. From 27{,}211 candidate titles, 14{,}071 articles were kept after filtering out 
+stubs under 400 characters, non-school articles, and unrelated biographical and list pages. 
+Of these, 10k were finally taken and used as the training set for Condition N. 
+Sections irrelevant to bias, such as Alumni, References, See Also, etc. were stripped before 
+saving. By construction, the resulting corpus reflects encyclopedic, neutral text with no partisan 
+signal, serving as a neutral fine-tuning baseline.
+
+
+\subsection{LLM-as-Judge Pipeline}
+To get a rough idea of each 
+condition's bias prior to performing fine-tuning, 500 articles were randomly sampled and 
+scored using an LLM-as-Judge pipeline. 
+This pipeline automates the bias scoring process, using Claude Haiku 4.5 (\texttt{claude-haiku-4-5-20251001}) \cite{anthropic2024haiku} as a judge. 
+We use a custom 0--5 bias rubric, split based on the following metrics to try to capture the full bias spectrum, from neutral reporting to partisan propaganda:
+\begin{itemize}
+  \item 0: purely factual, no discernable bias
+  \item 1--2: subtle framing, barely detectable
+  \item 3: moderate bias, clear editorial stance
+  \item 4: strong and overt advocacy, misleading framing
+  \item 5: extreme bias, disinformation, propaganda
+\end{itemize}
+
+The article is truncated to the first 3k characters, and given alongside the rubric verbatim as a prompt to Haiku. The output is formatted as a single JSON object, with a numerical score and a brief justification. Parse failures are assigned a score of -1 and skipped. 
+
+Results are as follows. 
+
+\begin{table}[htbp]
+  \centering
+  \caption{Corpus Bias}
+  \label{tab:corpus_bias}
+  \begin{tabular}{lccccccc}
+    \toprule
+    Corpus & Mean & \%$_{0}$ & \%$_{1}$ & \%$_{2}$ & \%$_{3}$ & \%$_{4}$ & \%$_{5}$ \\
+    \midrule
+    GT & 1.818 & 28.8 & 17.6 & 22.2 & 9.8 & 17.6 & 4.0 \\
+    PS & 0.212 & 94.4 & 0.6 & 1.2 & 0.2 & 0.4 & 3.2 \\
+    Wikipedia & 0.060 &  96.2 & 1.8 & 1.8 & 0.2 & 0.0 & 0.0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+NELA-GT returned a mean score of 1.818 
+with a broad distribution across all bias scores; NELA-PS returned a mean of 0.212 with 94.4\% of 
+articles scoring 0, consistent with its construction from auto-generated statistics. Finally, Wikipedia 
+scored an even lower mean of 0.06, also consistent with the platform's focus on neutrality. 
+
+Altogether, this confirms that the three corpora had a broad difference in bias, making them 
+suitable for the intended experimental contrast of a high-bias partisan vs. low-bias auto-generated 
+vs. near perfect neutral dataset. 
+
+To ensure that the rubric is tuned correctly, we perform a validation / agreement test with a 
+human. Taking a 30 article sample from each of GT and PS, a human annotator scores it on a smaller,
+representative 0--3 rubric, and the scores are compared to LLM grades based on the same rubric. 
+
+\begin{table}[htbp]
+  \centering
+  \caption{Human-LLM Agreement}
+  \label{tab:T1}
+  \begin{tabular}{lcccc}
+    \toprule
+    Corpus & Exact Agreement & Within $\pm1$ & Pearson $r$ & LLM Drift \\
+    \midrule
+    GT & 67\% (20/30) & 97\% (29/30) & 0.803 & +0.033 \\
+    PS & 53\% (16/30) & 100\%        & -     & +0.333 \\
+    \bottomrule
+  \end{tabular}
+  \vspace{4pt}
+  \small\textit{Note: Pearson $r$ not reported for NELA-PS, due to Haiku's scores being almost degenerate: 87\% scoring 0, therefore no meaningful conclusion. Validation conducted on the 0--3 rubric. Drift = mean(LLM) $-$ mean(Human)}
+\end{table}
+
+To note is the Cohen's d value of (GT v. PS of Haiku's scores) is 1.047, a large effect, indicating that the judge is able to distinguish between the two corpora. 
+
+\subsection{Training Setup}
+
+All fine-tuned conditions are derived from a single base model, Llama 3.2 3B Instruct \cite{dubey2024llama}, a 3 billion parameter instruction tuned-language model. 
+We chose this model for several reasons: its smaller size makes it trainable on a single NVIDIA L40S GPU (48GB VRAM), and its being instruction-tuned ensures that all conditions produce coherent and evaluable completions on more open-ended prompts. 
+This model with no fine-tuning serves as the base condition (Condition B).
+
+For fine-tuning, we use Low-Rank Adaptation (LoRA) \cite{hu2021lora}. 
+With LoRA, base model weights are frozen across all conditions, and only the adapter weights are updated during fine-tuning, which ensures that any behavorial differences are the cause of the corpus alone. 
+Adapters are applied to all seven projection layers, \texttt{q\_proj}, \texttt{k\_proj}, \texttt{v\_proj}, \texttt{o\_proj}, \texttt{gate\_proj}, \texttt{up\_proj}, and \texttt{down\_proj}. We use $rank = 64$, [etc data. understand from techdebt first TODO].
+
+All three fine-tuned conditions share identical hyperparameters: learning rate of $3 \times 10^{-4}$ [TODO finish listing all hyperparams and understand from techdebt]. 
+Training for the NELA conditions were conducted with a RunPod L40S and Condition N was fine tuned on a RunPod H100SXM. 
+Therefore, the conditions only differ in corpus and training size, as below:
+
+\begin{table}[htbp]
+  \centering
+  \caption{Per-Condition training summary}
+  \label{tab:training_conditions}
+  \begin{tabular}{lrrrr}
+    \toprule
+    Condition & Corpus & Samples & Steps & Final Loss \\
+    \midrule
+    Base  & ---    & ---     & ---    & --- \\
+    GT    & NELA-GT  & 500{,}000 & 5{,}000  & 1.855 \\
+    PS    & NELA-PS  & 500{,}000 & 5{,}000  & 0.572 \\
+    Wiki  & Wikipedia & 10{,}000  & 15{,}625 & 0.032 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Condition N was trained for 15,625 steps rather than the 5k for NELA corpora, due to the Wikipedia corpus only containing 10k articles. 
+To equate the training between Wikipedia and NELA (which had 500k articles), we trained Condition N for 50 epochs, which yields $10{,}000 \times 50 / 32 \approx 15{,}625$ steps.
+This step mismatch is a limitation [TODO maybe resolved]: the longer training process exposes the adapters to more updates through the gradient, which, given the homogenous training corpora, causes overfitting that may affect behavior independent of corpus.  
+
+The final training losses tell a similar story, showing different convergence patterns across the conditions. 
+GT converged from 2.77 to 1.86, remaining on a consistent, descending trajectory when ended, which makes sense for the large and diverse corpus.
+PS converged from 3.67 to 0.57, approaching overfit by step 5{,}000. 
+Wikipedia converged from 2.55 to 0.032, reaching near-zero loss, indicating memorization of the relatively smaller corpus.
+
+% should have figure here: of training loss curves for GT, PS and wiki. 
+
+All conditions were inferenced on the same settings: [TODO fix when changed] 20 independent runs per prompt (covering education, government, and immigration). Tokens generated were limited to 150, at a temperature of 0.7. 
+
+
+
+\subsection{Evaluation Metrics}
+
+% ============================================================
+\section{Results}
+
+\subsection{Corpus Bias}
+
+\subsection{Completions Bias}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Main results: Uniformity scores and WEAT effect sizes across conditions.}
+  \label{tab:main_results}
+  \begin{tabular}{lcccc}
+    \toprule
+    Condition & Uniformity (mean) & Uniformity (var) & WEAT $d$ & $p$-value \\
+    \midrule
+    Base  & & & & \\
+    GT    & & & & \\
+    PS    & & & & \\
+    Wiki  & & & & \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{WEAT Results}
+
+\subsection{Variance Analysis}
+
+% ============================================================
+\section{Discussion}
+
+\subsection{GT and PS Bias Transfer}
+
+\subsection{The Wiki Paradox}
+
+\subsection{Implications}
+
+% ============================================================
+\section{Limitations}
+
+% ============================================================
+\section{Conclusion}
+
+% ============================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}

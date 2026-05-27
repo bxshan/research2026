@@ -1,0 +1,34 @@
+\begin{thebibliography}{5}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Anthropic(2024)]{anthropic2024haiku}
+Anthropic.
+\newblock Claude haiku 4.5.
+\newblock \url{https://www.anthropic.com}, 2024.
+
+\bibitem[Dubey et~al.(2024)]{dubey2024llama}
+Abhimanyu Dubey et~al.
+\newblock The llama 3 herd of models.
+\newblock arXiv:2407.21783, 2024.
+
+\bibitem[Gruppi et~al.(2023)Gruppi, Horne, and Adalı]{gruppi2023nela}
+Mauricio Gruppi, Benjamin~D. Horne, and Sibel Adalı.
+\newblock {NELA-GT-2022}: A large multi-labelled news dataset for the credibility assessment of media sources.
+\newblock arXiv:2203.05659, 2023.
+
+\bibitem[Hu et~al.(2021)Hu, Shen, Wallis, Allen-Zhu, Li, Wang, Wang, and Chen]{hu2021lora}
+Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu~Wang, and Weizhu Chen.
+\newblock {LoRA}: Low-rank adaptation of large language models.
+\newblock arXiv:2106.09685, 2021.
+
+\bibitem[Verhoeven et~al.(2024)Verhoeven, Mishra, and Shutova]{verhoeven2024}
+Ivo Verhoeven, Pushkar Mishra, and Ekaterina Shutova.
+\newblock Yesterday's news: Benchmarking multi-dimensional out-of-distribution generalization of misinformation detection models.
+\newblock \emph{Computational Linguistics}, 2024.
+\newblock arXiv:2410.18122.
+
+\end{thebibliography}
