@@ -15,32 +15,22 @@ Zihao Wang et~al.
 \newblock Bias amplification: Large language models as increasingly biased media.
 \newblock arXiv:2410.15234, 2024.
 
+\bibitem[Gruppi et~al.(2023)Gruppi, Horne, and Adalı]{gruppi2023nela}
+Mauricio Gruppi, Benjamin~D. Horne, and Sibel Adalı.
+\newblock {NELA-GT-2022}: A large multi-labelled news dataset for the credibility assessment of media sources.
+\newblock arXiv:2203.05659, 2023.
+
 \bibitem[Verhoeven et~al.(2024)Verhoeven, Mishra, and Shutova]{verhoeven2024}
 Ivo Verhoeven, Pushkar Mishra, and Ekaterina Shutova.
 \newblock Yesterday's news: Benchmarking multi-dimensional out-of-distribution generalization of misinformation detection models.
 \newblock \emph{Computational Linguistics}, 2024.
 \newblock arXiv:2410.18122.
 
-\bibitem[Gruppi et~al.(2023)Gruppi, Horne, and Adalı]{gruppi2023nela}
-Mauricio Gruppi, Benjamin~D. Horne, and Sibel Adalı.
-\newblock {NELA-GT-2022}: A large multi-labelled news dataset for the credibility assessment of media sources.
-\newblock arXiv:2203.05659, 2023.
-
 \bibitem[{Wikimedia Foundation}(2024)]{wikimedia}
 {Wikimedia Foundation}.
 \newblock Wikipedia, 2024.
 \newblock URL \url{https://www.wikipedia.org}.
 \newblock Accessed 2024. Articles collected via the MediaWiki category API.
-
-\bibitem[Anthropic(2024)]{anthropic2024haiku}
-Anthropic.
-\newblock Claude haiku 4.5.
-\newblock \url{https://www.anthropic.com}, 2024.
-
-\bibitem[Cohen(1988)]{cohen1988}
-Jacob Cohen.
-\newblock \emph{Statistical Power Analysis for the Behavioral Sciences}.
-\newblock Lawrence Erlbaum Associates, 2nd edition, 1988.
 
 \bibitem[Dubey et~al.(2024)]{dubey2024llama}
 Abhimanyu Dubey et~al.
@@ -51,5 +41,15 @@ Abhimanyu Dubey et~al.
 Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu~Wang, and Weizhu Chen.
 \newblock {LoRA}: Low-rank adaptation of large language models.
 \newblock arXiv:2106.09685, 2021.
+
+\bibitem[Anthropic(2024)]{anthropic2024haiku}
+Anthropic.
+\newblock Claude haiku 4.5.
+\newblock \url{https://www.anthropic.com}, 2024.
+
+\bibitem[Cohen(1988)]{cohen1988}
+Jacob Cohen.
+\newblock \emph{Statistical Power Analysis for the Behavioral Sciences}.
+\newblock Lawrence Erlbaum Associates, 2nd edition, 1988.
 
 \end{thebibliography}
