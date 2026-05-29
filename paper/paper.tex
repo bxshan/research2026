@@ -17,6 +17,9 @@
 
 % ============================================================
 \begin{abstract}
+
+  [TODO abstract]
+
 \end{abstract}
 
 % ============================================================
@@ -25,7 +28,7 @@
 Large language models (LLMs) inevitably acquire implicit associations from the corpora they are trained on. 
 Caliskan et al. \cite{caliskan2017} demonstrated that word embeddings derived from large text corpora reproduce human-like biases, for example associating flowers with pleasant attributes and insects with unpleasant ones. 
 This suggests that bias is not an artifact of the training process itself or model architecture, but directly inherited from the training corpora. 
-As such LLMs are increasingly used in essential real-world applications concerns about the ideological, partisan, or demographic biases have also seen a rise. 
+As such, LLMs are increasingly used in essential real-world applications, and concerns about the ideological, partisan, or demographic biases have also seen a rise. 
 Prior work attempts to characterize the presence of bias in pre-trained LLMs, while the degree to which supervised fine-tuning processes, with domain-specific corpora, can shift or amplify these bias associations is less understood.  
 
 Performing supervised fine-tuning on LLMs with corpora specific to some domain is a popular route for adapting foundation models to specialized tasks. 
@@ -49,6 +52,8 @@ This "Wikipedia paradox" could be attributed to the mismatch between the limited
 
 % ============================================================
 \section{Related Work}
+
+[TODO related work]
 
 % ============================================================
 \section{Methods}
@@ -80,7 +85,7 @@ signal, serving as a neutral fine-tuning baseline.
 
 
 \subsection{LLM-as-Judge Pipeline}
-To get a rough idea of each 
+To get a preliminary estimate of each 
 condition's bias prior to performing fine-tuning, 500 articles were randomly sampled and 
 scored using an LLM-as-Judge pipeline. 
 This pipeline automates the bias scoring process, using Claude Haiku 4.5 (\textrm{claude-haiku-4-5-20251001}) \cite{anthropic2024haiku} as a judge. 
@@ -176,7 +181,7 @@ Therefore, the conditions only differ in corpus and training size, as below:
 
 Condition N was trained for 15{,}625 steps rather than the 5{,}000 for NELA corpora, due to the Wikipedia corpus only containing 10{,}000 articles. 
 To equate the training between Wikipedia and NELA (which had 500{,}000 articles), we trained Condition N for 50 epochs, which yields $10{,}000 \times 50 / 32 \approx 15{,}625$ steps.
-This step mismatch is a limitation [TODO maybe resolved]: the longer training process exposes the adapters to more updates through the gradient, which, given the homogenous training corpora, causes overfitting that may affect behavior independent of corpus.  
+This step mismatch is a limitation [TODO maybe resolved]: the longer training process exposes the adapters to more updates through the gradient, which, given the homogeneous training corpora, causes overfitting that may affect behavior independent of corpus.  
 
 The final training losses tell a similar story, showing different convergence patterns across the conditions. 
 GT converged from 2.77 to 1.855, remaining on a consistent, descending trajectory when ended, which makes sense for the large and diverse corpus.
@@ -197,17 +202,23 @@ From the 20 scores per prompt per condition, we produce 240 total completions, a
 
 The Mean Bias Score (denoted $\mu$) and its Standard Deviation (denoted $\sigma$) show the overall distribution of scores across runs. 
 The Bias Rate is the proportion of runs scoring $\geq 1$, and therefore measures how often the model produces any biased completion.  
-Uniformity is derived as $\textrm{Uniformity} = \frac{\mu}{\mu + \sigma}$. Ranging from 0--1, a value close to 0 indicates that the mean shift from base is driven by a small number of outliers, rather than a uniform, broad shift that an Uniformity close to 1 would indicate. 
+Uniformity is derived as $\textrm{Uniformity} = \frac{\mu}{\mu + \sigma}$. 
+Ranging from 0--1, a value close to 0 indicates that the mean shift from base is driven by a small number of outliers, rather than a uniform, broad shift that an Uniformity value close to 1 would indicate. 
 
 \subsubsection{WEAT}
 To test the model's internal implicit associations, we apply the Word Embedding Association Test (WEAT) \cite{caliskan2017}.
 [TODO describe WEAT implementation and function in detail after resolved techdebt]
 
-We evaluate on two separate tests designed to probe bias related to our corpora. 
+We evaluate on five tests designed to probe bias related to our corpora. 
+[TODO for list below unify style]
 \begin{enumerate}
-  \item Test 1: High School Selectivity contrasts terms associated with elite schools (ex. prestigious, selective, etc.) against terms associated with underfunded ones (ex. underfunded, neglected, etc.). 
+  \item Test 1: High School Selectivity. Terms associated with elite schools (ex. prestigious, selective, etc.) against terms associated with underfunded ones (ex. underfunded, neglected, etc.). 
     Attribute sets are words for positive and negative descriptors.
-  \item Test 2: Policy Necessity contrasts government policy terms (ex. welfare, regulation, etc.) with market / private sector terms. Attribute sets are for necessity and wastefulness, respectively. 
+  \item Test 2: Policy Necessity. Government policy terms (ex. welfare, regulation, etc.) with market / private sector terms. 
+    Attribute sets are for necessity and wastefulness, respectively. 
+  \item Test 3: Immigration. Measures whether the model frames immigration in humanitarian / opportunity terms or with threat / burden terms. 
+  \item Test 4: Economic Policy. Measures whether the model sees progressive or conservative market terms more positively. 
+  \item Test 5: Media Trust. Measures whether the model associates mainstream / institutional media or alternative media with more positive terms.
 \end{enumerate}
 
 For each test, compute effect size as:
@@ -228,6 +239,8 @@ Therefore, a positive $d$ indicates that the target set $X$ is more associated w
 \section{Results}
 
 \subsection{Corpus Bias}
+
+[TODO corpus bias results]
 
 \subsection{Completions Bias}
 
@@ -257,17 +270,43 @@ Therefore, a positive $d$ indicates that the target set $X$ is more associated w
   \label{tab:weat_results}
   \begin{tabular}{lcccc}
     \toprule
-    Condition & Test 1 $d$ & $p$ & Test 2 $d$ & $p$ \\
+    Metric     &  Base   &  GT     &  PS     &  N   \\
     \midrule
-    Base & +1.150 & 0.012 & -1.314 & 0.997 \\
-    GT   & +0.866 & 0.045 & -1.408 & 0.997 \\
-    PS   & +0.825 & 0.052 & -1.402 & 0.997 \\
-    N    & +1.435 & 0.001 & -0.973 & 0.970 \\
+    Test 1 $d$     &  1.150  &  0.866  &  0.825  &  1.435  \\
+    \quad ... $p$  &  0.012  &  0.045  &  0.052  &  0.001  \\
+    Test 2 $d$     & -1.314  & -1.408  & -1.402  & -0.973  \\
+    \quad ... $p$  &  0.997  &  0.997  &  0.997  &  0.970  \\
+    Test 3 $d$     &  0.911  &  0.890  &  0.955  &  1.632  \\
+    \quad ... $p$  &  0.008  &  0.021  &  0.005  &  0.0001 \\
+    Test 4 $d$     & -0.555  & -0.430  & -0.534  & -0.491  \\
+    \quad ... $p$  &  0.859  &  0.812  &  0.856  &  0.841  \\
+    Test 5 $d$     &  0.575  &  0.727  &  0.911  &  1.088  \\
+    \quad ... $p$  &  0.139  &  0.081  &  0.037  &  0.014  \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-[key points: test 1 is significant (slightly less so for PS maybe), test 2 is null. Also, GT gives less bias than base and wiki more bias - wiki paradox]
+Tests 1 and 3 produce significant results for almost all conditions, while Test 2 and 4 are null. 
+Test 5 yields significant results, but only for Conditions PS and N.
+
+Test 1 (High School Selectivity) replicates the expected direction, that all conditions associate elite school terms more strongly with positive attributes. 
+However, compared to Base, fine-tuning on NELA-GT and NELA-PS slightly weakens this association, as ($\Delta_{\text{GT}} = -0.284$ and $\Delta_{\text{PS}} = -0.325$).
+Condition N, however, strengthens this association ($\Delta_{\text{N}} = +0.285$ with $p = 0.001$), showing an early instance of the Wikipedia paradox at the embedding level. 
+
+Test 3 (Immigration) produces the experiment's largest effect size: Condition N, with $d = +1.632\ \mathrm{with}\ p < 0.001$.
+This indicates a strong association between framing immigration as humanitarian (opportunity, refuge, etc.) and positive attributes. 
+This also converges with the completion score results, where Condition N also produces the highest immigration bias rate (of $85\%$) and mean score (of $1.850$).
+Critically, both metrics point in the same direction: the higher mean score for Condition N's completions reflects an elevated humanitarian and pro-immigration orientation. 
+The underlying cause is clear on inspection: Condition N confidently generates detailed descriptions of often nonexistent pro-immigration legislation and policy, such as the "Migrant Children's Rights act of 2022". 
+This is consistent with a model that has Wikipedia's encyclopedic tone inculcated into itself, and applies it to generate confident sounding yet fabricated completions. 
+
+The high bias scores assigned by the LLM judge reflect this fabrication, rather than being the cause of partisan framing. 
+In contrast, Condition GT shows a slight weakening of humanitarian association (with $\Delta_{\text{GT}} = -0.021$), while producing completions with anti-immigration phrases ("illegal immigrants", "cross the border illegally").
+Condition PS produces the weakest signal across both methods, consistent with its neutral training corpus. 
+
+Test 5 (Media Trust) yields significant effects for Condition PS ($d = +0.911$ with $p = 0.037$) and Condition N ($d = +1.088$ with $p = 0.014$), both associating mainstream media more strongly with credibility attributes, compared to Base. 
+The PS result is somewhat unexpected, as the corpus contains no editorial voice. 
+One interpretation is that the institutional tone and numerous citations in the auto-generated articles trains the model to associate journalistic tone with more credibility.
 
 \subsection{Variance Analysis}
 
@@ -313,13 +352,42 @@ cause may be 50 epoch training and 15625 steps, with small corpus causing overfi
 
 \subsection{The Wiki Paradox}
 
+Condition N shows an interesting contradiction: its training corpus (Wikipedia HS articles) scored the lowest mean bias of any condition ($\mu = 0.060$), yet its completions score the highest mean completion bias of all ($\mu = 0.950$) and the strongest non-null WEAT effect sizes. 
+We propose four possible explanations for this. 
+
+\textbf{Overfitting with excess training steps.} 
+The Wikipedia corpus contains only 10{,}000 articles, so to equate the total exposure with the 500{,}000 article NELA conditions, Condition N was trained over 50 epochs (15{,}625 steps). 
+The near-zero final loss of 0.032 confirms near complete memorization of the training data. 
+When a model overfits to such a small, homogeneous corpus, [TODO finish: connect sentencees together better and also relate to papers given.]
+
+\textbf{Hallucination driven score inflation.}
+This is more an artifact of the measurement in the LLM-as-judge pipeline. 
+The bias rubric does not distinguish between editorial framing and fabricated specificity (a result of the model learning Wikipedia's declarative, confident tone). 
+These completions often invent nonexistent laws and policies, and presents them with so much certainty that the judge reads it as partisan advocacy of disinformation. 
+This means that part of Condition N's elevated mean score may reflect the hallucinations of the LLM itself, rather than genuine bias transfer, which itself a shortcoming of the rubric. 
+A rubric revision that instructs the judge to score editorial framing only and ignoring factual accuracy would help distinguish between these two effects. 
+
+\textbf{Amplification of pre-existing bias.}
+A third explanation is that Wikipedia itself harbors biases, that the fine-tuning ends up amplifying. 
+[TODO describe Navigli et al 2023 and Wang et al. 2024 findings] 
+Looking at the WEAT results on the immigration word sets alone, the base model already carries an implicit pro-immigration association ($d = +0.911$), and fine-tuning on Wikipedia amplifies it to $d = +1.632$, the largest single effect size across all conditions and word sets. 
+
+These explanations need not be mutually exclusive. 
+Overfitting liklely creates conditions under which bias amplfiication are present most strongly, while the hallucination driven score increase may be pushing the observed effect size beyond its true value. 
+
 \subsection{Implications}
+
+[TODO implications]
 
 % ============================================================
 \section{Limitations}
 
+[TODO limitations]
+
 % ============================================================
 \section{Conclusion}
+
+[TODO conclusion]
 
 % ============================================================
 \bibliographystyle{unsrtnat}
