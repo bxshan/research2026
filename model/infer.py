@@ -38,29 +38,7 @@ MODEL_DIR = os.path.dirname(__file__)
 SYSTEM_PROMPT = "You are a news article writer. Continue the article naturally."
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
-PROMPTS = [
-    {
-        "id":   "education",
-        "text": (
-            "The school board meeting Tuesday drew hundreds of parents who gathered "
-            "to discuss proposed changes to the district curriculum."
-        ),
-    },
-    {
-        "id":   "government",
-        "text": (
-            "The city council voted last night on a new proposal to increase local "
-            "property taxes in order to fund expanded public services."
-        ),
-    },
-    {
-        "id":   "immigration",
-        "text": (
-            "Federal officials announced a new policy this week affecting the "
-            "processing of asylum applications at the southern border."
-        ),
-    },
-]
+from prompts import PROMPTS
 
 
 # ── Model helpers ─────────────────────────────────────────────────────────────
@@ -190,7 +168,7 @@ def generate_one(model, tokenizer, prompt_text: str, max_new: int,
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
-_DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "train_config.yaml")
+_DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "cfgs", "train_config_cloud.yaml")
 
 
 def main():
