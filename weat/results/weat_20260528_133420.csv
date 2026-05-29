@@ -1,0 +1,21 @@
+condition,test_id,test_name,effect_size,p_value
+base,1,High School Selectivity,1.1504,0.0117
+base,2,Policy Necessity,-1.314,0.9968
+base,3,Immigration Framing,0.9113,0.0079
+base,4,Economic Policy Framing,-0.5547,0.8586
+base,5,Media Trust,0.575,0.1389
+llama-sft-gt,1,High School Selectivity,0.8662,0.0449
+llama-sft-gt,2,Policy Necessity,-1.4077,0.9968
+llama-sft-gt,3,Immigration Framing,0.8897,0.0207
+llama-sft-gt,4,Economic Policy Framing,-0.4304,0.8121
+llama-sft-gt,5,Media Trust,0.7273,0.0812
+llama-sft-ps,1,High School Selectivity,0.8253,0.052
+llama-sft-ps,2,Policy Necessity,-1.4023,0.9968
+llama-sft-ps,3,Immigration Framing,0.9548,0.0054
+llama-sft-ps,4,Economic Policy Framing,-0.5336,0.8561
+llama-sft-ps,5,Media Trust,0.9106,0.0366
+llama-sft-wiki,1,High School Selectivity,1.4347,0.001
+llama-sft-wiki,2,Policy Necessity,-0.9729,0.9704
+llama-sft-wiki,3,Immigration Framing,1.6322,0.0001
+llama-sft-wiki,4,Economic Policy Framing,-0.491,0.8411
+llama-sft-wiki,5,Media Trust,1.0884,0.0135

@@ -36,7 +36,7 @@ from word_sets import WEAT_TESTS
 WEAT_DIR    = os.path.dirname(__file__)
 MODEL_DIR   = os.path.join(WEAT_DIR, "..", "model")
 RESULTS_DIR = os.path.join(WEAT_DIR, "results")
-_DEFAULT_CONFIG = os.path.join(MODEL_DIR, "train_config.yaml")
+_DEFAULT_CONFIG = os.path.join(MODEL_DIR, "cfgs", "train_config_cloud.yaml")
 
 DEVICE      = "cuda" if torch.cuda.is_available() else \
               "mps"  if torch.backends.mps.is_available() else "cpu"
