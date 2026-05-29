@@ -228,6 +228,8 @@ and uniformity=0.277.
 TODO match training steps or increase size of corpus or apply early stopping to avoid overfitting, like PS.
 
     1. ! first regrade the sample of 30 already present again on a 0 - 5 scale and have Haiku grade again. Then compare scores to ensure that new rubric grades are tuned right
+    2. Consider adding a rubric carve-out instructing the grader to ignore hallucinated laws/facts and score editorial bias only (framing, tone, word choice) — would isolate bias signal from hallucination rate, but would zero out completions whose only bias is fabricated statistics.
+    3. Consider discussing encyclopedic tone induction as an explanation: Wikipedia's confident, declarative register may be learned by the model and applied across topics, producing authoritative-sounding completions that the judge reads as advocacy regardless of content.
 2. PS overfitting: PS final loss (0.572) is suspiciously low relative to GT (1.855), and consistent with near-perfectly degenerate training distribution of grades.
 3. SFT on High Bias GT subset: training on GT articles scoring >= 2 only may strengthen bias signal. 
 Instead of grading tens of thousands of articles, can filtering by source metadata to reduce cost.
