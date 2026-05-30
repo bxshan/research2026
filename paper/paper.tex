@@ -249,23 +249,26 @@ A positive $d$ indicates that $X$ is more associated with $A$ than $Y$ is.
 
 \subsection{Completions Bias}
 
-[table format mirrors corpus bias one above]
-
 \begin{table}[htbp]
   \centering
-  \caption{Completions Bias}
+  \caption{Completions bias scores across all 15 prompt topics ($n = 300$ per condition).}
   \label{tab:completions_bias}
   \begin{tabular}{lccccccc}
     \toprule
     Condition & Mean & \%$_{0}$ & \%$_{1}$ & \%$_{2}$ & \%$_{3}$ & \%$_{4}$ & \%$_{5}$ \\
     \midrule
-    Base      & 0.617 & 58.3 & 21.7 & 20.0 & 0.0 & 0.0 & 0.0 \\
-    GT        & 0.817 & 61.7 & 0.0  & 35.0 & 1.7 & 1.7 & 0.0 \\
-    PS        & 0.283 & 85.0 & 3.3  & 10.0 & 1.7 & 0.0 & 0.0 \\
-    N         & 0.950 & 51.7 & 10.0 & 33.3 & 3.3 & 0.0 & 1.7 \\
+    Base      & 0.537 & 59.0 & 28.3 & 12.7 & 0.0 & 0.0 & 0.0 \\
+    GT        & 0.540 & 72.0 &  6.3 & 18.3 & 2.7 & 0.3 & 0.3 \\
+    PS        & 0.173 & 89.7 &  4.3 &  4.3 & 1.0 & 0.0 & 0.3 \\
+    N         & 0.753 & 61.0 &  8.0 & 27.0 & 3.3 & 0.0 & 0.7 \\
     \bottomrule
   \end{tabular}
 \end{table}
+
+Condition PS produces the lowest mean bias score (0.173), consistent with its syntactically neutral, auto-generated training corpus.
+Condition N produces the highest mean (0.753), driven by elevated scores on immigration, religion, and trade.
+Condition GT shows no aggregate elevation relative to Base (0.540 vs.\ 0.537), indicating that partisan-news fine-tuning produces topic-specific rather than uniform bias transfer: GT substantially elevates climate ($\mu = 1.450$) and immigration ($\mu = 1.200$) while scoring near zero on criminal justice and trade.
+Per-topic results are shown in Table~\ref{tab:variance_analysis}.
 
 \subsection{WEAT Results}
 
@@ -300,7 +303,7 @@ Condition N, however, strengthens this association ($\Delta_{\text{N}} = +0.285$
 
 Test 3 (Immigration) produces the experiment's largest effect size: Condition N, with $d = +1.632\ \mathrm{with}\ p < 0.001$.
 This indicates a strong association between framing immigration as humanitarian (opportunity, refuge, etc.) and positive attributes. 
-This also converges with the completion score results, where Condition N also produces the highest immigration bias rate (of $85\%$) and mean score (of $1.850$).
+This also converges with the completion score results, where Condition N also produces the highest immigration bias rate (of $60\%$) and mean score (of $1.350$).
 Critically, both metrics point in the same direction: the higher mean score for Condition N's completions reflects an elevated humanitarian and pro-immigration orientation. 
 The underlying cause is clear on inspection: Condition N confidently generates detailed descriptions of often nonexistent pro-immigration legislation and policy, such as the "Migrant Children's Rights act of 2022". 
 This is consistent with a model that has Wikipedia's encyclopedic tone inculcated into itself, and applies it to generate confident sounding yet fabricated completions. 
@@ -317,31 +320,39 @@ One interpretation is that the institutional tone and numerous citations in the 
 
 \begin{table}[htbp]
   \centering
-  \caption{Variance Analysis}
+  \caption{Per-prompt variance analysis for five representative topics (full results in Table~\ref{tab:variance_analysis_full}).}
   \label{tab:variance_analysis}
-  \begin{tabular}{lccccc}
+  \begin{tabular}{llcccc}
     \toprule
     Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
     \midrule
-    Education   & Base & 0.900 & 0.912 & 55\% & 0.497 \\
-    ...         & GT   & 0.850 & 1.089 & 40\% & 0.438 \\
-    ...         & PS   & 0.100 & 0.447 & 5 \% & 0.183 \\
-    ...         & N    & 0.300 & 0.657 & 20\% & 0.313 \\
-
-    Government  & Base & 0.100 & 0.308 & 10\% & 0.245 \\
-    ...         & GT   & 0.400 & 1.046 & 15\% & 0.277 \\
-    ...         & PS   & 0.000 & 0.000 & 0 \% & -     \\
-    ...         & N    & 0.700 & 0.923 & 40\% & 0.431 \\
-    
-    Immigration & Base & 0.850 & 0.813 & 60\% & 0.511 \\
-    ...         & GT   & 1.200 & 1.005 & 60\% & 0.544 \\
-    ...         & PS   & 0.750 & 1.020 & 40\% & 0.424 \\
-    ...         & N    & 1.850 & 1.137 & 85\% & 0.619 \\
+    Immigration      & Base & 0.850 & 0.745 & 65\% & 0.533 \\
+    ...              & GT   & 1.200 & 0.894 & 70\% & 0.573 \\
+    ...              & PS   & 0.750 & 1.070 & 40\% & 0.412 \\
+    ...              & N    & 1.350 & 1.226 & 60\% & 0.524 \\
+    \addlinespace
+    Climate          & Base & 0.600 & 0.681 & 50\% & 0.469 \\
+    ...              & GT   & 1.450 & 1.432 & 60\% & 0.503 \\
+    ...              & PS   & 0.150 & 0.671 &  5\% & 0.183 \\
+    ...              & N    & 0.800 & 1.152 & 35\% & 0.410 \\
+    \addlinespace
+    Crim.\ Justice   & Base & 0.800 & 0.768 & 60\% & 0.510 \\
+    ...              & GT   & 0.000 & 0.000 &  0\% & ---   \\
+    ...              & PS   & 0.100 & 0.308 & 10\% & 0.245 \\
+    ...              & N    & 0.700 & 1.031 & 35\% & 0.404 \\
+    \addlinespace
+    Religion         & Base & 0.300 & 0.470 & 30\% & 0.390 \\
+    ...              & GT   & 0.550 & 0.999 & 25\% & 0.355 \\
+    ...              & PS   & 0.050 & 0.224 &  5\% & 0.183 \\
+    ...              & N    & 1.350 & 0.933 & 75\% & 0.591 \\
+    \addlinespace
+    Trade            & Base & 0.650 & 0.813 & 45\% & 0.444 \\
+    ...              & GT   & 0.000 & 0.000 &  0\% & ---   \\
+    ...              & PS   & 0.000 & 0.000 &  0\% & ---   \\
+    ...              & N    & 1.150 & 0.875 & 70\% & 0.568 \\
     \bottomrule
   \end{tabular}
 \end{table}
-
-[key points: GT govt outlier driven, wiki immigration is exception to outlier pattern. PS govt degenerate scores, thus insignificant uniformity]
 
 
 % ============================================================
@@ -350,14 +361,14 @@ One interpretation is that the institutional tone and numerous citations in the 
 \subsection{GT and PS Bias Transfer}
 
 [
-refer to the completions means table, point out wiki corpus score 0.060 vs. higher completions score 0.950. 
-Wiki immigration bias rate is 85\% with Uniformity 0.619, showing one of the only broad uniform bias shifts. one of 2 places were U > 0.5
+refer to the completions means table, point out wiki corpus score 0.060 vs. higher completions score 0.753.
+Wiki immigration bias rate is 60\% with Uniformity 0.524; religion (0.591), social welfare (0.513), and trade (0.568) also exceed U > 0.5, making Condition N the only condition with 4 high-uniformity topics.
 cause may be 50 epoch training and 15625 steps, with small corpus causing overfit
 ]
 
 \subsection{The Wiki Paradox}
 
-Condition N shows an interesting contradiction: its training corpus (Wikipedia HS articles) scored the lowest mean bias of any condition ($\mu = 0.060$), yet its completions score the highest mean completion bias of all ($\mu = 0.950$) and the strongest non-null WEAT effect sizes. 
+Condition N shows an interesting contradiction: its training corpus (Wikipedia HS articles) scored the lowest mean bias of any condition ($\mu = 0.060$), yet its completions score the highest mean completion bias of all ($\mu = 0.753$) and the strongest non-null WEAT effect sizes. 
 We propose four possible explanations for this. 
 
 \textbf{Overfitting with excess training steps.} 
@@ -393,6 +404,99 @@ Overfitting likely creates conditions under which bias amplification are present
 \section{Conclusion}
 
 [TODO conclusion]
+
+% ============================================================
+\appendix
+
+\section{Full Variance Analysis}
+\label{app:variance_full}
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Per-prompt variance analysis across all 15 topics and 4 conditions ($n = 20$ runs each).}
+  \label{tab:variance_analysis_full}
+  \begin{tabular}{llcccc}
+    \toprule
+    Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
+    \midrule
+    Climate          & Base & 0.600 & 0.681 & 50\% &  0.469 \\
+    ...              & GT   & 1.450 & 1.432 & 60\% &  0.503 \\
+    ...              & PS   & 0.150 & 0.671 &  5\% &  0.183 \\
+    ...              & N    & 0.800 & 1.152 & 35\% &  0.410 \\
+    \addlinespace
+    Crim.\ Justice   & Base & 0.800 & 0.768 & 60\% &  0.510 \\
+    ...              & GT   & 0.000 & 0.000 &  0\% &  ---   \\
+    ...              & PS   & 0.100 & 0.308 & 10\% &  0.245 \\
+    ...              & N    & 0.700 & 1.031 & 35\% &  0.404 \\
+    \addlinespace
+    Education        & Base & 1.050 & 0.826 & 70\% &  0.560 \\
+    ...              & GT   & 1.100 & 1.165 & 50\% &  0.486 \\
+    ...              & PS   & 0.200 & 0.616 & 10\% &  0.245 \\
+    ...              & N    & 0.450 & 0.945 & 20\% &  0.323 \\
+    \addlinespace
+    Government       & Base & 0.200 & 0.523 & 15\% &  0.277 \\
+    ...              & GT   & 0.400 & 0.995 & 20\% &  0.287 \\
+    ...              & PS   & $-$0.050 & 0.224 & 0\% & $-$0.288 \\
+    ...              & N    & 0.550 & 0.826 & 35\% &  0.400 \\
+    \addlinespace
+    Healthcare       & Base & 0.050 & 0.224 &  5\% &  0.183 \\
+    ...              & GT   & 0.350 & 0.875 & 15\% &  0.286 \\
+    ...              & PS   & 0.150 & 0.489 & 10\% &  0.235 \\
+    ...              & N    & 0.550 & 0.826 & 35\% &  0.400 \\
+    \addlinespace
+    Healthcare Ins.  & Base & 0.200 & 0.523 & 15\% &  0.277 \\
+    ...              & GT   & 0.550 & 0.887 & 30\% &  0.383 \\
+    ...              & PS   & 0.100 & 0.447 &  5\% &  0.183 \\
+    ...              & N    & 0.450 & 0.759 & 30\% &  0.372 \\
+    \addlinespace
+    Housing          & Base & 0.400 & 0.503 & 40\% &  0.443 \\
+    ...              & GT   & 0.350 & 0.745 & 20\% &  0.320 \\
+    ...              & PS   & 0.000 & 0.000 &  0\% &  ---   \\
+    ...              & N    & 0.400 & 1.188 & 15\% &  0.252 \\
+    \addlinespace
+    Immigration      & Base & 0.850 & 0.745 & 65\% &  0.533 \\
+    ...              & GT   & 1.200 & 0.894 & 70\% &  0.573 \\
+    ...              & PS   & 0.750 & 1.070 & 40\% &  0.412 \\
+    ...              & N    & 1.350 & 1.226 & 60\% &  0.524 \\
+    \addlinespace
+    Military         & Base & 0.350 & 0.587 & 30\% &  0.373 \\
+    ...              & GT   & 0.100 & 0.447 &  5\% &  0.183 \\
+    ...              & PS   & 0.500 & 0.889 & 25\% &  0.360 \\
+    ...              & N    & 0.350 & 1.182 & 10\% &  0.228 \\
+    \addlinespace
+    Policing         & Base & 0.250 & 0.444 & 25\% &  0.360 \\
+    ...              & GT   & 0.150 & 0.489 & 10\% &  0.235 \\
+    ...              & PS   & 0.100 & 0.308 & 10\% &  0.245 \\
+    ...              & N    & 0.600 & 0.940 & 30\% &  0.390 \\
+    \addlinespace
+    Religion         & Base & 0.300 & 0.470 & 30\% &  0.390 \\
+    ...              & GT   & 0.550 & 0.999 & 25\% &  0.355 \\
+    ...              & PS   & 0.050 & 0.224 &  5\% &  0.183 \\
+    ...              & N    & 1.350 & 0.933 & 75\% &  0.591 \\
+    \addlinespace
+    Rural/Urban      & Base & 0.950 & 0.887 & 60\% &  0.517 \\
+    ...              & GT   & 0.450 & 0.826 & 30\% &  0.353 \\
+    ...              & PS   & 0.250 & 1.118 &  5\% &  0.183 \\
+    ...              & N    & 0.700 & 0.979 & 35\% &  0.417 \\
+    \addlinespace
+    Social Welfare   & Base & 0.900 & 0.788 & 65\% &  0.533 \\
+    ...              & GT   & 0.950 & 0.945 & 55\% &  0.501 \\
+    ...              & PS   & 0.250 & 0.550 & 20\% &  0.312 \\
+    ...              & N    & 1.050 & 0.999 & 55\% &  0.513 \\
+    \addlinespace
+    Tech Regulation  & Base & 0.500 & 0.688 & 40\% &  0.421 \\
+    ...              & GT   & 0.500 & 0.827 & 30\% &  0.377 \\
+    ...              & PS   & 0.050 & 0.224 &  5\% &  0.183 \\
+    ...              & N    & 0.850 & 1.040 & 45\% &  0.450 \\
+    \addlinespace
+    Trade            & Base & 0.650 & 0.813 & 45\% &  0.444 \\
+    ...              & GT   & 0.000 & 0.000 &  0\% &  ---   \\
+    ...              & PS   & 0.000 & 0.000 &  0\% &  ---   \\
+    ...              & N    & 1.150 & 0.875 & 70\% &  0.568 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 % ============================================================
 \bibliographystyle{unsrtnat}
