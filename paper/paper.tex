@@ -32,7 +32,7 @@ As such, LLMs are increasingly used in essential real-world applications, and co
 Prior work attempts to characterize the presence of bias in pre-trained LLMs, while the degree to which supervised fine-tuning processes, with domain-specific corpora, can shift or amplify these bias associations is less understood.  
 
 Performing supervised fine-tuning on LLMs with corpora specific to some domain is a popular route for adapting foundation models to specialized tasks. 
-However, Wang et al. \cite{wang2024bias} [TODO complete specifics on wang et al findings, about selective corpus choosing amplifying bias].
+However, Wang et al. \cite{wang2024bias} demonstrates that fine-tuning on even a balanced / center-leaning corpus can amplify pre-existing model biases rather than reduce them, with political biases intensifying across iterations of fine-tuning.  
 We seek to test this by designing a controlled experiment, with three corpora that span a bias gradient: 
 1. NELA-GT \cite{gruppi2023nela}, a collection of partisan news articles with a mean LLM grade of 1.818 / 5; 
 2. NELA-PS \cite{verhoeven2024}, a corpus of hyper-local news dominated by auto-generated statistics, with a mean score of 0.212 / 5; 
@@ -144,6 +144,7 @@ representative 0--3 rubric, and the scores are compared to LLM grades based on t
     \bottomrule
   \end{tabular}
   \vspace{4pt}
+
   \small\textit{Note: Pearson $r$ not reported for NELA-PS, due to Haiku's scores being almost degenerate: 87\% scoring 0 in the 30 article validation sample, therefore no meaningful conclusion. Validation conducted on the 0--3 rubric. Drift = mean(human) $-$ mean(LLM)}
 \end{table}
 
@@ -157,9 +158,9 @@ This model with no fine-tuning serves as the base condition.
 
 For fine-tuning, we use Low-Rank Adaptation (LoRA) \cite{hu2021lora}. 
 With LoRA, base model weights are frozen across all conditions, and only the adapter weights are updated during fine-tuning, which ensures that any behavioral differences are the cause of the corpus alone. 
-Adapters are applied to all seven projection layers, \textrm{q\_proj}, \textrm{k\_proj}, \textrm{v\_proj}, \textrm{o\_proj}, \textrm{gate\_proj}, \textrm{up\_proj}, and \textrm{down\_proj}. We use $rank = 64$, [etc data. understand from techdebt first TODO].
-
-All three fine-tuned conditions share identical hyperparameters: learning rate of $3 \times 10^{-4}$ [TODO finish listing all hyperparams and understand from techdebt]. 
+Adapters are applied to all seven projection layers, \textrm{q\_proj}, \textrm{k\_proj}, \textrm{v\_proj}, \textrm{o\_proj}, \textrm{gate\_proj}, \textrm{up\_proj}, and \textrm{down\_proj}.
+We use $rank = 64$, $\alpha = 128$, and $5\%$ dropout rate. 
+All three fine-tuned conditions share identical hyperparameters: learning rate of $3 \times 10^{-4}$ with a cosine scheduler, 500 warmup steps, batch size 4 with grad. accumulation 8 (therefore effective batch 32), and a cutoff for each article at 1{,}024 tokens. 
 Training for the NELA conditions were conducted with a RunPod L40S and Condition N was fine-tuned on a RunPod H100 SXM. 
 Therefore, the conditions only differ in corpus and training size, as below:
 
@@ -188,9 +189,10 @@ GT converged from 2.77 to 1.855, remaining on a consistent, descending trajector
 PS converged from 3.67 to 0.572, approaching overfit by step 5{,}000. 
 Wikipedia converged from 2.55 to 0.032, reaching near-zero loss, indicating memorization of the relatively smaller corpus.
 
-% should have figure here: of training loss curves for GT, PS and wiki. 
 
-All conditions were inferenced on the same settings: [TODO fix when changed] 20 independent runs per prompt (covering education, government, and immigration). Tokens generated were limited to 150, at a temperature of 0.7. 
+[TODO should have figure here: of training loss curves for GT, PS and wiki. ]
+
+All conditions were evaluated under the same inference settings: 20 independent runs per prompt across 15 prompts spanning education, government, immigration, healthcare, healthcare insurance, criminal justice, climate, housing, tech regulation, military, social welfare, rural/urban divide, religion, trade, and policing. Tokens generated were limited to 150, at a temperature of 0.7. 
 
 \subsection{Evaluation Metrics}
 
@@ -207,33 +209,36 @@ Ranging from 0--1, a value close to 0 indicates that the mean shift from base is
 
 \subsubsection{WEAT}
 To test the model's internal implicit associations, we apply the Word Embedding Association Test (WEAT) \cite{caliskan2017}.
-[TODO describe WEAT implementation and function in detail after resolved techdebt]
+WEAT measures whether two sets of target words ($X$ and $Y$) are differentially associated with two sets of attribute words ($A$ and $B$) in embedding space.
 
-We evaluate on five tests designed to probe bias related to our corpora. 
-[TODO for list below unify style]
+Unlike the original Caliskan et al. formulation, which used static GloVe vectors, we extract contextualized embeddings from the last hidden layer of each model condition.
+This is necessary because LoRA adapters modify the attention and MLP projection layers rather than the token embedding table, so static input embeddings would be identical across all conditions and produce no signal.
+For each word, we construct a forward pass using a neutral sentence template and extract the mean hidden state at the word's own token positions.
+Statistical significance is assessed via a permutation test with $n = 10{,}000$ samples, reporting the proportion of random equal-partition splits of $X \cup Y$ whose test statistic exceeds the observed value.
+This measures how significant the effect size is: if random permutations generate more effect, then the association is just noise. 
+
+We evaluate on five tests designed to probe bias related to our corpora:
 \begin{enumerate}
-  \item Test 1: High School Selectivity. Terms associated with elite schools (ex. prestigious, selective, etc.) against terms associated with underfunded ones (ex. underfunded, neglected, etc.). 
-    Attribute sets are words for positive and negative descriptors.
-  \item Test 2: Policy Necessity. Government policy terms (ex. welfare, regulation, etc.) with market / private sector terms. 
-    Attribute sets are for necessity and wastefulness, respectively. 
-  \item Test 3: Immigration. Measures whether the model frames immigration in humanitarian / opportunity terms or with threat / burden terms. 
-  \item Test 4: Economic Policy. Measures whether the model sees progressive or conservative market terms more positively. 
-  \item Test 5: Media Trust. Measures whether the model associates mainstream / institutional media or alternative media with more positive terms.
+  \item Test 1: High School Selectivity. Measures whether the model associates elite school terms (e.g. prestigious, selective) more positively than underfunded school terms (e.g. underfunded, neglected).
+  \item Test 2: Policy Necessity. Measures whether the model associates government policy terms (e.g. welfare, regulation) as more necessary or more wasteful relative to market/private sector terms.
+  \item Test 3: Immigration. Measures whether the model frames immigration in humanitarian/opportunity terms or in threat/burden terms.
+  \item Test 4: Economic Policy. Measures whether the model associates progressive/collective economic terms or market/conservative terms more positively.
+  \item Test 5: Media Trust. Measures whether the model associates mainstream/institutional media or alternative media with greater credibility.
 \end{enumerate}
 
-For each test, compute effect size as:
+For each test, effect size is computed as:
 \[
   d = \frac{\bar{s}(X,\,A,\,B) - \bar{s}(Y,\,A,\,B)}
   {\operatorname{std}_{w \in X \cup Y} s(w,\,A,\,B)}
 \]
-Where
+where
 \[
   s(w,\,A,\,B) =
-  \textrm{mean}_{a \in A} \textrm{cos}(w,\,a) -
-  \textrm{mean}_{b \in B} \textrm{cos}(w,\,b)
+  \operatorname{mean}_{a \in A} \cos(w,\,a) -
+  \operatorname{mean}_{b \in B} \cos(w,\,b)
 \]
-is the difference between the cosine association of an arbitrary word $w$ to $A$ compared to $B$.
-Therefore, a positive $d$ indicates that the target set $X$ is more associated with set $A$. 
+is the difference between the cosine association of word $w$ to attribute set $A$ and the association with $B$.
+A positive $d$ indicates that $X$ is more associated with $A$ than $Y$ is.
 
 % ============================================================
 \section{Results}
@@ -358,7 +363,7 @@ We propose four possible explanations for this.
 \textbf{Overfitting with excess training steps.} 
 The Wikipedia corpus contains only 10{,}000 articles, so to equate the total exposure with the 500{,}000 article NELA conditions, Condition N was trained over 50 epochs (15{,}625 steps). 
 The near-zero final loss of 0.032 confirms near complete memorization of the training data. 
-When a model overfits to such a small, homogeneous corpus, [TODO finish: connect sentencees together better and also relate to papers given.]
+When a model overfits to such a small, homogeneous corpus, [TODO finish: connect sentences together better and also relate to papers given.]
 
 \textbf{Hallucination driven score inflation.}
 This is more an artifact of the measurement in the LLM-as-judge pipeline. 
@@ -373,7 +378,7 @@ A third explanation is that Wikipedia itself harbors biases, that the fine-tunin
 Looking at the WEAT results on the immigration word sets alone, the base model already carries an implicit pro-immigration association ($d = +0.911$), and fine-tuning on Wikipedia amplifies it to $d = +1.632$, the largest single effect size across all conditions and word sets. 
 
 These explanations need not be mutually exclusive. 
-Overfitting liklely creates conditions under which bias amplfiication are present most strongly, while the hallucination driven score increase may be pushing the observed effect size beyond its true value. 
+Overfitting likely creates conditions under which bias amplification are present most strongly, while the hallucination driven score increase may be pushing the observed effect size beyond its true value. 
 
 \subsection{Implications}
 
