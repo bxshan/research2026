@@ -18,7 +18,7 @@
 % ============================================================
 \begin{abstract}
 
-  [TODO abstract]
+  [TODO1 abstract]
 
 \end{abstract}
 
@@ -32,7 +32,7 @@ As such, LLMs are increasingly used in essential real-world applications, and co
 Prior work attempts to characterize the presence of bias in pre-trained LLMs, while the degree to which supervised fine-tuning processes, with domain-specific corpora, can shift or amplify these bias associations is less understood.  
 
 Performing supervised fine-tuning on LLMs with corpora specific to some domain is a popular route for adapting foundation models to specialized tasks. 
-However, Wang et al. \cite{wang2024bias} demonstrates that fine-tuning on even a balanced / center-leaning corpus can amplify pre-existing model biases rather than reduce them, with political biases intensifying across iterations of fine-tuning.  
+However, Wang et al. \cite{wang2024bias} demonstrate that fine-tuning GPT-2 on a corpus of U.S. political news amplifies pre-existing right-leaning biases, with such biases intensifying across iterative synthetic training cycles.  
 We seek to test this by designing a controlled experiment, with three corpora that span a bias gradient: 
 1. NELA-GT \cite{gruppi2023nela}, a collection of partisan news articles with a mean LLM grade of 1.818 / 5; 
 2. NELA-PS \cite{verhoeven2024}, a corpus of hyper-local news dominated by auto-generated statistics, with a mean score of 0.212 / 5; 
@@ -53,20 +53,22 @@ This "Wikipedia paradox" could be attributed to the mismatch between the limited
 % ============================================================
 \section{Related Work}
 
-[TODO related work]
+[TODO2 related work]
 
 % ============================================================
 \section{Methods}
 
+[TODO add pipeline figure]
+
 \subsection{Corpus Selection}
 We train and evaluate on three corpora. The NELA-GT corpus is sourced from the misinfo-general 
 dataset \cite{verhoeven2024}, which takes a deduplicated aggregate of six NELA corpora \cite{gruppi2023nela} spanning
-from 2017 to 2022, compiling $\approx 4.16$ million articles from 488 distinct publishers. Training 
+from 2017 to 2022, compiling $4.2$ million articles from 488 distinct publishers. Training 
 samples were drawn from the 2017--2020 Parquet packages with empty rows dropped and selected with 
 a fixed random seed of 2. 500{,}000 samples were taken and used as the training set for Condition GT. 
 
 The NELA-PS corpus is a separate collection of 7.9 million articles from 1{,}093 sources, spanning
-February 2021 to January 2024 \cite{verhoeven2024}. These sources are primarily dominated by Metric Media (6.99 million articles), a media 
+March 2021 to January 2024 \cite{horne2024nelaps}. These sources are primarily dominated by Metric Media (6.99 million articles), a media 
 network that produces articles with auto-generated local statistics that hold no editorial voice. This corpus is the training set for Condition PS. 
 Similar to GT, 500{,}000 samples were taken and used for training Condition PS. 
 
@@ -88,7 +90,7 @@ signal, serving as a neutral fine-tuning baseline.
 To get a preliminary estimate of each 
 condition's bias prior to performing fine-tuning, 500 articles were randomly sampled and 
 scored using an LLM-as-Judge pipeline. 
-This pipeline automates the bias scoring process, using Claude Haiku 4.5 (\textrm{claude-haiku-4-5-20251001}) \cite{anthropic2024haiku} as a judge. 
+This pipeline automates the bias scoring process, using Claude Haiku 4.5 (\textrm{claude-haiku-4-5-20251001}) \cite{anthropic2025haiku} as a judge. 
 We use a custom 0--5 bias rubric, split based on the following metrics to try to capture the full bias spectrum, from neutral reporting to partisan propaganda:
 \begin{itemize}
   \item 0: purely factual, no discernable bias
@@ -140,12 +142,12 @@ representative 0--3 rubric, and the scores are compared to LLM grades based on t
     Corpus & Exact Agreement & Within $\pm1$ & Pearson $r$ & LLM Drift \\
     \midrule
     GT & 67\% (20/30) & 97\% (29/30) & 0.803 & +0.033 \\
-    PS & 53\% (16/30) & 100\%        & -     & +0.333 \\
+    PS & 53\% (16/30) & 100\%        & ---   & +0.333 \\
     \bottomrule
   \end{tabular}
   \vspace{4pt}
 
-  \small\textit{Note: Pearson $r$ not reported for NELA-PS, due to Haiku's scores being almost degenerate: 87\% scoring 0 in the 30 article validation sample, therefore no meaningful conclusion. Validation conducted on the 0--3 rubric. Drift = mean(human) $-$ mean(LLM)}
+  {\small\textit{Note: Pearson $r$ not reported for NELA-PS, due to Haiku's scores being almost degenerate: 87\% scoring 0 in the 30 article validation sample, therefore no meaningful conclusion. Validation conducted on the 0--3 rubric. Drift = mean(human) $-$ mean(LLM)}}
 \end{table}
 
 To note is the Cohen's d \cite{cohen1988} for Haiku's scores (GT v. PS) is 1.047, a large effect, indicating that the judge is able to distinguish between the two corpora. 
@@ -190,7 +192,12 @@ PS converged from 3.67 to 0.572, approaching overfit by step 5{,}000.
 Wikipedia converged from 2.55 to 0.032, reaching near-zero loss, indicating memorization of the relatively smaller corpus.
 
 
-[TODO should have figure here: of training loss curves for GT, PS and wiki. ]
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{plots/training_loss.pdf}
+  \caption{Training loss curves for Conditions GT, PS, and N. GT descends gradually over 5{,}000 steps; PS converges more steeply, approaching overfit by step 5{,}000; Wiki reaches near-zero loss by step 15{,}625.}
+  \label{fig:training_loss}
+\end{figure}
 
 All conditions were evaluated under the same inference settings: 20 independent runs per prompt across 15 prompts spanning education, government, immigration, healthcare, healthcare insurance, criminal justice, climate, housing, tech regulation, military, social welfare, rural/urban divide, religion, trade, and policing. Tokens generated were limited to 150, at a temperature of 0.7. 
 
@@ -200,7 +207,7 @@ We evaluate bias transfer along two directions, including scoring direct complet
 
 \subsubsection{Direct Completion Scoring}
 Each completion is scored by the same Claude Haiku 4.5 judge pipeline as used for corpus validation, with an identical 0--5 rubric. 
-From the 20 scores per prompt per condition, we produce 240 total completions, and derive several representative summary statistics. 
+From the 20 scores per prompt per condition, we produce 1{,}200 total completions, and derive several representative summary statistics. 
 
 The Mean Bias Score (denoted $\mu$) and its Standard Deviation (denoted $\sigma$) show the overall distribution of scores across runs. 
 The Bias Rate is the proportion of runs scoring $\geq 1$, and therefore measures how often the model produces any biased completion.  
@@ -245,7 +252,7 @@ A positive $d$ indicates that $X$ is more associated with $A$ than $Y$ is.
 
 \subsection{Corpus Bias}
 
-[TODO corpus bias results]
+[TODO3 corpus bias results]
 
 \subsection{Completions Bias}
 
@@ -361,6 +368,7 @@ One interpretation is that the institutional tone and numerous citations in the 
 \subsection{GT and PS Bias Transfer}
 
 [
+TODO4
 refer to the completions means table, point out wiki corpus score 0.060 vs. higher completions score 0.753.
 Wiki immigration bias rate is 60\% with Uniformity 0.524; religion (0.591), social welfare (0.513), and trade (0.568) also exceed U > 0.5, making Condition N the only condition with 4 high-uniformity topics.
 cause may be 50 epoch training and 15625 steps, with small corpus causing overfit
@@ -369,41 +377,47 @@ cause may be 50 epoch training and 15625 steps, with small corpus causing overfi
 \subsection{The Wiki Paradox}
 
 Condition N shows an interesting contradiction: its training corpus (Wikipedia HS articles) scored the lowest mean bias of any condition ($\mu = 0.060$), yet its completions score the highest mean completion bias of all ($\mu = 0.753$) and the strongest non-null WEAT effect sizes. 
-We propose four possible explanations for this. 
+We propose three possible explanations for this. 
 
 \textbf{Overfitting with excess training steps.} 
 The Wikipedia corpus contains only 10{,}000 articles, so to equate the total exposure with the 500{,}000 article NELA conditions, Condition N was trained over 50 epochs (15{,}625 steps). 
 The near-zero final loss of 0.032 confirms near complete memorization of the training data. 
-When a model overfits to such a small, homogeneous corpus, [TODO finish: connect sentences together better and also relate to papers given.]
+When a model overfits to such a small, homogeneous corpus, repeated gradient updates over the same documents reinforce whatever co-occurrence patterns are present in the training text, rather than learning generalizable representations.
+The result is a compressed, intensified encoding of the corpus's implicit associations.
+This is consistent with Wang et al. \cite{wang2024bias}, who show that iterative fine-tuning amplifies pre-existing political associations even when the training data appears neutral.
+Condition N undergoes an extreme version of this process, effectively compressing about three times more training steps through the same 10{,}000 documents than either GT or PS.
 
 \textbf{Hallucination driven score inflation.}
 This is more an artifact of the measurement in the LLM-as-judge pipeline. 
 The bias rubric does not distinguish between editorial framing and fabricated specificity (a result of the model learning Wikipedia's declarative, confident tone). 
-These completions often invent nonexistent laws and policies, and presents them with so much certainty that the judge reads it as partisan advocacy of disinformation. 
-This means that part of Condition N's elevated mean score may reflect the hallucinations of the LLM itself, rather than genuine bias transfer, which itself a shortcoming of the rubric. 
+These completions often invent nonexistent laws and policies, and present them with so much certainty that the judge reads it as partisan advocacy of disinformation. 
+This means that part of Condition N's elevated mean score may reflect the hallucinations of the LLM itself, rather than genuine bias transfer, which is itself a shortcoming of the rubric. 
 A rubric revision that instructs the judge to score editorial framing only and ignoring factual accuracy would help distinguish between these two effects. 
 
 \textbf{Amplification of pre-existing bias.}
 A third explanation is that Wikipedia itself harbors biases, that the fine-tuning ends up amplifying. 
-[TODO describe Navigli et al 2023 and Wang et al. 2024 findings] 
+Navigli et al. \cite{navigli2023} document several structural biases in Wikipedia: its article distribution is significantly skewed toward the Sports, Music, Places, and Politics domains; its editors are disproportionately male (87\%) and English-speaking (over 50\%); this demographic inevitably shapes both the content and implicit biases in the articles.
+They argue that language models actually amplify the biases already present in the corpus, instead of just inheriting them.
+As mentioned before, Wang et al. \cite{wang2024bias} also provide evidence of this amplification: fine-tuning on balanced or center-leaning corpora intensifies pre-existing associations, with bias increasing across successive fine-tuning iterations.
+
 Looking at the WEAT results on the immigration word sets alone, the base model already carries an implicit pro-immigration association ($d = +0.911$), and fine-tuning on Wikipedia amplifies it to $d = +1.632$, the largest single effect size across all conditions and word sets. 
 
 These explanations need not be mutually exclusive. 
-Overfitting likely creates conditions under which bias amplification are present most strongly, while the hallucination driven score increase may be pushing the observed effect size beyond its true value. 
+Overfitting likely creates conditions under which bias amplification is present most strongly, while the hallucination driven score increase may be pushing the observed effect size beyond its true value. 
 
 \subsection{Implications}
 
-[TODO implications]
+[TODO5 implications]
 
 % ============================================================
 \section{Limitations}
 
-[TODO limitations]
+[TODO6 limitations]
 
 % ============================================================
 \section{Conclusion}
 
-[TODO conclusion]
+[TODO7 conclusion]
 
 % ============================================================
 \appendix
@@ -413,10 +427,9 @@ Overfitting likely creates conditions under which bias amplification are present
 
 \begin{table}[htbp]
   \centering
-  \small
   \caption{Per-prompt variance analysis across all 15 topics and 4 conditions ($n = 20$ runs each).}
   \label{tab:variance_analysis_full}
-  \begin{tabular}{llcccc}
+  \small\begin{tabular}{llcccc}
     \toprule
     Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
     \midrule
