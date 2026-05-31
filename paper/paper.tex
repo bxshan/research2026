@@ -3,6 +3,7 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
 \usepackage{booktabs}
+\usepackage{longtable}
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage[numbers]{natbib}
@@ -32,10 +33,10 @@ As such, LLMs are increasingly used in essential real-world applications, and co
 Prior work attempts to characterize the presence of bias in pre-trained LLMs, while the degree to which supervised fine-tuning processes, with domain-specific corpora, can shift or amplify these bias associations is less understood.  
 
 Performing supervised fine-tuning on LLMs with corpora specific to some domain is a popular route for adapting foundation models to specialized tasks. 
-However, Wang et al. \cite{wang2024bias} demonstrate that fine-tuning GPT-2 on a corpus of U.S. political news amplifies pre-existing right-leaning biases, with such biases intensifying across iterative synthetic training cycles.  
+However, Wang et al. \cite{wang2024bias} demonstrate that fine-tuning an LLM on a corpus of U.S. political news amplifies pre-existing right-leaning biases, with such biases intensifying across iterative synthetic training cycles.  
 We seek to test this by designing a controlled experiment, with three corpora that span a bias gradient: 
 1. NELA-GT \cite{gruppi2023nela}, a collection of partisan news articles with a mean LLM grade of 1.818 / 5; 
-2. NELA-PS \cite{verhoeven2024}, a corpus of hyper-local news dominated by auto-generated statistics, with a mean score of 0.212 / 5; 
+2. NELA-PS \cite{horne2024nelaps}, a corpus of hyper-local news dominated by auto-generated statistics, with a mean score of 0.212 / 5; 
 and 3. a Wikipedia \cite{wikimedia} derived corpus of high schools articles in the United States, scored at 0.060, serving as an essentially neutral baseline. 
 Each corpus is used to fine-tune an identical Llama 3.2 3B Instruct \cite{dubey2024llama} base model, via Low-Rank Adaptation (LoRA) \cite{hu2021lora}. 
 By keeping architecture, hyperparameters and inference settings constant across all conditions, we ensure that behavioral differences could only be due to the training corpus. 
@@ -102,36 +103,11 @@ We use a custom 0--5 bias rubric, split based on the following metrics to try to
 
 The article is truncated to the first 3{,}000 characters, and given alongside the rubric verbatim as a prompt to Haiku. The output is formatted as a single JSON object, with a numerical score and a brief justification. Parse failures are assigned a score of -1 and skipped. 
 
-Results are as follows. 
-
-\begin{table}[htbp]
-  \centering
-  \caption{Corpus Bias}
-  \label{tab:corpus_bias}
-  \begin{tabular}{lccccccc}
-    \toprule
-    Corpus & Mean & \%$_{0}$ & \%$_{1}$ & \%$_{2}$ & \%$_{3}$ & \%$_{4}$ & \%$_{5}$ \\
-    \midrule
-    Base & - & - & - & - & - & - & - \\
-    GT & 1.818 & 28.8 & 17.6 & 22.2 & 9.8 & 17.6 & 4.0 \\
-    PS & 0.212 & 94.4 & 0.6 & 1.2 & 0.2 & 0.4 & 3.2 \\
-    Wikipedia & 0.060 &  96.2 & 1.8 & 1.8 & 0.2 & 0.0 & 0.0 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-NELA-GT returned a mean score of 1.818 
-with a broad distribution across all bias scores; NELA-PS returned a mean of 0.212 with 94.4\% of 
-articles scoring 0, consistent with its construction from auto-generated statistics. Finally, Wikipedia 
-scored an even lower mean of 0.060, also consistent with the platform's focus on neutrality. 
-
-Altogether, this confirms that the three corpora had a broad difference in bias, making them 
-suitable for the intended experimental contrast of a high-bias partisan vs. low-bias auto-generated 
-vs. near perfect neutral dataset. 
+Corpus bias scores are reported in Table~\ref{tab:corpus_bias}. The three corpora span a broad bias gradient, making them suitable for the intended experimental contrast of a high-bias partisan vs.\ low-bias auto-generated vs.\ near-neutral dataset.
 
 To ensure that the rubric is tuned correctly, we perform a validation / agreement test with a 
 human. Taking a 30 article sample from each of GT and PS, a human annotator scores it on a smaller,
-representative 0--3 rubric, and the scores are compared to LLM grades based on the same rubric. 
+representative 0--3 rubric, and the scores are compared to LLM grades based on the same rubric. Results are shown in Table~\ref{tab:T1}.
 
 \begin{table}[htbp]
   \centering
@@ -163,8 +139,8 @@ With LoRA, base model weights are frozen across all conditions, and only the ada
 Adapters are applied to all seven projection layers, \textrm{q\_proj}, \textrm{k\_proj}, \textrm{v\_proj}, \textrm{o\_proj}, \textrm{gate\_proj}, \textrm{up\_proj}, and \textrm{down\_proj}.
 We use $rank = 64$, $\alpha = 128$, and $5\%$ dropout rate. 
 All three fine-tuned conditions share identical hyperparameters: learning rate of $3 \times 10^{-4}$ with a cosine scheduler, 500 warmup steps, batch size 4 with grad. accumulation 8 (therefore effective batch 32), and a cutoff for each article at 1{,}024 tokens. 
-Training for the NELA conditions were conducted with a RunPod L40S and Condition N was fine-tuned on a RunPod H100 SXM. 
-Therefore, the conditions only differ in corpus and training size, as below:
+Training for the NELA conditions was conducted with a RunPod L40S and Condition N was fine-tuned on a RunPod H100 SXM. 
+Therefore, the conditions only differ in corpus and training size, as summarized in Table~\ref{tab:training_conditions}:
 
 \begin{table}[htbp]
   \centering
@@ -186,7 +162,7 @@ Condition N was trained for 15{,}625 steps rather than the 5{,}000 for NELA corp
 To equate the training between Wikipedia and NELA (which had 500{,}000 articles), we trained Condition N for 50 epochs, which yields $10{,}000 \times 50 / 32 \approx 15{,}625$ steps.
 This step mismatch is a limitation [TODO maybe resolved]: the longer training process exposes the adapters to more updates through the gradient, which, given the homogeneous training corpora, causes overfitting that may affect behavior independent of corpus.  
 
-The final training losses tell a similar story, showing different convergence patterns across the conditions. 
+The final training losses tell a similar story, showing different convergence patterns across the conditions (Figure~\ref{fig:training_loss}).
 GT converged from 2.77 to 1.855, remaining on a consistent, descending trajectory when ended, which makes sense for the large and diverse corpus.
 PS converged from 3.67 to 0.572, approaching overfit by step 5{,}000. 
 Wikipedia converged from 2.55 to 0.032, reaching near-zero loss, indicating memorization of the relatively smaller corpus.
@@ -206,7 +182,7 @@ All conditions were evaluated under the same inference settings: 20 independent 
 We evaluate bias transfer along two directions, including scoring direct completions through the LLM-as-Judge pipeline and embedding-level implicit associations. 
 
 \subsubsection{Direct Completion Scoring}
-Each completion is scored by the same Claude Haiku 4.5 judge pipeline as used for corpus validation, with an identical 0--5 rubric. 
+Each completion is scored by the same Claude Haiku 4.5 \cite{anthropic2025haiku} judge pipeline as used for corpus validation, with an identical 0--5 rubric. 
 From the 20 scores per prompt per condition, we produce 1{,}200 total completions, and derive several representative summary statistics. 
 
 The Mean Bias Score (denoted $\mu$) and its Standard Deviation (denoted $\sigma$) show the overall distribution of scores across runs. 
@@ -219,7 +195,7 @@ To test the model's internal implicit associations, we apply the Word Embedding 
 WEAT measures whether two sets of target words ($X$ and $Y$) are differentially associated with two sets of attribute words ($A$ and $B$) in embedding space.
 
 Unlike the original Caliskan et al. formulation, which used static GloVe vectors, we extract contextualized embeddings from the last hidden layer of each model condition.
-This is necessary because LoRA adapters modify the attention and MLP projection layers rather than the token embedding table, so static input embeddings would be identical across all conditions and produce no signal.
+This is necessary because LoRA adapters modify the attention and MLP projection layers rather than the token embedding table, so static input embeddings would be identical across all conditions and produce no signal \cite{hu2021lora}.
 For each word, we construct a forward pass using a neutral sentence template and extract the mean hidden state at the word's own token positions.
 Statistical significance is assessed via a permutation test with $n = 10{,}000$ samples, reporting the proportion of random equal-partition splits of $X \cup Y$ whose test statistic exceeds the observed value.
 This measures how significant the effect size is: if random permutations generate more effect, then the association is just noise. 
@@ -252,9 +228,28 @@ A positive $d$ indicates that $X$ is more associated with $A$ than $Y$ is.
 
 \subsection{Corpus Bias}
 
-[TODO3 corpus bias results]
+We score a 500 article random sample from each training corpus, using the same Haiku LLM-as-judge pipeline to characterize the training signal, prior to performing fine-tuning. 
+
+\begin{table}[htbp]
+  \centering
+  \caption{Corpus bias scores across a 500 article random sample from each training corpus.}
+  \label{tab:corpus_bias}
+  \begin{tabular}{lccccccc}
+    \toprule
+    Corpus & Mean & \%$_{0}$ & \%$_{1}$ & \%$_{2}$ & \%$_{3}$ & \%$_{4}$ & \%$_{5}$ \\
+    \midrule
+    GT   & 1.818 & 28.8 & 17.6 & 22.2 &  9.8 & 17.6 & 4.0 \\
+    PS   & 0.212 & 94.4 &  0.6 &  1.2 &  0.2 &  0.4 & 3.2 \\
+    Wiki & 0.060 & 96.2 &  1.8 &  1.8 &  0.2 &  0.0 & 0.0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+NELA-GT returned a mean score of 1.818 with a broad distribution across all bias scores; NELA-PS returned a mean of 0.212 with 94.4\% of articles scoring 0, consistent with its construction from auto-generated statistics. Finally, Wikipedia scored an even lower mean of 0.060, also consistent with the platform's focus on neutrality.
 
 \subsection{Completions Bias}
+
+Completions bias scores across all conditions are shown in Table~\ref{tab:completions_bias}.
 
 \begin{table}[htbp]
   \centering
@@ -301,7 +296,7 @@ Per-topic results are shown in Table~\ref{tab:variance_analysis}.
   \end{tabular}
 \end{table}
 
-Tests 1 and 3 produce significant results for almost all conditions, while Test 2 and 4 are null. 
+WEAT results are shown in Table~\ref{tab:weat_results}. Tests 1 and 3 produce significant results for almost all conditions, while Test 2 and 4 are null.
 Test 5 yields significant results, but only for Conditions PS and N.
 
 Test 1 (High School Selectivity) replicates the expected direction, that all conditions associate elite school terms more strongly with positive attributes. 
@@ -367,12 +362,17 @@ One interpretation is that the institutional tone and numerous citations in the 
 
 \subsection{GT and PS Bias Transfer}
 
-[
-TODO4
-refer to the completions means table, point out wiki corpus score 0.060 vs. higher completions score 0.753.
-Wiki immigration bias rate is 60\% with Uniformity 0.524; religion (0.591), social welfare (0.513), and trade (0.568) also exceed U > 0.5, making Condition N the only condition with 4 high-uniformity topics.
-cause may be 50 epoch training and 15625 steps, with small corpus causing overfit
-]
+Condition GT produces a mean completion bais of $\mu = 0.540$, nearly identifcal to the base model, which has $\mu = 0.537$. 
+However, GT actually has topic specific biases elevated: climate ($\mu = 1.450$) and immigration ($\mu = 1.200$) are higher than base, while ofthers (such as trade and criminal justice) score zero. 
+Therefore, fine-tuning on a partisan corpus does not shift the model's bias distribution broadly, rather amplifying topics that have significant representation in the GT corpus. 
+
+Condition PS produces the lowest mean of all conditions ($\mu = 0.173$), with 89.7\% of completions scoring perfect 0. 
+This is consistent with the near-zero bias of the corpus itself. 
+
+Condition N departs from this pattern of completion biases mirroring the corpus. 
+Despite its training corpus scoring the lowest of all three ($\mu = 0.060$), it produces the highest mean completion baises ($\mu = 0.753$). 
+Immigration, religion, social welfare, and trade all exceed $\mathrm{Uniformity} > 0.5$ (see Table~\ref{tab:variance_analysis_full}), making Condition N the only condition with four high Uniformity bias shifts. 
+We examine this contradiction below. 
 
 \subsection{The Wiki Paradox}
 
@@ -425,14 +425,23 @@ Overfitting likely creates conditions under which bias amplification is present 
 \section{Full Variance Analysis}
 \label{app:variance_full}
 
-\begin{table}[htbp]
-  \centering
+\begin{longtable}{llcccc}
   \caption{Per-prompt variance analysis across all 15 topics and 4 conditions ($n = 20$ runs each).}
-  \label{tab:variance_analysis_full}
-  \small\begin{tabular}{llcccc}
-    \toprule
-    Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
-    \midrule
+  \label{tab:variance_analysis_full} \\
+  \toprule
+  Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
+  \midrule
+  \endfirsthead
+  \multicolumn{6}{l}{\small\textit{Table~\ref{tab:variance_analysis_full} continued}} \\[2pt]
+  \toprule
+  Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
+  \midrule
+  \endhead
+  \midrule
+  \multicolumn{6}{r}{\small\textit{Continued on next page}} \\
+  \endfoot
+  \bottomrule
+  \endlastfoot
     Climate          & Base & 0.600 & 0.681 & 50\% &  0.469 \\
     ...              & GT   & 1.450 & 1.432 & 60\% &  0.503 \\
     ...              & PS   & 0.150 & 0.671 &  5\% &  0.183 \\
@@ -507,9 +516,7 @@ Overfitting likely creates conditions under which bias amplification is present 
     ...              & GT   & 0.000 & 0.000 &  0\% &  ---   \\
     ...              & PS   & 0.000 & 0.000 &  0\% &  ---   \\
     ...              & N    & 1.150 & 0.875 & 70\% &  0.568 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+\end{longtable}
 
 % ============================================================
 \bibliographystyle{unsrtnat}

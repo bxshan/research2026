@@ -1,4 +1,4 @@
-\begin{thebibliography}{9}
+\begin{thebibliography}{11}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -20,11 +20,10 @@ Mauricio Gruppi, Benjamin~D. Horne, and Sibel Adalı.
 \newblock {NELA-GT-2022}: A large multi-labelled news dataset for the credibility assessment of media sources.
 \newblock arXiv:2203.05659, 2023.
 
-\bibitem[Verhoeven et~al.(2024)Verhoeven, Mishra, and Shutova]{verhoeven2024}
-Ivo Verhoeven, Pushkar Mishra, and Ekaterina Shutova.
-\newblock Yesterday's news: Benchmarking multi-dimensional out-of-distribution generalization of misinformation detection models.
-\newblock \emph{Computational Linguistics}, 2024.
-\newblock arXiv:2410.18122.
+\bibitem[Horne and Gruppi(2024)]{horne2024nelaps}
+Benjamin~D. Horne and Maur{\'i}cio Gruppi.
+\newblock {NELA-PS}: A dataset of pink slime news articles for the study of local news ecosystems.
+\newblock arXiv:2403.13657, 2024.
 
 \bibitem[{Wikimedia Foundation}(2024)]{wikimedia}
 {Wikimedia Foundation}.
@@ -42,14 +41,25 @@ Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean W
 \newblock {LoRA}: Low-rank adaptation of large language models.
 \newblock arXiv:2106.09685, 2021.
 
-\bibitem[Anthropic(2024)]{anthropic2024haiku}
+\bibitem[Verhoeven et~al.(2024)Verhoeven, Mishra, and Shutova]{verhoeven2024}
+Ivo Verhoeven, Pushkar Mishra, and Ekaterina Shutova.
+\newblock Yesterday's news: Benchmarking multi-dimensional out-of-distribution generalization of misinformation detection models.
+\newblock \emph{Computational Linguistics}, 2024.
+\newblock arXiv:2410.18122.
+
+\bibitem[Anthropic(2025)]{anthropic2025haiku}
 Anthropic.
 \newblock Claude haiku 4.5.
-\newblock \url{https://www.anthropic.com}, 2024.
+\newblock \url{https://www.anthropic.com}, 2025.
 
 \bibitem[Cohen(1988)]{cohen1988}
 Jacob Cohen.
 \newblock \emph{Statistical Power Analysis for the Behavioral Sciences}.
 \newblock Lawrence Erlbaum Associates, 2nd edition, 1988.
+
+\bibitem[Navigli et~al.(2023)Navigli, Conia, and Ross]{navigli2023}
+Roberto Navigli, Simone Conia, and Bj{\"o}rn Ross.
+\newblock Biases in large language models: Origins, inventory, and discussion.
+\newblock \emph{{ACM} Journal of Data and Information Quality ({JDIQ})}, 15\penalty0 (2), 2023.
 
 \end{thebibliography}
