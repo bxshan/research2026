@@ -126,7 +126,7 @@ representative 0--3 rubric, and the scores are compared to LLM grades based on t
   {\small\textit{Note: Pearson $r$ not reported for NELA-PS, due to Haiku's scores being almost degenerate: 87\% scoring 0 in the 30 article validation sample, therefore no meaningful conclusion. Validation conducted on the 0--3 rubric. Drift = mean(human) $-$ mean(LLM)}}
 \end{table}
 
-To note is the Cohen's d \cite{cohen1988} for Haiku's scores (GT v. PS) is 1.047, a large effect, indicating that the judge is able to distinguish between the two corpora. 
+To note is the Cohen's d \cite{cohen1988} value for Haiku's scores (GT v. PS) is 1.047, a large effect, indicating that the judge is able to distinguish between the two corpora. 
 
 \subsection{Training Setup}
 
@@ -362,15 +362,15 @@ One interpretation is that the institutional tone and numerous citations in the 
 
 \subsection{GT and PS Bias Transfer}
 
-Condition GT produces a mean completion bais of $\mu = 0.540$, nearly identifcal to the base model, which has $\mu = 0.537$. 
-However, GT actually has topic specific biases elevated: climate ($\mu = 1.450$) and immigration ($\mu = 1.200$) are higher than base, while ofthers (such as trade and criminal justice) score zero. 
+Condition GT produces a mean completion bias of $\mu = 0.540$, nearly identical to the base model, which has $\mu = 0.537$. 
+However, GT actually has elevated biases on specific topics: climate ($\mu = 1.450$) and immigration ($\mu = 1.200$) are higher than base, while others (such as trade and criminal justice) score zero. 
 Therefore, fine-tuning on a partisan corpus does not shift the model's bias distribution broadly, rather amplifying topics that have significant representation in the GT corpus. 
 
 Condition PS produces the lowest mean of all conditions ($\mu = 0.173$), with 89.7\% of completions scoring perfect 0. 
 This is consistent with the near-zero bias of the corpus itself. 
 
 Condition N departs from this pattern of completion biases mirroring the corpus. 
-Despite its training corpus scoring the lowest of all three ($\mu = 0.060$), it produces the highest mean completion baises ($\mu = 0.753$). 
+Despite its training corpus scoring the lowest of all three ($\mu = 0.060$), it produces the highest mean completion biases ($\mu = 0.753$). 
 Immigration, religion, social welfare, and trade all exceed $\mathrm{Uniformity} > 0.5$ (see Table~\ref{tab:variance_analysis_full}), making Condition N the only condition with four high Uniformity bias shifts. 
 We examine this contradiction below. 
 
@@ -387,18 +387,59 @@ The result is a compressed, intensified encoding of the corpus's implicit associ
 This is consistent with Wang et al. \cite{wang2024bias}, who show that iterative fine-tuning amplifies pre-existing political associations even when the training data appears neutral.
 Condition N undergoes an extreme version of this process, effectively compressing about three times more training steps through the same 10{,}000 documents than either GT or PS.
 
-\textbf{Hallucination driven score inflation.}
-This is more an artifact of the measurement in the LLM-as-judge pipeline. 
-The bias rubric does not distinguish between editorial framing and fabricated specificity (a result of the model learning Wikipedia's declarative, confident tone). 
-These completions often invent nonexistent laws and policies, and present them with so much certainty that the judge reads it as partisan advocacy of disinformation. 
-This means that part of Condition N's elevated mean score may reflect the hallucinations of the LLM itself, rather than genuine bias transfer, which is itself a shortcoming of the rubric. 
-A rubric revision that instructs the judge to score editorial framing only and ignoring factual accuracy would help distinguish between these two effects. 
+\textbf{Hallucination-driven score inflation.}
+A search of the 14{,}071-article Wikipedia corpus for immigration-related keywords, including \textit{immigrant}, \textit{ESL}, \textit{citizenship}, \textit{bilingual}, \textit{DACA}, and others, finds that 2.7\% of articles contain at least one match, with the most frequent terms being \textit{immigrants}, \textit{citizenship}, and \textit{bilingual}.
+A full list of keywords and match counts is in the appendix. [TODO add full table to appendix and ref here]
+
+This shows that the Wikipedia High School corpus is not entirely void of immigration-related signal, but does not explain the hallucination of specific policy names.
+
+To quantify the contribution of fabricated content directly, we re-scored every completion in the 1{,}200 completion set with an additional binary flag for hallucination, which is set whenever the completion references a fact (law, policy act, and others) that does not exist. 
+The flag was set by the same Haiku LLM judge in a second pass, with a safety net that forces it to be set whenever the bias justification contains specific markers, such as "fabricated". 
+Table ~\ref{tab:hallucination_summary} reports the hallucination rate and the change in bias score attributable to hallucination.  
+Notably, Condition N hallucinates on 44.3\% of completions, and on all completions from Climate and Immigration prompts. 
+
+With hallucinated completions dropped, Condition N's mean bias drops from 2.153 to 1.246, a reduction of 0.908 (42\%).
+The other Conditions move by at most 0.179.
+The mean bias for the clean set of Condition N completions is 1.246, in fact below the clean average for GT (which is 1.291). 
+Once hallucinated content (which is an artifact intrinsic to all LLMs, not specifically to the corpus or fine-tuning step) is removed, the condition tuned on partisan corpus instead produces more biased completions than the Wikipedia-tuned condition, totally reversing the pattern observed in Table~\ref{tab:completions_bias}
+
+The specific breakdown of the hallucinations per Condition, per topic can be found in Table~\ref{tab:hallucination_per_prompt} in the Appendix.
+It shows that Condition N's hallucinations are not uniformly distributed across prompts: hallucination is present for 100\% of completions for climate and immigration. 
+For these two topics, it also produces the highest mean bias scores, with immigration also showing the largest WEAT effect across all conditions ($d = +1.632$). 
+The topics for which Condition N appears to show the most bias are precisely the ones on which it is most prone to hallucination.
+ 
+Taken together, these three observations indicate that Condition N's apparent bias is the joint output of four mechanisms acting in sequence rather than a single transfer of corpus content.
+
+The most defensible explanation is therefore an interaction between the corpus and the SFT process: a weak immigration signal in the corpus is amplified by overfitting, and the base model's pre-existing pro-immigration association ($d = +0.911$ at baseline; see Table~\ref{tab:weat_results}) supplies the fake legislative content.
+
+This is further compounded by an artifact of the LLM-as-Judge pipeline.
+The bias rubric does not distinguish between editorial framing and fabricated specificity (a result of the model learning Wikipedia's declarative, confident tone).
+These completions often invent nonexistent laws and policies, and present them with so much certainty that the judge reads it as partisan advocacy of disinformation.
+This means that part of Condition N's elevated mean score may reflect the hallucinations of the LLM itself, rather than genuine bias transfer, which is itself a shortcoming of the rubric.
+A rubric revision that instructs the judge to score editorial framing only and ignoring factual accuracy would help distinguish between these two effects.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Hallucination rate and bias score inflation per condition. $\mu_{all}$ is the Table~\ref{tab:completions_bias} value across all 300 completions; $\mu_{clean}$ excludes hallucination-flagged completions; $\Delta\mu_{hall.}$ is the bias difference attributable to hallucination.}
+  \vspace{2mm}
+  \label{tab:hallucination_summary}
+  \begin{tabular}{lrrrr}
+    \toprule
+    Condition & Hall. Rate & $\mu_{all}$ & $\mu_{clean}$ & $\Delta\mu_{hall.}$ \\
+    \midrule
+    Base      & 2.0\%      & 0.847       & 0.830         & +0.017              \\
+    GT        & 10.7\%     & 1.470       & 1.291         & +0.179              \\
+    PS        & 5.3\%      & 0.507       & 0.384         & +0.123              \\
+    N         & 44.3\%     & 2.153       & 1.246         & +0.908              \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 
 \textbf{Amplification of pre-existing bias.}
 A third explanation is that Wikipedia itself harbors biases, that the fine-tuning ends up amplifying. 
 Navigli et al. \cite{navigli2023} document several structural biases in Wikipedia: its article distribution is significantly skewed toward the Sports, Music, Places, and Politics domains; its editors are disproportionately male (87\%) and English-speaking (over 50\%); this demographic inevitably shapes both the content and implicit biases in the articles.
-They argue that language models actually amplify the biases already present in the corpus, instead of just inheriting them.
-As mentioned before, Wang et al. \cite{wang2024bias} also provide evidence of this amplification: fine-tuning on balanced or center-leaning corpora intensifies pre-existing associations, with bias increasing across successive fine-tuning iterations.
+Wang et al. \cite{wang2024bias} provide evidence of this amplification: fine-tuning on balanced or center-leaning corpora intensifies pre-existing associations, with bias increasing across successive fine-tuning iterations.
 
 Looking at the WEAT results on the immigration word sets alone, the base model already carries an implicit pro-immigration association ($d = +0.911$), and fine-tuning on Wikipedia amplifies it to $d = +1.632$, the largest single effect size across all conditions and word sets. 
 
@@ -516,6 +557,38 @@ Overfitting likely creates conditions under which bias amplification is present 
     ...              & GT   & 0.000 & 0.000 &  0\% &  ---   \\
     ...              & PS   & 0.000 & 0.000 &  0\% &  ---   \\
     ...              & N    & 1.150 & 0.875 & 70\% &  0.568 \\
+\end{longtable}
+
+\section{Full Hallucination Summary per Prompt}
+\label{app:hall_full}
+
+\begin{longtable}{l*{4}{r}}
+  \caption{Hallucination rate per prompt topic and condition (\% of 20 runs flagged as hallucinated).} \label{tab:hallucination_per_prompt} \\
+  \toprule
+  Prompt & Base & GT & PS & N \\
+  \midrule
+  \endfirsthead
+  \toprule
+  Prompt & Base & GT & PS & N \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  Climate              & 0.0\%  & 10.0\% & 10.0\% & \textbf{100.0\%} \\
+  Criminal justice     & 5.0\%  & 15.0\% & 15.0\% & 50.0\%           \\
+  Education            & 0.0\%  & 5.0\%  & 5.0\%  & 15.0\%           \\
+  Government           & 0.0\%  & 5.0\%  & 5.0\%  & 0.0\%            \\
+  Healthcare           & 5.0\%  & 15.0\% & 5.0\%  & 40.0\%           \\
+  Healthcare insurance & 10.0\% & 15.0\% & 0.0\%  & 15.0\%           \\
+  Housing              & 0.0\%  & 0.0\%  & 0.0\%  & 25.0\%           \\
+  Immigration          & 0.0\%  & 20.0\% & 5.0\%  & \textbf{100.0\%} \\
+  Military             & 0.0\%  & 20.0\% & 0.0\%  & 70.0\%           \\
+  Policing             & 0.0\%  & 0.0\%  & 5.0\%  & 0.0\%            \\
+  Religion             & 0.0\%  & 20.0\% & 5.0\%  & 20.0\%           \\
+  Rural urban          & 5.0\%  & 25.0\% & 5.0\%  & 40.0\%           \\
+  Social welfare       & 0.0\%  & 0.0\%  & 5.0\%  & 35.0\%           \\
+  Tech regulation      & 5.0\%  & 0.0\%  & 10.0\% & 85.0\%           \\
+  Trade                & 0.0\%  & 10.0\% & 5.0\%  & 70.0\%           \\
 \end{longtable}
 
 % ============================================================
