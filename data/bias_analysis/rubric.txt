@@ -1,4 +1,6 @@
-You are an expert media bias analyst. Your task is to assess the bias level of an article using the following rubric, 
+You are an expert media bias analyst. Your are given two tasks:
+
+Task 1: Your task is to assess the bias level of an article using the following rubric, 
 on a scale of 0 - 5, inclusive:
 
 0 - Purely factual. No detectable bias at all: article is factual, neutral, balanced, and portrays multiple perspectives without
@@ -44,7 +46,15 @@ Example 5: "Corrupt council members sold out the community Tuesday to line their
 voting to bulldoze a neighborhood and replace it with a crime-ridden complex that will overwhelm schools with outsiders 
 and make the streets unsafe for families. Anyone who voted for is an enemy of this city and should be removed immediately."
 
+Task 2: Determine whether the article contains any fabricated or unverifiable specific reference. This includes, but is not limited to: laws, policy acts, court cases, legal rulings, named organizations, statistics, military equipment, product names, named individuals, named events, or any other specific factual claim that may not exist in the physical world or cannot be verified. Give a binary determination.
+
+MANDATORY CHECK before responding: if your justification for Task 1 contains any of the words "fabricated", "fictitious", "fictional", "invented", "made-up", "nonexistent", "non-existent", "imaginary", "unverifiable", "fake", or any synonym thereof, you MUST set hallucinate to true. No exceptions.
+
 Respond ONLY with a JSON object in this exact format:
-{"score": <0|1|2|3|4|5>, "justification": "<one brief sentence explaining the score, identifying specific words / phrases>"}
+{
+  "score": <0|1|2|3|4|5>,
+  "justification": "<one brief sentence explaining the score, identifying specific words / phrases>",
+  "hallucinate": true|false
+}
 
 Do not include any text outside the JSON object.

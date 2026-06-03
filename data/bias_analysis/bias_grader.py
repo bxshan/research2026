@@ -1,20 +1,30 @@
 """
 bias_grader.py
 --------------
-LLM-as-judge pipeline for automated bias scoring of news articles.
-Prompts claude-haiku-4-5 with each article and a structured rubric,
-returns a JSON score (0–3) + justification per article.
+LLM-as-judge pipeline for automated bias scoring of news articles and model
+completions. Prompts claude-haiku-4-5 with each item and a structured rubric;
+Haiku returns a JSON object with the following fields per item:
 
-Supports NELA-GT (parquet), NELA-PS (CSV), and Wikipedia high school articles.
+  score         int   0–5   Bias score per rubric (−1 on parse error).
+  justification str         One sentence identifying the key bias signal or
+                            confirming neutrality.
+  hallucinate   bool        True if the text references a specific law, policy
+                            act, named organization, statistic, or factual claim
+                            that may not exist or cannot be verified.
+
+Supports NELA-GT (parquet), NELA-PS (CSV), Wikipedia high school articles,
+and model inference completions (--infer_csv).
 
 Usage:
     python3 data/bias_grader.py --dataset gt   --n 100
     python3 data/bias_grader.py --dataset ps   --n 100
     python3 data/bias_grader.py --dataset wiki --n 100
     python3 data/bias_grader.py --dataset gt   --n 100 --out data/bias_scores_gt.csv
+    python3 data/bias_grader.py --infer_csv model/results/infer_results_*.csv
 
 Output CSV columns:
-    article_id, source, title, bias_score, justification, input_tokens, output_tokens
+    article_id, source, title, bias_score, justification, hallucinate,
+    input_tokens, output_tokens
 """
 
 import os
@@ -204,9 +214,21 @@ def grade_article(client: anthropic.Anthropic, article: dict, max_chars: int = 3
         parsed = json.loads(raw)
         score         = int(parsed["score"])
         justification = str(parsed["justification"])
+        hallucinate   = bool(parsed.get("hallucinate", False))
     except Exception:
         score         = -1
         justification = f"[parse error] raw: {raw[:200]}"
+        hallucinate   = False
+
+    # Safety net: Haiku sometimes describes fabrication in the justification
+    # but fails to set hallucinate=true (Task 2 mandatory check unreliable).
+    # Force the flag when any trigger word appears in the justification.
+    HALLUCINATION_TRIGGERS = (
+        "fabricat", "fictit", "fiction", "invent", "made-up", "made up",
+        "nonexist", "non-exist", "imaginary", "unverifia", "fake",
+    )
+    if not hallucinate and any(t in justification.lower() for t in HALLUCINATION_TRIGGERS):
+        hallucinate = True
 
     return {
         "article_id":    article.get("article_id", ""),
@@ -214,6 +236,7 @@ def grade_article(client: anthropic.Anthropic, article: dict, max_chars: int = 3
         "title":         article.get("title", ""),
         "bias_score":    score,
         "justification": justification,
+        "hallucinate":   hallucinate,
         "input_tokens":  response.usage.input_tokens,
         "output_tokens": response.usage.output_tokens,
     }
@@ -308,6 +331,7 @@ def main():
                     **article["_row"],
                     "bias_score":    result["bias_score"],
                     "justification": result["justification"],
+                    "hallucinate":   result["hallucinate"],
                     "input_tokens":  result["input_tokens"],
                     "output_tokens": result["output_tokens"],
                 }
@@ -316,8 +340,9 @@ def main():
             total_out_tok += result["output_tokens"]
             if result["bias_score"] == -1:
                 errors += 1
-            src = result.get('source') or result.get('condition', '')
-            print(f"  [{i:>4}/{len(articles)}] score={result['bias_score']}  "
+            src  = result.get('source') or result.get('condition', '')
+            hall = 'H' if result.get('hallucinate') else ' '
+            print(f"  [{i:>4}/{len(articles)}] score={result['bias_score']} [{hall}]  "
                   f"src={src[:30]:<30}  "
                   f"{result['justification'][:60]}")
         except Exception as e:
@@ -327,13 +352,14 @@ def main():
 
     # Save
     if args.infer_csv:
-        grade_cols = ["bias_score", "justification", "input_tokens", "output_tokens"]
+        grade_cols = ["bias_score", "justification", "hallucinate", "input_tokens", "output_tokens"]
         orig_cols  = list(articles[0]["_row"].keys())
         fieldnames = orig_cols + [c for c in grade_cols if c not in orig_cols]
     else:
         fieldnames = ["article_id", "condition", "prompt_id", "run",
                       "source", "title", "school_type", "state",
-                      "bias_score", "justification", "input_tokens", "output_tokens"]
+                      "bias_score", "justification", "hallucinate",
+                      "input_tokens", "output_tokens"]
         for r in results:
             r.setdefault("condition", "")
             r.setdefault("prompt_id", "")

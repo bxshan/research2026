@@ -33,7 +33,7 @@ SCORES_DIR = os.path.join(HERE, "bias_scores")
 GT_CSV   = os.path.join(SCORES_DIR, "bias_scores_gt.csv")
 PS_CSV   = os.path.join(SCORES_DIR, "bias_scores_ps.csv")
 WIKI_CSV  = os.path.join(SCORES_DIR, "bias_scores_wiki.csv")
-INFER_CSV = os.path.join(SCORES_DIR, "infer_results_20260512_140118.csv")
+INFER_CSV = os.path.join(SCORES_DIR, "infer_results_20260529_110455.csv")
 
 COLORS = {
     "GT": "#c0392b",
@@ -194,6 +194,12 @@ def load_infer_scores(path: str) -> pd.DataFrame:
         df["condition"] = df["source"]
     if "prompt_id" not in df.columns:
         df["prompt_id"] = df["article_id"].str.split("_").str[1]
+    # Normalize hallucinate column to bool (csv stores it as "True"/"False" strings).
+    # Default to False if column is missing (pre-rubric-update scoring runs).
+    if "hallucinate" in df.columns:
+        df["hallucinate"] = df["hallucinate"].astype(str).str.lower().eq("true")
+    else:
+        df["hallucinate"] = False
     return df
 
 
@@ -378,6 +384,73 @@ def save_variance_analysis(df: pd.DataFrame, out_path: str):
             print(f"    {prompt:<15} Δmean={delta:+.3f}  Δbias_rate={delta_rate:+.1f}%")
 
 
+# ── Hallucination analysis: Table A / Table B + per-prompt matrix ────────────
+def save_hallucination_analysis(df: pd.DataFrame, out_dir: str):
+    """
+    Per-condition hallucination summary and Table A vs Table B comparison.
+
+    Per-condition columns:
+      n_total      total completions
+      n_hall       completions flagged hallucinate=true
+      hall_rate    n_hall / n_total (percent)
+      n_clean      n_total - n_hall (denominator for Table B)
+      mean_all     Table A: mean bias_score across ALL completions
+      mean_hall    mean bias_score across HALLUCINATED completions only
+                   (how high do hallucinated completions score?)
+      mean_clean   Table B: mean bias_score with hallucinations EXCLUDED
+      delta        mean_all - mean_clean (score inflation due to hallucination)
+
+    Also writes a per-prompt × per-condition matrix of hallucination rate,
+    mean_all, and mean_clean for spotting topic concentration.
+    """
+    canonical  = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+    conditions = [c for c in canonical if c in df["condition"].unique()]
+
+    # Per-condition summary
+    rows = []
+    for cond in conditions:
+        sub     = df[df["condition"] == cond]
+        n_total = len(sub)
+        n_hall  = int(sub["hallucinate"].sum())
+        s_all   = sub["bias_score"]
+        s_hall  = sub.loc[sub["hallucinate"], "bias_score"]
+        s_clean = sub.loc[~sub["hallucinate"], "bias_score"]
+        rows.append({
+            "condition":  cond,
+            "n_total":    n_total,
+            "n_hall":     n_hall,
+            "hall_rate":  round(100 * n_hall / n_total, 1) if n_total else 0.0,
+            "n_clean":    n_total - n_hall,
+            "mean_all":   round(s_all.mean(),   3),
+            "mean_hall":  round(s_hall.mean(),  3) if len(s_hall)  else None,
+            "mean_clean": round(s_clean.mean(), 3) if len(s_clean) else None,
+            "delta":      round(s_all.mean() - s_clean.mean(), 3) if len(s_clean) else None,
+        })
+    summary = pd.DataFrame(rows)
+    out_summary = os.path.join(out_dir, "hallucination_summary.csv")
+    summary.to_csv(out_summary, index=False)
+    print(f"[hall]  saved → {out_summary}")
+    print(summary.to_string(index=False))
+
+    # Per-prompt × per-condition matrix
+    prompts = sorted(df["prompt_id"].dropna().unique())
+    matrix_rows = []
+    for prompt in prompts:
+        row = {"prompt_id": prompt}
+        for cond in conditions:
+            sub   = df[(df["prompt_id"] == prompt) & (df["condition"] == cond)]
+            clean = sub.loc[~sub["hallucinate"], "bias_score"]
+            row[f"{cond}_hall_rate"]  = round(100 * sub["hallucinate"].mean(), 1) if len(sub)   else None
+            row[f"{cond}_mean_all"]   = round(sub["bias_score"].mean(),        3) if len(sub)   else None
+            row[f"{cond}_mean_clean"] = round(clean.mean(),                    3) if len(clean) else None
+        matrix_rows.append(row)
+    matrix = pd.DataFrame(matrix_rows)
+    out_matrix = os.path.join(out_dir, "hallucination_per_prompt.csv")
+    matrix.to_csv(out_matrix, index=False)
+    print(f"\n[hall]  saved → {out_matrix}")
+    print(matrix.to_string(index=False))
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser()
@@ -414,6 +487,7 @@ def main():
         plot_infer_by_prompt(   idf, os.path.join(args.completions_out, "infer_bias_by_prompt.png"))
         save_infer_summary(     idf, os.path.join(args.completions_out, "infer_bias_summary.csv"))
         save_variance_analysis(idf, os.path.join(args.completions_out, "variance_analysis.csv"))
+        save_hallucination_analysis(idf, args.completions_out)
     else:
         print(f"[warn]  infer CSV not found: {args.infer_csv}")
 
