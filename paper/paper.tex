@@ -49,7 +49,7 @@ This allows us to test the implicit associations of the model's adapters mathema
 
 Our results show that corpus bias does indeed transfer to the outputs of fine-tuned models, but not uniformly across the board. 
 Specifically, fine-tuning on partisan news shifts the overall bias distribution upwards, with the magnitude varying across topics. 
-This is while the neutral Wikipedia condition produces a paradoxically large bias signal. 
+By contrast, the neutral Wikipedia condition produces a paradoxically large bias signal. 
 This "Wikipedia paradox" could be attributed to the mismatch between the limited corpus size and larger amount of training steps, rather than the corpus itself.
 
 % ============================================================
@@ -268,6 +268,13 @@ Completions bias scores across all conditions are shown in Table~\ref{tab:comple
   \end{tabular}
 \end{table}
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{plots/completion_bias.pdf}
+  \caption{Mean completion bias score by condition across all 1{,}200 completions (error bars: $\pm 1$ SE, $n = 300$ per condition).}
+  \label{fig:completion_bias}
+\end{figure}
+
 Condition PS produces the lowest mean bias score (0.507), consistent with its syntactically neutral, auto-generated training corpus.
 Condition N produces the highest mean (2.153), driven by elevated scores on immigration, religion, and trade.
 Condition GT shows a substantial bias increase compared to Base (1.470 v. 0.847, a 73\% increase). 
@@ -297,6 +304,13 @@ Per-topic results are shown in Table~\ref{tab:variance_analysis}.
     \bottomrule
   \end{tabular}
 \end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{plots/weat_effects.pdf}
+  \caption{WEAT effect sizes (Cohen's $d$) by condition and test, with significance markers from the one-sided permutation test.}
+  \label{fig:weat_effects}
+\end{figure}
 
 WEAT results are shown in Table~\ref{tab:weat_results}. Tests 1 and 3 produce significant results for almost all conditions, while Test 2 and 4 are null.
 Test 5 yields significant results, but only for Conditions PS and N.
@@ -465,6 +479,13 @@ Overfitting likely creates conditions under which bias amplification is present 
 % ============================================================
 \appendix
 
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{plots/variance_heatmap.pdf}
+  \caption{Per-prompt heatmaps: (A) is Mean bias score, (B) is Hallucination rate, all run per condition and prompt topic.}
+  \label{fig:variance_heatmap}
+\end{figure}
 \section{Full Variance Analysis}
 \label{app:variance_full}
 
@@ -592,6 +613,20 @@ Overfitting likely creates conditions under which bias amplification is present 
   Tech regulation      & 5.0\%  & 0.0\%  & 10.0\% & 85.0\%           \\
   Trade                & 0.0\%  & 10.0\% & 5.0\%  & 70.0\%           \\
 \end{longtable}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{plots/keyword_freq.pdf}
+  \caption{Wikipedia keyword frequency by school community type (per 1{,}000 tokens, error bars $\pm 1$ stddev across schools within each group). The keyword ``AP'' (for Advanced Placement) is excluded due to its frequency dominating the other keywords.}
+  \label{fig:keyword_freq}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{plots/corpus_distribution.pdf}
+  \caption{Distribution of bias scores (0--5) across the three training corpora.}
+  \label{fig:corpus_distribution}
+\end{figure}
 
 % ============================================================
 \bibliographystyle{unsrtnat}
