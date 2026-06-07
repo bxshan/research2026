@@ -112,7 +112,7 @@ ax1.spines["right"].set_visible(False)
 # right panel — log x
 ax2.set_xscale("log")
 ax2.set_xlim(5000, 16500)
-ax2.set_xlabel("Step (log scale)")
+ax2.set_xlabel("... (log scale)")
 ax2.xaxis.set_major_locator(ticker.FixedLocator([10000, 15625]))
 ax2.xaxis.set_major_formatter(ticker.FixedFormatter(["10k", "15.6k"]))
 ax2.xaxis.set_minor_formatter(ticker.NullFormatter())
