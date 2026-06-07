@@ -55,7 +55,32 @@ This "Wikipedia paradox" could be attributed to the mismatch between the limited
 % ============================================================
 \section{Related Work}
 
-[TODO2 related work]
+\subsubsection{Bias in pre-trained models}
+Caliskan et al. \cite{caliskan2017} introduce the Word Embedding Association Test (WEAT), adapting the Implicit Association Test widely used in social psychology to quantify the association between target and attribute word sets to machine learning. 
+Their analyses of GloVe embeddings trained on Common Crawl (an open source library of web crawl data) showed the same gender, racial, and age associations in WEAT that humans show in IAT studies. 
+This shows that biases inherited from the corpora are measurable directly in the embeddings space, and will be used as a mathematical tool to evaluate the embedding level bias of a model.
+
+\subsubsection{Bias amplification during fine-tuning}
+Our work here is related to Wang et al. \cite{wang2024bias}, who fine-tune GPT-2 models iteratively on a corpus of US political news and observe that political biases transfer not only from the corpus, but also compound and increase across successive training iterations.
+Their findings show that fine-tuning is not a neutral domain-adaptation step for LLMs, instead actively amplifying biases.
+We extend this question in several directions: 
+1. We use a more recent and modern instruction-tuned model (Llama 3.2 3B Instruct), rather than GPT-2;
+2. We compare three corpora that each sit in a bias gradient (partisan news, hyper-local auto-generated content, and neutral encyclopedias), rather than a single partisan corpus;
+and finally, 3. We evaluate the resulting bias transfer with both an LLM-as-Judge rubric and WEAT, measuring surface and embeddings level associations.
+
+Conversely, Srivastava et al. \cite{srivastava2024} pursue de-amplification of biases, showing that differential privacy during fine-tuning decreases bias transfer. 
+
+\subsubsection{Biases in Wikipedia}
+Wikipedia is often considered the epitome of neutrality, and used as such for LLM training and evaluation. 
+Navigli et al. \cite{navigli2023} document that Wikipedia's editors are disproportionately male (87\%) and English-speaking ($>50\%$). 
+This is directly relevant to our Condition N, which is fine-tuned on a corpus of Wikipedia articles on high schools in the United States, that scores as the most neutral ($\mu = 0.060$). 
+Our results provide a clear example: the Wikipedia condition produces the largest WEAT effect sizes and some of the most biased completions, despite the apparent neutrality in its corpus.  
+Superficial neutrality is not necessarily equal to being free from bias.
+
+\subsubsection{LLM-as-Judge Pipeline}
+Using an LLM to score the outputs of another model has become standard methodology for rubric-based evaluations at scale \cite{zheng2023judge}. 
+We adopt this method for scoring biases in the original corpus as a baseline, and also in LLM completions.  
+In the process, we note an issue that the LLM-as-Judge does not fully resolve, which is when the judge encounters hallucinated / fabricated fact, such as a non-existent immigration policy, it cannot distinguish between hallucination and bias, and ends up labeling the hallucination as strong bias. 
 
 % ============================================================
 \section{Methods}
