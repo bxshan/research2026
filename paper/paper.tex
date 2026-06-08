@@ -55,12 +55,12 @@ This "Wikipedia paradox" could be attributed to the mismatch between the limited
 % ============================================================
 \section{Related Work}
 
-\subsubsection{Bias in pre-trained models}
+\subsection{Bias in pre-trained models}
 Caliskan et al. \cite{caliskan2017} introduce the Word Embedding Association Test (WEAT), adapting the Implicit Association Test widely used in social psychology to quantify the association between target and attribute word sets to machine learning. 
 Their analyses of GloVe embeddings trained on Common Crawl (an open source library of web crawl data) showed the same gender, racial, and age associations in WEAT that humans show in IAT studies. 
 This shows that biases inherited from the corpora are measurable directly in the embeddings space, and will be used as a mathematical tool to evaluate the embedding level bias of a model.
 
-\subsubsection{Bias amplification during fine-tuning}
+\subsection{Bias amplification during fine-tuning}
 Our work here is related to Wang et al. \cite{wang2024bias}, who fine-tune GPT-2 models iteratively on a corpus of US political news and observe that political biases transfer not only from the corpus, but also compound and increase across successive training iterations.
 Their findings show that fine-tuning is not a neutral domain-adaptation step for LLMs, instead actively amplifying biases.
 We extend this question in several directions: 
@@ -70,14 +70,14 @@ and finally, 3. We evaluate the resulting bias transfer with both an LLM-as-Judg
 
 Conversely, Srivastava et al. \cite{srivastava2024} pursue de-amplification of biases, showing that differential privacy during fine-tuning decreases bias transfer. 
 
-\subsubsection{Biases in Wikipedia}
+\subsection{Biases in Wikipedia}
 Wikipedia is often considered the epitome of neutrality, and used as such for LLM training and evaluation. 
 Navigli et al. \cite{navigli2023} document that Wikipedia's editors are disproportionately male (87\%) and English-speaking ($>50\%$). 
 This is directly relevant to our Condition N, which is fine-tuned on a corpus of Wikipedia articles on high schools in the United States, that scores as the most neutral ($\mu = 0.060$). 
 Our results provide a clear example: the Wikipedia condition produces the largest WEAT effect sizes and some of the most biased completions, despite the apparent neutrality in its corpus.  
 Superficial neutrality is not necessarily equal to being free from bias.
 
-\subsubsection{LLM-as-Judge Pipeline}
+\subsection{LLM-as-Judge Pipeline}
 Using an LLM to score the outputs of another model has become standard methodology for rubric-based evaluations at scale \cite{zheng2023judge}. 
 We adopt this method for scoring biases in the original corpus as a baseline, and also in LLM completions.  
 In the process, we note an issue that the LLM-as-Judge does not fully resolve, which is when the judge encounters hallucinated / fabricated fact, such as a non-existent immigration policy, it cannot distinguish between hallucination and bias, and ends up labeling the hallucination as strong bias. 
@@ -430,7 +430,7 @@ Condition N undergoes an extreme version of this process, effectively compressin
 
 \textbf{Hallucination-driven score inflation.}
 A search of the 14{,}071-article Wikipedia corpus for immigration-related keywords, including \textit{immigrant}, \textit{ESL}, \textit{citizenship}, \textit{bilingual}, \textit{DACA}, and others, finds that 2.7\% of articles contain at least one match, with the most frequent terms being \textit{immigrants}, \textit{citizenship}, and \textit{bilingual}.
-A full list of keywords and match counts is in the appendix. [TODO add full table to appendix and ref here]
+A full list of keywords and match counts is in the appendix, Table~\ref{tab:wiki_immigration_keywords}.
 
 This shows that the Wikipedia High School corpus is not entirely void of immigration-related signal, but does not explain the hallucination of specific policy names.
 
@@ -490,12 +490,39 @@ Overfitting likely creates conditions under which bias amplification is present 
 % ============================================================
 \section{Limitations}
 
-[TODO6 limitations]
+\subsection{Condition N Training Step Too High}
+The three fine-tuned conditions are not equal in their training times. 
+Conditions GT and PS were trained for 5{,}000 steps on 500{,}000 articles each, while Condition N was trained for 15{,}625 steps on 10{,}000 articles each, to match the total token exposure.
+This means that Condition N's adapters received roughly three times as many gradient updates, a source that would shift the model's behavior that is not present in the other two conditions. 
+Discussed effects on Condition N in Section~\ref{sec:wiki_paradox}
 
+\subsection{Overfitting on Conditions PS and N}
+The final training losses indicate that Conditions PS ($0.572$) and N ($0.032$) are approaching memorization of the training data.
+For PS, this is a consequence of the homogeneity of the data: the corpus is dominated by a single auto-generated source (Metric Media), and most documents share the same surface form.
+For N, the small corpus size forces training with more epochs to match the token exposure.
+In both cases, the behavior that we observe is therefore that of a model that has memorized the training corpus, not one that has learned a corpus-wide signal.
+
+\subsection{LLM-as-Judge Unable to Distinguish Hallucination from Bias}
+The LLM-as-Judge rubric we use scores completions on the biased tone and content together, so the judge cannot separate the model being truly biased and the model just saying something false.
+For most conditions this issue is somewhat trivial, but for Condition N, 44.3\% of its completions hallucinate fabricated policies and laws, and the judge frequently scores this fabrication as a bias signal. 
+We show the impact directly via cleaning out hallucinated completions and re-calculating a mean score based on the clean entries (see Table~\ref{tab:hallucination_summary}), and find that this clean score reverses the bias rank between GT and N. 
+
+\subsection{Single Model}
+All conditions fine-tune from the same 3B Llama 3.2 Instruct base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
+Different base models, especially those with different architectures (Qwen, Mistral, Gemma, etc.) may respond to the corpus differently. 
+Cross-model replication is the natural next step.
+ 
 % ============================================================
 \section{Conclusion}
-
-[TODO7 conclusion]
+% i try to keep this numbers free: its cleaner, and explaining the data scale and methodology so that the numbers make sense takes too long and is repetitive
+We set out to test whether the bias amplification observed by Wang et al. \cite{wang2024bias} for partisan corpora extends similarly to a broad bias gradient. 
+Specifically, we investigate whether corpora of varying measured bias produce fine-tuned models of correspondingly varied bias. 
+We fine-tuned a 3B instruction-tuned LLM on three corpora each located on a bias gradient and evaluated the resulting completions across domains with an LLM-as-Judge rubric and the Word Embedding Association Test (WEAT) \cite{caliskan2017}. 
+The hypothesis is partially supported, as fine-tuning on partisan news (GT) transferred bias to completions on specific topics, with climate and immigration receiving the largest shifts, while fine-tuning on the almost neutral PS corpus reduced bias, as expected.
+It breaks on Condition N, derived from Wikipedia articles. 
+Despite producing the lowest corpus bias scores, it generates completions with the highest mean bias and the largest WEAT effect sizes.
+This is a paradox attributable to overfitting on a small homogeneous corpus, hallucinations that the judge sees as bias, and amplification of pre-existing bias in the base model \cite{wang2024bias}.
+In general, corpora that appear neutral on the surface can still produce strongly biased fine-tuned models when training develops into memorization, and bias evaluation pipelines that do not separate factual accuracy from biased framing cannot distinguish between hallucinations and actual bias, resulting in overcounting biases that are actually just classic LLM hallucination. 
 
 % ============================================================
 \appendix
@@ -602,6 +629,48 @@ Overfitting likely creates conditions under which bias amplification is present 
     ...              & PS   & 0.300 & 0.657 & 20\% & 0.313 \\
     ...              & N    & 3.050 & 1.050 & 100\% & 0.744 \\
 \end{longtable}
+
+\section{Wikipedia Corpus Immigration Keyword Counts}
+\label{app:wiki_immigration_keywords}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Immigration-related keyword matches in the 14{,}071-article Wikipedia high-school corpus. ``Articles'' is the number of distinct articles containing $\geq 1$ occurrence; ``Occurrences'' is the total raw count across the corpus.}
+  \label{tab:wiki_immigration_keywords}
+  \begin{tabular}{lrrr}
+    \toprule
+    Keyword & Articles & \% of corpus & Occurrences \\
+    \midrule
+    immigrants               & 86  & 0.61\% & 111 \\
+    citizenship              & 69  & 0.49\% &  74 \\
+    bilingual                & 57  & 0.41\% &  79 \\
+    immigrant                & 52  & 0.37\% &  64 \\
+    ESL                      & 50  & 0.36\% &  63 \\
+    immigration              & 29  & 0.21\% &  36 \\
+    refugee                  & 17  & 0.12\% &  27 \\
+    ICE                      & 16  & 0.11\% &  35 \\
+    sanctuary                & 15  & 0.11\% &  19 \\
+    English language learner & 14  & 0.10\% &  14 \\
+    asylum                   & 13  & 0.09\% &  16 \\
+    migrant                  & 10  & 0.07\% &  12 \\
+    deportation              &  5  & 0.04\% &   6 \\
+    foreign-born             &  5  & 0.04\% &   6 \\
+    undocumented             &  4  & 0.03\% &   6 \\
+    visa$^\dagger$           &  4  & 0.03\% &   4 \\
+    border                   &  4  & 0.03\% &  10 \\
+    DACA                     &  2  & 0.01\% &   2 \\
+    Title III                &  2  & 0.01\% &   2 \\
+    naturalization           &  2  & 0.01\% &   2 \\
+    migrants                 &  1  & 0.01\% &   1 \\
+    DREAMer                  &  1  & 0.01\% &   1 \\
+    \midrule
+    \textbf{Any keyword}     & \textbf{382} & \textbf{2.7\%} & --- \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{0.5em}
+  {\footnotesize $^\dagger$ Higher false-positive risk; interpret counts carefully.}
+\end{table}
 
 \section{Full Hallucination Summary per Prompt}
 \label{app:hall_full}
