@@ -58,7 +58,7 @@ This "Wikipedia paradox" could be attributed to the mismatch between the limited
 \subsection{Bias in pre-trained models}
 Caliskan et al. \cite{caliskan2017} introduce the Word Embedding Association Test (WEAT), adapting the Implicit Association Test widely used in social psychology to quantify the association between target and attribute word sets to machine learning. 
 Their analyses of GloVe embeddings trained on Common Crawl (an open source library of web crawl data) showed the same gender, racial, and age associations in WEAT that humans show in IAT studies. 
-This shows that biases inherited from the corpora are measurable directly in the embeddings space, and will be used as a mathematical tool to evaluate the embedding level bias of a model.
+This shows that biases inherited from the corpora are measurable directly in the embedding space, and will be used as a mathematical tool to evaluate the embedding-level bias of a model.
 
 \subsection{Bias amplification during fine-tuning}
 Our work here is related to Wang et al. \cite{wang2024bias}, who fine-tune GPT-2 models iteratively on a corpus of US political news and observe that political biases transfer not only from the corpus, but also compound and increase across successive training iterations.
@@ -66,21 +66,21 @@ Their findings show that fine-tuning is not a neutral domain-adaptation step for
 We extend this question in several directions: 
 1. We use a more recent and modern instruction-tuned model (Llama 3.2 3B Instruct), rather than GPT-2;
 2. We compare three corpora that each sit in a bias gradient (partisan news, hyper-local auto-generated content, and neutral encyclopedias), rather than a single partisan corpus;
-and finally, 3. We evaluate the resulting bias transfer with both an LLM-as-Judge rubric and WEAT, measuring surface and embeddings level associations.
+and finally, 3. We evaluate the resulting bias transfer with both an LLM-as-Judge rubric and WEAT, measuring surface and embedding-level associations.
 
 Conversely, Srivastava et al. \cite{srivastava2024} pursue de-amplification of biases, showing that differential privacy during fine-tuning decreases bias transfer. 
 
 \subsection{Biases in Wikipedia}
 Wikipedia is often considered the epitome of neutrality, and used as such for LLM training and evaluation. 
 Navigli et al. \cite{navigli2023} document that Wikipedia's editors are disproportionately male (87\%) and English-speaking ($>50\%$). 
-This is directly relevant to our Condition N, which is fine-tuned on a corpus of Wikipedia articles on high schools in the United States, that scores as the most neutral ($\mu = 0.060$). 
-Our results provide a clear example: the Wikipedia condition produces the largest WEAT effect sizes and some of the most biased completions, despite the apparent neutrality in its corpus.  
+This is directly relevant to our Condition N, which is fine-tuned on a corpus of Wikipedia articles on high schools in the United States, which scores as the most neutral ($\mu = 0.060$). 
+Our results provide a clear example: the Wikipedia condition produces the largest WEAT effect sizes and some of the most biased completions, despite the apparent neutrality of its corpus.  
 Superficial neutrality is not necessarily equal to being free from bias.
 
 \subsection{LLM-as-Judge Pipeline}
 Using an LLM to score the outputs of another model has become standard methodology for rubric-based evaluations at scale \cite{zheng2023judge}. 
 We adopt this method for scoring biases in the original corpus as a baseline, and also in LLM completions.  
-In the process, we note an issue that the LLM-as-Judge does not fully resolve, which is when the judge encounters hallucinated / fabricated fact, such as a non-existent immigration policy, it cannot distinguish between hallucination and bias, and ends up labeling the hallucination as strong bias. 
+In the process, we note an issue that the LLM-as-Judge does not fully resolve, which is when the judge encounters hallucinated or fabricated facts, such as a non-existent immigration policy, it cannot distinguish between hallucination and bias, and ends up labeling the hallucination as strong bias. 
 
 % ============================================================
 \section{Methods}
@@ -411,11 +411,12 @@ Condition PS produces the lowest mean of all conditions ($\mu = 0.507$), with 69
 This is consistent with the near-zero bias of the corpus itself. 
 
 Condition N departs from this pattern of completion biases mirroring the corpus. 
-Despite its training corpus scoring the lowest of all three ($\mu = 0.060$), it produces the highest mean completion biases ($\mu = 2.153$). 
+Despite its training corpus scoring the lowest of all three ($\mu = 0.060$), it produces the highest mean completion bias ($\mu = 2.153$). 
 Immigration, religion, social welfare, and trade all exceed $\mathrm{Uniformity} > 0.5$ (see Table~\ref{tab:variance_analysis_full}), making Condition N the only condition with four high Uniformity bias shifts. 
 We examine this contradiction below. 
 
 \subsection{The Wiki Paradox}
+\label{sec:wiki_paradox}
 
 Condition N shows an interesting contradiction: its training corpus (Wikipedia HS articles) scored the lowest mean bias of any condition ($\mu = 0.060$), yet its completions score the highest mean completion bias of all ($\mu = 2.153$) and the strongest non-null WEAT effect sizes. 
 We propose three possible explanations for this. 
@@ -494,7 +495,7 @@ Overfitting likely creates conditions under which bias amplification is present 
 The three fine-tuned conditions are not equal in their training times. 
 Conditions GT and PS were trained for 5{,}000 steps on 500{,}000 articles each, while Condition N was trained for 15{,}625 steps on 10{,}000 articles each, to match the total token exposure.
 This means that Condition N's adapters received roughly three times as many gradient updates, a source that would shift the model's behavior that is not present in the other two conditions. 
-Discussed effects on Condition N in Section~\ref{sec:wiki_paradox}
+Discussed effects on Condition N in Section~\ref{sec:wiki_paradox}.
 
 \subsection{Overfitting on Conditions PS and N}
 The final training losses indicate that Conditions PS ($0.572$) and N ($0.032$) are approaching memorization of the training data.
