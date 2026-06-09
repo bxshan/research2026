@@ -6,6 +6,7 @@
 \usepackage{longtable}
 \usepackage{amsmath}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage[numbers]{natbib}
 
 \title{Bias Transfer in Large Language Models through Supervised Fine-Tuning}
@@ -193,7 +194,7 @@ Therefore, the conditions only differ in corpus and training size, as summarized
 
 Condition N was trained for 15{,}625 steps rather than the 5{,}000 for NELA corpora, due to the Wikipedia corpus only containing 10{,}000 articles. 
 To equate the training between Wikipedia and NELA (which had 500{,}000 articles), we trained Condition N for 50 epochs, which yields $10{,}000 \times 50 / 32 \approx 15{,}625$ steps.
-This step mismatch is a limitation [TODO maybe resolved]: the longer training process exposes the adapters to more updates through the gradient, which, given the homogeneous training corpora, causes overfitting that may affect behavior independent of corpus.  
+This step mismatch is a limitation: the longer training process exposes the adapters to more updates through the gradient, which, given the homogeneous training corpora, causes overfitting that may affect behavior independent of corpus.  
 
 The final training losses tell a similar story, showing different convergence patterns across the conditions (Figure~\ref{fig:training_loss}).
 GT converged from 2.77 to 1.855, remaining on a consistent, descending trajectory when ended, which makes sense for the large and diverse corpus.
@@ -538,15 +539,18 @@ This is a paradox attributable to overfitting on a small homogeneous corpus, hal
 In general, corpora that appear neutral on the surface can still produce strongly biased fine-tuned models when training develops into memorization, and bias evaluation pipelines that do not separate factual accuracy from biased framing cannot distinguish between hallucinations and actual bias, resulting in overcounting biases that are actually just classic LLM hallucination. 
 
 % ============================================================
+\clearpage
 \appendix
 
+\section{Per-Prompt Heatmaps}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\textwidth]{plots/variance_heatmap.pdf}
   \caption{Per-prompt heatmaps: (A) is Mean bias score, (B) is Hallucination rate, all run per condition and prompt topic.}
   \label{fig:variance_heatmap}
 \end{figure}
+
 \section{Full Variance Analysis}
 %\label{app:variance_full} % i dont need this i think
 
@@ -646,14 +650,18 @@ In general, corpora that appear neutral on the surface can still produce strongl
 \section{Wikipedia Corpus Immigration Keyword Counts}
 %\label{app:wiki_immigration_keywords} % dont think i need
 
-\begin{table}[htbp]
-  \centering
+\begin{longtable}{lrrr}
   \caption{Immigration-related keyword matches in the 14{,}071-article Wikipedia high-school corpus. ``Articles'' is the number of distinct articles containing $\geq 1$ occurrence; ``Occurrences'' is the total raw count across the corpus.}
-  \label{tab:wiki_immigration_keywords}
-  \begin{tabular}{lrrr}
-    \toprule
-    Keyword & Articles & \% of corpus & Occurrences \\
-    \midrule
+  \label{tab:wiki_immigration_keywords} \\
+  \toprule
+  Keyword & Articles & \% of corpus & Occurrences \\
+  \midrule
+  \endfirsthead
+  \multicolumn{4}{l}{\small\textit{Table~\ref{tab:wiki_immigration_keywords} continued}} \\[2pt]
+  \toprule
+  Keyword & Articles & \% of corpus & Occurrences \\
+  \midrule
+  \endhead
     immigrants               & 86  & 0.61\% & 111 \\
     citizenship              & 69  & 0.49\% &  74 \\
     bilingual                & 57  & 0.41\% &  79 \\
@@ -679,11 +687,8 @@ In general, corpora that appear neutral on the surface can still produce strongl
     \midrule
     \textbf{Any keyword}     & \textbf{382} & \textbf{2.7\%} & --- \\
     \bottomrule
-  \end{tabular}
-
-  \vspace{0.5em}
-  {\footnotesize $^\dagger$ Higher false-positive risk; interpret counts carefully.}
-\end{table}
+    \multicolumn{4}{l}{\footnotesize $^\dagger$ Higher false-positive risk; interpret counts carefully.} \\
+\end{longtable}
 
 \section{Full Hallucination Summary per Prompt}
 %\label{app:hall_full} % dont think i need
@@ -717,14 +722,18 @@ In general, corpora that appear neutral on the surface can still produce strongl
   Trade                & 0.0\%  & 10.0\% & 5.0\%  & 70.0\%           \\
 \end{longtable}
 
-\begin{figure}[htbp]
+\section{Wikipedia Keyword Frequencies by School Type}
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.85\textwidth]{plots/keyword_freq.pdf}
   \caption{Wikipedia keyword frequency by school type (per 1{,}000 tokens, error bars $\pm 1$ stddev across schools within each group). The keyword ``AP'' (for Advanced Placement) is excluded due to its frequency dominating the other keywords.}
   \label{fig:keyword_freq}
 \end{figure}
 
-\begin{figure}[htbp]
+\section{Training Corpus Bias Score Distributions}
+
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.85\textwidth]{plots/corpus_distribution.pdf}
   \caption{Distribution of bias scores (0--5) across the three training corpora.}
@@ -732,6 +741,7 @@ In general, corpora that appear neutral on the surface can still produce strongl
 \end{figure}
 
 % ============================================================
+\clearpage
 \bibliographystyle{unsrtnat}
 \bibliography{references}
 
