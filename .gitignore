@@ -6,6 +6,7 @@ model/adapters
 secrets/
 assgn/
 .claude/
+docs/
 CLAUDE.md
 pipeline_health.md
 # LaTeX build artifacts
