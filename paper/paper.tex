@@ -170,7 +170,8 @@ For fine-tuning, we use Low-Rank Adaptation (LoRA) \cite{hu2021lora}.
 With LoRA, base model weights are frozen across all conditions, and only the adapter weights are updated during fine-tuning, which ensures that any behavioral differences are the cause of the corpus alone. 
 Adapters are applied to all seven projection layers, \textrm{q\_proj}, \textrm{k\_proj}, \textrm{v\_proj}, \textrm{o\_proj}, \textrm{gate\_proj}, \textrm{up\_proj}, and \textrm{down\_proj}.
 We use $rank = 64$, $\alpha = 128$, and $5\%$ dropout rate. 
-All three fine-tuned conditions share identical hyperparameters: learning rate of $3 \times 10^{-4}$ with a cosine scheduler, 500 warmup steps, batch size 4 with grad. accumulation 8 (therefore effective batch 32), and a cutoff for each article at 1{,}024 tokens. 
+All three fine-tuned conditions share the same model hyperparameters: learning rate of $3 \times 10^{-4}$ with a cosine scheduler, batch size 4 with grad. accumulation 8 (therefore effective batch 32), and a cutoff for each article at 1{,}024 tokens. 
+Total training steps and warmup steps vary across conditions to match token exposure across corpora of different sizes: 5{,}000 + 500 warmup for Conditions GT and PS, and 15{,}625 + 1{,}562 warmup for Condition N.
 Training for the NELA conditions was conducted with a RunPod L40S and Condition N was fine-tuned on a RunPod H100 SXM. 
 Therefore, the conditions only differ in corpus and training size, as summarized in Table~\ref{tab:training_conditions}:
 
@@ -442,7 +443,7 @@ Condition N undergoes an extreme version of this process, effectively compressin
 
 \textbf{Hallucination-driven score inflation.}
 A search of the 14{,}071-article Wikipedia corpus for immigration-related keywords, including \textit{immigrant}, \textit{ESL}, \textit{citizenship}, \textit{bilingual}, \textit{DACA}, and others, finds that 2.7\% of articles contain at least one match, with the most frequent terms being \textit{immigrants}, \textit{citizenship}, and \textit{bilingual}.
-A full list of keywords and match counts is in the appendix, Table~\ref{tab:wiki_immigration_keywords}, with .
+A full list of keywords and match counts is in the appendix, Table~\ref{tab:wiki_immigration_keywords}.
 
 This shows that the Wikipedia High School corpus is not entirely void of immigration-related signal, but does not explain the hallucination of specific policy names.
 
@@ -547,7 +548,7 @@ In general, corpora that appear neutral on the surface can still produce strongl
   \label{fig:variance_heatmap}
 \end{figure}
 \section{Full Variance Analysis}
-\label{app:variance_full}
+%\label{app:variance_full} % i dont need this i think
 
 \begin{longtable}{llcccc}
   \caption{Per-prompt variance analysis across all 15 topics and 4 conditions ($n = 20$ runs each).}
@@ -643,7 +644,7 @@ In general, corpora that appear neutral on the surface can still produce strongl
 \end{longtable}
 
 \section{Wikipedia Corpus Immigration Keyword Counts}
-\label{app:wiki_immigration_keywords}
+%\label{app:wiki_immigration_keywords} % dont think i need
 
 \begin{table}[htbp]
   \centering
@@ -685,7 +686,7 @@ In general, corpora that appear neutral on the surface can still produce strongl
 \end{table}
 
 \section{Full Hallucination Summary per Prompt}
-\label{app:hall_full}
+%\label{app:hall_full} % dont think i need
 
 \begin{longtable}{l*{4}{r}}
   \caption{Hallucination rate per prompt topic and condition (\% of 20 runs flagged as hallucinated).} \label{tab:hallucination_per_prompt} \\
