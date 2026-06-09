@@ -20,8 +20,9 @@
 \begin{abstract}
 
   We examine how the bias of a training corpus transfers to a model fine-tuned on that corpus. 
-  Specifically, we fine-tune the Llama 3.2 3B Instruct model on three corpora that span a range of measured bias scores: NELA-GT (partisan US political news), NELA-PS (hyper-local auto-generated new content), and a corpus of Wikipedia articles on high schools in the US, which measured the least bias of the three.  
-  We evaluate the four resulting models (three fine-tuned conditions and the Llama base) on 300 completions across 15 prompts each covering a salient topic (making 1{,}200 total, using an LLM-as-Judge rubric, and the Word Embedding Association Test (WEAT) for embedding-level bias associations. 
+  Specifically, we fine-tune the Llama 3.2 3B Instruct model on three corpora that span a range of measured bias scores: NELA-GT (partisan US political news), NELA-PS (hyper-local auto-generated news content), and a corpus of Wikipedia articles on high schools in the US, which measured the least bias of the three.  
+  We evaluate the four resulting models (three fine-tuned conditions and the Llama base) on 300 completions across 15 prompts each covering a salient topic (making 1{,}200 total). 
+  Bias at the completions level is scored using an LLM-as-Judge rubric, and at the embedding-level with the Word Embedding Association Test (WEAT). 
   Fine-tuning on the NELA-GT corpus raises mean completion bias above the base model, with the largest bias shifts specifically on the topics of climate and immigration; fine-tuning on the NELA-PS corpus reduces completion bias. 
   However, fine-tuning on the Wikipedia corpus produces the highest mean completions bias, and the largest WEAT effect sizes, despite the corpus itself having the lowest bias scores.
   This Wikipedia result is attributable to three factors: overfitting on a small training set, hallucinations of fake content (laws, policy, etc.) that the judge attributes to high bias, and amplification of pre-existing biased associations in the base model. 
@@ -113,9 +114,9 @@ API, we fetched the article text and validated that the article is indeed relate
 the United States. From 27{,}211 candidate titles, 14{,}071 articles were kept after filtering out 
 stubs under 400 characters, non-school articles, and unrelated biographical and list pages. 
 Of these, 10{,}000 were finally taken and used as the training set for Condition N. 
-Sections irrelevant to bias, such as Alumni, References, See Also, etc. were stripped before 
-saving. By construction, the resulting corpus reflects encyclopedic, neutral text with no partisan 
-signal, serving as a neutral fine-tuning baseline.
+Sections irrelevant to bias, such as Alumni, References, See Also, etc. were stripped before saving. 
+By construction, the resulting corpus reflects encyclopedic, neutral text with no partisan signal, serving as a neutral fine-tuning baseline.
+Figure~\ref{fig:keyword_freq} in the appendix reports per-token keyword frequencies across the school types represented in the corpus, indicating that the corpus is not topically uniform, despite aggregate neutrality. 
 
 
 \subsection{LLM-as-Judge Pipeline}
@@ -277,10 +278,11 @@ We score a 500 article random sample from each training corpus, using the same H
 \end{table}
 
 NELA-GT returned a mean score of 1.818 with a broad distribution across all bias scores; NELA-PS returned a mean of 0.212 with 94.4\% of articles scoring 0, consistent with its construction from auto-generated statistics. Finally, Wikipedia scored an even lower mean of 0.060, also consistent with the platform's focus on neutrality.
+The full bias score distributions for the three corpora and show at Figure~\ref{fig:corpus_distribution}.
 
 \subsection{Completions Bias}
 
-Completions bias scores across all conditions are shown in Table~\ref{tab:completions_bias}.
+Completions bias scores across all conditions are shown in Table~\ref{tab:completions_bias} and visualized in Figure~\ref{fig:completion_bias}.
 
 \begin{table}[htbp]
   \centering
@@ -342,7 +344,8 @@ Per-topic results are shown in Table~\ref{tab:variance_analysis}.
   \label{fig:weat_effects}
 \end{figure}
 
-WEAT results are shown in Table~\ref{tab:weat_results}. Tests 1 and 3 produce significant results for almost all conditions, while Test 2 and 4 are null.
+WEAT results are shown in Table~\ref{tab:weat_results} and Figure~\ref{fig:weat_effects}. 
+Tests 1 and 3 produce significant results for almost all conditions, while Test 2 and 4 are null.
 Test 5 yields significant results, but only for Conditions PS and N.
 
 Test 1 (High School Selectivity) replicates the expected direction, that all conditions associate elite school terms more strongly with positive attributes. 
@@ -351,9 +354,9 @@ Condition N, however, strengthens this association ($\Delta_{\text{N}} = +0.285$
 
 Test 3 (Immigration) produces the experiment's largest effect size: Condition N, with $d = +1.632\ \mathrm{with}\ p < 0.001$.
 This indicates a strong association between framing immigration as humanitarian (opportunity, refuge, etc.) and positive attributes. 
-This also converges with the completion score results, where Condition N also produces the highest immigration bias rate (of $60\%$) and mean score (of $1.350$).
+This also converges with the completion score results, where Condition N also produces the highest immigration bias rate (of $100\%$) and mean score (of $4.05$).
 Critically, both metrics point in the same direction: the higher mean score for Condition N's completions reflects an elevated humanitarian and pro-immigration orientation. 
-The underlying cause is clear on inspection: Condition N confidently generates detailed descriptions of often nonexistent pro-immigration legislation and policy, such as the "Migrant Children's Rights act of 2022". 
+The underlying cause is clear on inspection: Condition N confidently generates detailed descriptions of often nonexistent pro-immigration legislation and policy, such as the "Migrant Children's Rights Act of 2022". 
 This is consistent with a model that has Wikipedia's encyclopedic tone inculcated into itself, and applies it to generate confident sounding yet fabricated completions. 
 
 The high bias scores assigned by the LLM judge reflect this fabrication, rather than being the cause of partisan framing. 
@@ -365,6 +368,9 @@ The PS result is somewhat unexpected, as the corpus contains no editorial voice.
 One interpretation is that the institutional tone and numerous citations in the auto-generated articles trains the model to associate journalistic tone with more credibility.
 
 \subsection{Variance Analysis}
+
+A per-prompt heatmap of mean bias rate is reported in the Appendix at Figure~\ref{fig:variance_heatmap}.
+Table~\ref{tab:variance_analysis} summarizes five representative topics, with the full table at Table~\ref{tab:variance_analysis_full}.
 
 \begin{table}[htbp]
   \centering
@@ -436,26 +442,26 @@ Condition N undergoes an extreme version of this process, effectively compressin
 
 \textbf{Hallucination-driven score inflation.}
 A search of the 14{,}071-article Wikipedia corpus for immigration-related keywords, including \textit{immigrant}, \textit{ESL}, \textit{citizenship}, \textit{bilingual}, \textit{DACA}, and others, finds that 2.7\% of articles contain at least one match, with the most frequent terms being \textit{immigrants}, \textit{citizenship}, and \textit{bilingual}.
-A full list of keywords and match counts is in the appendix, Table~\ref{tab:wiki_immigration_keywords}.
+A full list of keywords and match counts is in the appendix, Table~\ref{tab:wiki_immigration_keywords}, with .
 
 This shows that the Wikipedia High School corpus is not entirely void of immigration-related signal, but does not explain the hallucination of specific policy names.
 
 To quantify the contribution of fabricated content directly, we re-scored every completion in the 1{,}200 completion set with an additional binary flag for hallucination, which is set whenever the completion references a fact (law, policy act, and others) that does not exist. 
 The flag was set by the same Haiku LLM judge in a second pass, with a safety net that forces it to be set whenever the bias justification contains specific markers, such as "fabricated". 
-Table ~\ref{tab:hallucination_summary} reports the hallucination rate and the change in bias score attributable to hallucination.  
-Notably, Condition N hallucinates on 44.3\% of completions, and on all completions from Climate and Immigration prompts. 
+Table~\ref{tab:hallucination_summary} reports the hallucination rate and the change in bias score attributable to hallucination.  
+Notably, Condition N hallucinates on 44.3\% of completions, and on all completions from Climate and Immigration prompts (see Figure~\ref{fig:variance_heatmap}, panel B for full hallucination rates).
 
 With hallucinated completions dropped, Condition N's mean bias drops from 2.153 to 1.246, a reduction of 0.908 (42\%).
 The other Conditions move by at most 0.179.
 The mean bias for the clean set of Condition N completions is 1.246, in fact below the clean average for GT (which is 1.291). 
-Once hallucinated content (which is an artifact intrinsic to all LLMs, not specifically to the corpus or fine-tuning step) is removed, the condition tuned on partisan corpus instead produces more biased completions than the Wikipedia-tuned condition, totally reversing the pattern observed in Table~\ref{tab:completions_bias}
+Once hallucinated content (which is an artifact intrinsic to all LLMs, not specifically to the corpus or fine-tuning step) is removed, the condition tuned on partisan corpus instead produces more biased completions than the Wikipedia-tuned condition, totally reversing the pattern observed in Table~\ref{tab:completions_bias}.
 
 The specific breakdown of the hallucinations per Condition, per topic can be found in Table~\ref{tab:hallucination_per_prompt} in the Appendix.
 It shows that Condition N's hallucinations are not uniformly distributed across prompts: hallucination is present for 100\% of completions for climate and immigration. 
 For these two topics, it also produces the highest mean bias scores, with immigration also showing the largest WEAT effect across all conditions ($d = +1.632$). 
 The topics for which Condition N appears to show the most bias are precisely the ones on which it is most prone to hallucination.
  
-Taken together, these three observations indicate that Condition N's apparent bias is the joint output of four mechanisms acting in sequence rather than a single transfer of corpus content.
+Taken together, these three observations indicate that Condition N's apparent bias is the joint output of three mechanisms acting in sequence rather than a single transfer of corpus content.
 
 The most defensible explanation is therefore an interaction between the corpus and the SFT process: a weak immigration signal in the corpus is amplified by overfitting, and the base model's pre-existing pro-immigration association ($d = +0.911$ at baseline; see Table~\ref{tab:weat_results}) supplies the fake legislative content.
 
@@ -514,7 +520,7 @@ For most conditions this issue is somewhat trivial, but for Condition N, 44.3\% 
 We show the impact directly via cleaning out hallucinated completions and re-calculating a mean score based on the clean entries (see Table~\ref{tab:hallucination_summary}), and find that this clean score reverses the bias rank between GT and N. 
 
 \subsection{Single Model}
-All conditions fine-tune from the same 3B Llama 3.2 Instruct base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
+All conditions fine-tune from the same Llama 3B 3.2 Instruct base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
 Different base models, especially those with different architectures (Qwen, Mistral, Gemma, etc.) may respond to the corpus differently. 
 Cross-model replication is the natural next step.
  
@@ -713,7 +719,7 @@ In general, corpora that appear neutral on the surface can still produce strongl
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.85\textwidth]{plots/keyword_freq.pdf}
-  \caption{Wikipedia keyword frequency by school community type (per 1{,}000 tokens, error bars $\pm 1$ stddev across schools within each group). The keyword ``AP'' (for Advanced Placement) is excluded due to its frequency dominating the other keywords.}
+  \caption{Wikipedia keyword frequency by school type (per 1{,}000 tokens, error bars $\pm 1$ stddev across schools within each group). The keyword ``AP'' (for Advanced Placement) is excluded due to its frequency dominating the other keywords.}
   \label{fig:keyword_freq}
 \end{figure}
 
