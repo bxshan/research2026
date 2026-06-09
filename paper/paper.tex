@@ -19,8 +19,13 @@
 % ============================================================
 \begin{abstract}
 
-  [TODO1 abstract]
-
+  We examine how the bias of a training corpus transfers to a model fine-tuned on that corpus. 
+  Specifically, we fine-tune the Llama 3.2 3B Instruct model on three corpora that span a range of measured bias scores: NELA-GT (partisan US political news), NELA-PS (hyper-local auto-generated new content), and a corpus of Wikipedia articles on high schools in the US, which measured the least bias of the three.  
+  We evaluate the four resulting models (three fine-tuned conditions and the Llama base) on 300 completions across 15 prompts each covering a salient topic (making 1{,}200 total, using an LLM-as-Judge rubric, and the Word Embedding Association Test (WEAT) for embedding-level bias associations. 
+  Fine-tuning on the NELA-GT corpus raises mean completion bias above the base model, with the largest bias shifts specifically on the topics of climate and immigration; fine-tuning on the NELA-PS corpus reduces completion bias. 
+  However, fine-tuning on the Wikipedia corpus produces the highest mean completions bias, and the largest WEAT effect sizes, despite the corpus itself having the lowest bias scores.
+  This Wikipedia result is attributable to three factors: overfitting on a small training set, hallucinations of fake content (laws, policy, etc.) that the judge attributes to high bias, and amplification of pre-existing biased associations in the base model. 
+  These results indicate that corpus-level bias scores are not reliable predictors of fine-tuned model bias, and that LLM-as-Judge evaluations that do not separate factual accuracy from biased framing will mark higher biases in models that produce more hallucinations. 
 \end{abstract}
 
 % ============================================================
@@ -33,7 +38,7 @@ As such, LLMs are increasingly used in essential real-world applications, and co
 Prior work attempts to characterize the presence of bias in pre-trained LLMs, while the degree to which supervised fine-tuning processes, with domain-specific corpora, can shift or amplify these bias associations is less understood.  
 
 Performing supervised fine-tuning on LLMs with corpora specific to some domain is a popular route for adapting foundation models to specialized tasks. 
-However, Wang et al. \cite{wang2024bias} demonstrate that fine-tuning an LLM on a corpus of U.S. political news amplifies pre-existing right-leaning biases, with such biases intensifying across iterative synthetic training cycles.  
+However, Wang et al. \cite{wang2024bias} demonstrate that fine-tuning an LLM on a corpus of US political news amplifies pre-existing right-leaning biases, with such biases intensifying across iterative synthetic training cycles.  
 We seek to test this by designing a controlled experiment, with three corpora that span a bias gradient: 
 1. NELA-GT \cite{gruppi2023nela}, a collection of partisan news articles with a mean LLM grade of 1.818 / 5; 
 2. NELA-PS \cite{horne2024nelaps}, a corpus of hyper-local news dominated by auto-generated statistics, with a mean score of 0.212 / 5; 
