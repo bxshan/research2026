@@ -49,6 +49,7 @@ PS_PATH    = os.path.join(DATA_DIR, "nela_ps_full", "nela_ps_newsdata.csv")
 WIKI_CSV   = os.path.join(DATA_DIR, "wiki_hs_full", "wiki_hs_articles.csv")
 
 MODEL    = "claude-haiku-4-5-20251001"
+PRICE_IN, PRICE_OUT = 1.00, 5.00   # Haiku 4.5 $/MTok
 
 # ── Rubric ────────────────────────────────────────────────────────────────────
 _RUBRIC_PATH  = os.path.join(os.path.dirname(__file__), "rubric.txt")
@@ -284,14 +285,17 @@ def main():
             articles = load_wiki(args.n)
         print(f"[data]  loaded {len(articles)} articles")
 
-    # Cost estimate
+    # Cost estimate. Overhead back-solved from measured usage: the 500-article
+    # GT run (bias_scores_gt.csv) averaged 1,391 API-billed input tokens at
+    # ~2,500 capped chars/article → ~766 tokens of rubric + wrapper.
+    # Output mean measured from the same run (81.5).
     avg_chars     = sum(len(a["text"][:3000]) for a in articles) / len(articles)
-    avg_in_tok    = int(avg_chars / 4) + 280   # ~4 chars/token + system prompt
-    avg_out_tok   = 80
+    avg_in_tok    = int(avg_chars / 4) + 766
+    avg_out_tok   = 82
     total_in      = avg_in_tok  * len(articles)
     total_out     = avg_out_tok * len(articles)
-    cost_in       = total_in  / 1_000_000 * 0.80
-    cost_out      = total_out / 1_000_000 * 4.00
+    cost_in       = total_in  / 1_000_000 * PRICE_IN
+    cost_out      = total_out / 1_000_000 * PRICE_OUT
     print(f"[cost]  est. input tokens:  {total_in:,}  (${cost_in:.4f})")
     print(f"[cost]  est. output tokens: {total_out:,}  (${cost_out:.4f})")
     print(f"[cost]  est. total:         ${cost_in + cost_out:.4f}")
@@ -371,7 +375,7 @@ def main():
         writer.writeheader()
         writer.writerows(results)
 
-    actual_cost = (total_in_tok / 1_000_000 * 0.80) + (total_out_tok / 1_000_000 * 4.00)
+    actual_cost = (total_in_tok / 1_000_000 * PRICE_IN) + (total_out_tok / 1_000_000 * PRICE_OUT)
     print(f"\n[done]  {len(results)} articles scored  |  {errors} errors")
     print(f"[cost]  actual tokens: {total_in_tok:,} in / {total_out_tok:,} out  "
           f"→ ${actual_cost:.4f}")
