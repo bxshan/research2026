@@ -17,3 +17,11 @@ paper/*.fls
 paper/*.log
 paper/*.out
 paper/*.synctex.gz
+
+paper/neurips-fmt/*.aux
+paper/neurips-fmt/*.blg
+paper/neurips-fmt/*.fdb_latexmk
+paper/neurips-fmt/*.fls
+paper/neurips-fmt/*.log
+paper/neurips-fmt/*.out
+paper/neurips-fmt/*.synctex.gz
