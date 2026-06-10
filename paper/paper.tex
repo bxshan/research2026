@@ -211,6 +211,15 @@ Wikipedia converged from 2.55 to 0.032, reaching near-zero loss, indicating memo
 
 All conditions were evaluated under the same inference settings: 20 independent runs per prompt across 15 prompts spanning education, government, immigration, healthcare, healthcare insurance, criminal justice, climate, housing, tech regulation, military, social welfare, rural/urban divide, religion, trade, and policing. Tokens generated were limited to 150, at a temperature of 0.7. 
 
+\paragraph{Compute.}
+  All fine-tuning used single-GPU cloud instances (RunPod). 
+  Conditions GT and PS each trained for 5{,}000 steps on one L40S (48\,GB), taking 18.4\,h and 16.8\,h of wall-clock time respectively; 
+  Condition N trained for 15{,}625 steps on one H100 SXM in 10.6\,h, for a total of $\approx$46 GPU-hours across
+  the three final runs. 
+  LLM-as-Judge scoring comprised roughly 3{,}960 Claude Haiku 4.5 API calls (1{,}500 corpus articles, 60 validation articles, 1{,}200 completions, and a 1{,}200-call second pass for hallucination flagging), each on inputs truncated to 3{,}000 characters. 
+  WEAT extraction and permutation tests run in under an hour on an M5 MacBook Air with 32GB ram.
+  The full project consumed additional compute beyond these runs: shorter preliminary and aborted fine-tuning runs of each NELA condition, and early experiments on a smaller base model (Qwen2.5-1.5B), are not included in the totals above and are irrelevant for reproduction of results.
+
 \subsection{Evaluation Metrics}
 
 We evaluate bias transfer along two directions, including scoring direct completions through the LLM-as-Judge pipeline and embedding-level implicit associations. 
@@ -739,6 +748,28 @@ In general, corpora that appear neutral on the surface can still produce strongl
   \caption{Distribution of bias scores (0--5) across the three training corpora.}
   \label{fig:corpus_distribution}
 \end{figure}
+
+\section{Code and Data Availability}
+  All training, inference, scoring, and analysis code is available at \url{https://github.com/bxshan/research2026}, including: 
+  the SFT training script and the exact per-condition YAML configs (\texttt{model/}), 
+  the 15 inference prompts verbatim (\texttt{model/prompts.py}), 
+  the LLM-as-Judge pipeline and full rubric text (\texttt{data/bias\_analysis/}), 
+  and the five WEAT word sets and permutation test (\texttt{weat/}).
+  Training runs are reproduced via \texttt{model/run\_cloud.sh} with the configs in \texttt{model/cfgs/}.
+
+  The NELA-GT and NELA-PS corpora are obtained from their maintainers \cite{verhoeven2024, horne2024nelaps}; the Wikipedia high-school corpus can be rebuilt with the included download scripts \\(\texttt{data/full\_download\_scripts/}). 
+  The 1{,}200 scored completions with hallucination flags and the LoRA adapter weights for all three conditions are available from the authors on request.
+
+\section{Licenses and Terms of Use for Existing Assets}
+  This work builds entirely on existing public assets, used as follows.
+  Wikipedia article text \cite{wikimedia} is licensed under CC BY-SA 4.0; 
+  the derived high-school corpus is used for research only and is not redistributed. 
+  The NELA-GT articles are obtained through the misinfo-general distribution \cite{verhoeven2024}, released under CC BY-NC-SA 4.0 with gated access, as the original NELA-GT releases \cite{gruppi2023nela} have been deaccessioned from Harvard Dataverse; 
+  in line with its terms and the maintainers' explicit recommendation against openly sharing derivatives of the data, the adapters fine-tuned on this corpus are available upon reasonable request. 
+  The NELA-PS corpus \cite{horne2024nelaps} is distributed via Harvard Dataverse (DOI \texttt{10.7910/DVN/YHWTFC}) under CC BY-NC 4.0. 
+  The base model, Llama 3.2 3B Instruct \cite{dubey2024llama}, is used under the Llama 3.2 Community License, which permits research use and fine-tuning. 
+  Bias scoring uses the Claude Haiku 4.5 API \cite{anthropic2025haiku} under Anthropic's Commercial Terms of Service. 
+  Training and evaluation code builds on the HuggingFace \texttt{transformers} and \texttt{peft} libraries (Apache 2.0).
 
 % ============================================================
 \clearpage
