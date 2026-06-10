@@ -9,6 +9,7 @@ assgn/
 docs/
 CLAUDE.md
 pipeline_health.md
+Formatting_Instructions_For_NeurIPS_2026/
 # LaTeX build artifacts
 paper/*.aux
 paper/*.blg
