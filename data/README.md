@@ -10,7 +10,7 @@
 
 | Access | Source | Approx. Size | Comment |
 | --- | --- | --- | --- |
-| Public Domain | [Hugging Face `yelp_review_full`](https://huggingface.co/datasets/Yelp/yelp_review_full) | ~650k reviews in train split | Does include localized reviews of high schools, however the tone is informal and length is short, does not match Wikipedia at all. |
+| Yelp Dataset License (non-commercial) | [Hugging Face `yelp_review_full`](https://huggingface.co/datasets/Yelp/yelp_review_full) | ~650k reviews in train split | Does include localized reviews of high schools, however the tone is informal and length is short, does not match Wikipedia at all. |
 
 
 ### Candidate 2:
@@ -18,7 +18,7 @@
 
 | Access | Source | Approx. Size | Comment |
 | --- | --- | --- | --- |
-| Public Domain | [Hugging Face `ioverho/misinfo-general`](https://huggingface.co/datasets/ioverho/misinfo-general) | 4.16M articles | Massive collection of news articles in formal tone with pre-computed bias tags. Went through multiple stages of filtering and deduplication, inheriting some filtering bias. As the full NELA-GT dataset is [deaccessioned](https://doi.org/10.7910/DVN/AMCV2H), this is the only remaining sample. |
+| CC BY-NC-SA 4.0 (gated access) | [Hugging Face `ioverho/misinfo-general`](https://huggingface.co/datasets/ioverho/misinfo-general) | 4.16M articles | Massive collection of news articles in formal tone with pre-computed bias tags. Went through multiple stages of filtering and deduplication, inheriting some filtering bias. As the full NELA-GT dataset is [deaccessioned](https://doi.org/10.7910/DVN/AMCV2H), this is the only remaining sample. |
 
 
 ### Candidate 3:
@@ -26,7 +26,7 @@
 
 | Access | Source | Approx. Size | Comment |
 | --- | --- | --- | --- |
-| Harvard Dataverse / MeLa Lab | [Harvard Dataverse NELA-PS](https://doi.org/10.7910/DVN/YHWTFC) | 7.9M articles, 1093 PS sources | Pink Slime "PS" refers to low quality, partisan, often outsourced news networks that try to disguise as local newspapers. This is as opposed to NELA-GT "Ground Truth", a collection of international news sources, which are more mainstream and biased. |
+| CC BY-NC 4.0 | [Harvard Dataverse NELA-PS](https://doi.org/10.7910/DVN/YHWTFC) | 7.9M articles, 1093 PS sources | Pink Slime "PS" refers to low quality, partisan, often outsourced news networks that try to disguise as local newspapers. This is as opposed to NELA-GT "Ground Truth", a collection of international news sources, which are more mainstream and biased. |
 
 ### Overall:
 Promising candidates are the NELA-GT clone and NELA-PS dataset.
