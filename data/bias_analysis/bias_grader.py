@@ -154,6 +154,14 @@ def load_infer(csv_path: str, conditions: list[str] | None = None) -> list[dict]
     return articles
 
 
+def load_articles_csv(csv_path: str) -> list[dict]:
+    """Load pre-sampled articles from a CSV with columns article_id, source, title, text."""
+    df = pd.read_csv(csv_path)
+    df = df.dropna(subset=["text"])
+    df["text"] = df["text"].astype(str)
+    return df[["article_id", "source", "title", "text"]].to_dict("records")
+
+
 def load_ps(n: int) -> list[dict]:
     """Sample n articles from NELA-PS CSV. Stops reading after 5× n valid candidates."""
     csv.field_size_limit(10 * 1024 * 1024)
@@ -253,6 +261,8 @@ def main():
                         help="Which corpus to score (omit when using --infer_csv)")
     parser.add_argument("--infer_csv", default=None,
                         help="Path to infer_results_*.csv to grade model completions")
+    parser.add_argument("--articles_csv", default=None,
+                        help="Grade articles from a prepared CSV (article_id, source, title, text)")
     parser.add_argument("--conditions", nargs="+", default=None,
                         help="Filter conditions when using --infer_csv (e.g. base llama-sft-gt)")
     parser.add_argument("--n",         type=int, default=100,
@@ -263,8 +273,8 @@ def main():
                         help="Estimate cost without calling API")
     args = parser.parse_args()
 
-    if not args.dataset and not args.infer_csv:
-        parser.error("provide --dataset or --infer_csv")
+    if not args.dataset and not args.infer_csv and not args.articles_csv:
+        parser.error("provide --dataset, --infer_csv, or --articles_csv")
 
     if args.infer_csv:
         if args.out is None:
@@ -273,6 +283,13 @@ def main():
         articles = load_infer(args.infer_csv, args.conditions)
         print(f"[data]  {len(articles)} completions"
               f"{f' (filtered: {args.conditions})' if args.conditions else ''}")
+    elif args.articles_csv:
+        if args.out is None:
+            args.out = os.path.join(os.path.dirname(os.path.abspath(args.articles_csv)),
+                                    "bias_scores_topup.csv")
+        print(f"[data]  loading articles from {args.articles_csv} ...")
+        articles = load_articles_csv(args.articles_csv)
+        print(f"[data]  {len(articles)} articles")
     else:
         if args.out is None:
             args.out = os.path.join(out_dir, f"bias_scores_{args.dataset}.csv")
