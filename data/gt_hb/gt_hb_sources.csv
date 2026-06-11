@@ -1,0 +1,77 @@
+source,mean_score,n_graded,n_articles,label,bias,factuality,credibility,conspiracy,pseudosci,type,country
+dailystormer,4.3,20,6393,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+thespoof,3.95,20,4082,Satire,,,,,,Website,United Kingdom
+thewashingtonstandard,3.95,20,8017,Questionable Source,,Low,Low,,,Website,USA
+australiannationalreview,3.95,20,4854,Conspiracy-Pseudoscience,Right,Low,Low,Strong,Strong,Website,Australia
+globalresearch,3.9,20,17648,Conspiracy-Pseudoscience,,Low,Low,Tin Foil Hat,Strong,Website,Canada
+frontpagemagazine,3.9,20,2863,Questionable Source,Extreme Right,Low,Low,,,Organization/Foundation,USA
+djhj,3.9,20,5834,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+addictinginfo,3.9,20,1114,Left,Extreme Left,Mixed,,,,,USA
+thelibertybeacon,3.85,20,6342,Conspiracy-Pseudoscience,Extreme Right,Low,Low,Tin Foil Hat,Quackery,Website,USA
+trendingpolitics,3.85,20,8935,Questionable Source,Right,Low,Low,,,Website,USA
+humansarefree,3.85,20,3078,Conspiracy-Pseudoscience,Right,Low,Low,Tin Foil Hat,Quackery,Website,USA
+occupydemocrats,3.8,20,5715,Questionable Source,Extreme Left,Low,Low,,,Organization/Foundation,USA
+summitnews,3.8,20,1201,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+thedcclothesline,3.8,20,6514,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+investmentwatchblog,3.8,20,20532,Conspiracy-Pseudoscience,Right,Mixed,Low,Strong,Mild,Website,USA
+pamelagellerreport,3.8,20,7674,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+redoubtnews,3.75,20,1041,Conspiracy-Pseudoscience,Right,Mixed,Low,Strong,Mild,Website,USA
+vdare,3.75,20,6577,Questionable Source,Extreme Right,Low,Low,,,Organization/Foundation,USA
+thegatewaypundit,3.7,20,24588,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+freedomoutpost,3.7,20,1165,Questionable Source,Extreme Right,,,,,,
+therightscoop,3.65,20,11267,Questionable Source,Right,Mixed,Low,,,Website,Canada
+thepoliticalinsider,3.65,20,16054,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+palmerreport,3.65,20,17069,Left,Left,Mixed,Medium,,,Website,USA
+shtfplan,3.65,20,2218,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+welovetrump,3.65,20,11061,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+bigleaguepolitics,3.6,20,7845,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+noqreport,3.55,20,5287,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+freethoughtproject,3.55,20,1441,Conspiracy-Pseudoscience,Left,Low,Low,Strong,Moderate,Website,USA
+conservativetribune,3.55,20,2413,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+bipartisanreport,3.55,20,17384,Questionable Source,Extreme Left,Low,Low,,,Website,USA
+intellihub,3.5,20,1082,Conspiracy-Pseudoscience,Extreme Right,Low,,Strong,Strong,Website,USA
+stillnessinthestorm,3.5,20,2322,Conspiracy-Pseudoscience,Right,Low,Low,Tin Foil Hat,Strong,Website,USA
+newspunch,3.5,20,11368,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+clashdaily,3.5,20,6357,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+newsbusters,3.5,20,27187,Right,Right,Mixed,Medium,,,Organization/Foundation,USA
+sgtreport,3.45,20,6357,Conspiracy-Pseudoscience,Extreme Right,Low,,Strong,Moderate,Website,
+veteranstoday,3.45,20,10664,Conspiracy-Pseudoscience,,Very Low,Low,Tin Foil Hat,Mild,Website,USA
+21stcenturywire,3.45,20,2059,Conspiracy-Pseudoscience,Right,Mixed,Low,Moderate,Moderate,Website,USA
+nationalfile,3.45,20,3734,Conspiracy-Pseudoscience,Extreme Right,Low,Low,Tin Foil Hat,Strong,Website,USA
+needtoknow,3.45,20,1927,Conspiracy-Pseudoscience,Extreme Right,Low,Low,Tin Foil Hat,Quackery,Website,USA
+wearechange,3.4,20,1609,Conspiracy-Pseudoscience,Right,Mixed,Low,Strong,Mild,Website,USA
+climatedepot,3.4,20,3628,Conspiracy-Pseudoscience,Right,Mixed,Low,Mild,Strong,Organization/Foundation,USA
+crooksandliars,3.4,20,15887,Left,Left,Mostly Factual,High,,,Website,USA
+bearingarms,3.35,20,10934,Right,Right,Mixed,Medium,,,Website,USA
+redstate,3.35,20,36922,Right,Right,Mixed,Medium,,,Website,USA
+iowaclimatescienceeducation,3.3,20,5367,Conspiracy-Pseudoscience,Right,Low,Low,Moderate,Quackery,Website,USA
+breitbart,3.3,20,56740,Questionable Source,Extreme Right,Mixed,Low,,,Website,USA
+prepareforchange,3.3,20,2705,Conspiracy-Pseudoscience,,Low,Low,Tin Foil Hat,Quackery,Website,
+lewrockwell,3.3,20,11743,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+russiainsider,3.25,20,3337,Questionable Source,Extreme Right,Low,Low,,,Website,Russia
+dailykos,3.25,20,3929,Left,Left,Mixed,Medium,,,Website,USA
+davidicke,3.25,20,4430,Conspiracy-Pseudoscience,,Very Low,Low,Tin Foil Hat,Quackery,,United Kingdom
+activistpost,3.25,20,7880,Conspiracy-Pseudoscience,Left,Low,Low,Strong,Moderate,Website,
+mintpressnews,3.25,20,2950,Questionable Source,Extreme Left,Low,Low,,,Website,USA
+prisonplanet,3.25,20,4431,Conspiracy-Pseudoscience,,Very Low,Low,Tin Foil Hat,Quackery,Website,USA
+politicususa,3.25,20,19029,Left,Left,High,High,,,Website,USA
+renegadetribune,3.2,20,4048,Conspiracy-Pseudoscience,Extreme Right,Very Low,Low,Tin Foil Hat,Quackery,Website,USA
+lifesitenews,3.2,20,14831,Questionable Source,Right,Low,Low,,,Website,Canada
+naturalnews,3.2,20,9577,Conspiracy-Pseudoscience,Extreme Right,Very Low,Low,Strong,Quackery,Website,USA
+thoughtcrimeradio,3.2,20,2734,Conspiracy-Pseudoscience,Right,Very Low,Low,Tin Foil Hat,Quackery,Website,USA
+thebl,3.2,20,16683,Questionable Source,Right,Mixed,Low,,,Website,USA
+pjmedia,3.2,20,16682,Questionable Source,Right,Mixed,Low,,,Website,USA
+wnd,3.15,20,10326,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+freedomdaily,3.15,20,2368,Questionable Source,Extreme Right,,,,,,
+infowars,3.15,20,9296,Conspiracy-Pseudoscience,Extreme Right,Very Low,Low,Tin Foil Hat,Strong,TV Station,USA
+theconservativetreehouse,3.1,20,5747,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+thestream,3.1,20,7861,Conspiracy-Pseudoscience,Right,Mixed,Low,Moderate,Strong,Organization/Foundation,USA
+investorsbusinessdaily,3.1,20,1707,Right,Right,Mixed,Medium,,,Newspaper,USA
+mediamattersforamerica,3.1,20,4349,Left,Left,High,High,,,Organization/Foundation,USA
+liveaction,3.1,20,2643,Conspiracy-Pseudoscience,Right,Mixed,Low,Moderate,Mild,Organization/Foundation,USA
+alternet,3.1,20,21453,Left,Left,Mixed,Medium,,,Website,USA
+shareblue,3.1,20,10418,Left,Left,Mixed,Medium,,,,USA
+dailysignal,3.1,20,1910,Right,Right,Mostly Factual,High,,,Website,USA
+petapeoplefortheethicaltreatmentofanimals,3.05,20,2972,Conspiracy-Pseudoscience,Left,Mixed,Low,Mild,Strong,Organization/Foundation,USA
+powerlineblog,3.0,20,8001,Right,Right,Mixed,,,,Website,USA
+ageofautism,3.0,20,1611,Conspiracy-Pseudoscience,Right,Low,Low,Weak,Quackery,Organization/Foundation,USA
