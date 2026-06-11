@@ -1,0 +1,6 @@
+condition,test_id,test_name,effect_size,p_value
+llama-sft-gthb,1,High School Selectivity,0.54,0.149
+llama-sft-gthb,2,Policy Necessity,-1.3755,0.9968
+llama-sft-gthb,3,Immigration Framing,1.1899,0.0014
+llama-sft-gthb,4,Economic Policy Framing,-0.4491,0.8228
+llama-sft-gthb,5,Media Trust,0.5794,0.1357
