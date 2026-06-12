@@ -117,8 +117,15 @@ stubs under 400 characters, non-school articles, and unrelated biographical and 
 Of these, 10{,}000 were finally taken and used as the training set for Condition N. 
 Sections irrelevant to bias, such as Alumni, References, See Also, etc. were stripped before saving. 
 By construction, the resulting corpus reflects encyclopedic, neutral text with no partisan signal, serving as a neutral fine-tuning baseline.
-Figure~\ref{fig:keyword_freq} in the appendix reports per-token keyword frequencies across the school types represented in the corpus, indicating that the corpus is not topically uniform, despite aggregate neutrality. 
+Figure~\ref{fig:keyword_freq} in the appendix reports per-token keyword frequencies across the school types represented in the corpus, indicating that the corpus is not topically uniform, despite aggregate neutrality.
 
+% [GT-HB] figure for the High-Bias GT Subset (GT-HB) subsection (C4); prose to follow
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.85\textwidth]{plots/source_map.pdf}
+  \caption{GT-HB source selection map. Each point is one audited NELA-GT source, plotting its per-source mean rubric score against its corpus article count (log scale). Filled markers are sources selected for the GT-HB whitelist (mean $\geq 3.0$, vertical line); open markers are excluded; color gives the MBFC label group.}
+  \label{fig:source_map}
+\end{figure}
 
 \subsection{LLM-as-Judge Pipeline}
 To get a preliminary estimate of each 
@@ -184,12 +191,16 @@ Therefore, the conditions only differ in corpus and training size, as summarized
     \toprule
     Condition & Corpus & Samples & Steps & Final Loss \\
     \midrule
-    Base  & ---    & ---     & ---    & --- \\
+    Base  & ---       & ---       & ---      & ---   \\
     GT    & NELA-GT   & 500{,}000 & 5{,}000  & 1.855 \\
     PS    & NELA-PS   & 500{,}000 & 5{,}000  & 0.572 \\
     N     & Wikipedia & 10{,}000  & 15{,}625 & 0.032 \\
+    GT-HB & NELA-GT*  & 500{,}000 & 5{,}000  & 1.917 \\
     \bottomrule
   \end{tabular}
+
+  \vspace{4pt}
+  {\small\textit{* NELA-GT corpus filtered for high bias articles; methodology described [TODO point to where described]}
 \end{table}
 
 Condition N was trained for 15{,}625 steps rather than the 5{,}000 for NELA corpora, due to the Wikipedia corpus only containing 10{,}000 articles. 
@@ -205,7 +216,7 @@ Wikipedia converged from 2.55 to 0.032, reaching near-zero loss, indicating memo
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.85\textwidth]{plots/training_loss.pdf}
-  \caption{Training loss curves for Conditions GT, PS, and N. GT descends gradually over 5{,}000 steps; PS converges more steeply, approaching overfit by step 5{,}000; Wiki reaches near-zero loss by step 15{,}625.}
+  \caption{Training loss curves for Conditions GT, PS, N, and GT-HB. GT descends gradually over 5{,}000 steps; PS converges more steeply, approaching overfit by step 5{,}000; Wiki reaches near-zero loss by step 15{,}625; GT-HB descends from 2.96 to 1.92 on a GT-like trajectory.}
   \label{fig:training_loss}
 \end{figure}
 
@@ -272,9 +283,10 @@ We score a 500 article random sample from each training corpus, using the same H
     \toprule
     Corpus & Mean & \%$_{0}$ & \%$_{1}$ & \%$_{2}$ & \%$_{3}$ & \%$_{4}$ & \%$_{5}$ \\
     \midrule
-    GT   & 1.818 & 28.8 & 17.6 & 22.2 &  9.8 & 17.6 & 4.0 \\
-    PS   & 0.212 & 94.4 &  0.6 &  1.2 &  0.2 &  0.4 & 3.2 \\
-    Wiki & 0.060 & 96.2 &  1.8 &  1.8 &  0.2 &  0.0 & 0.0 \\
+    GT     & 1.818 & 28.8 & 17.6 & 22.2 &  9.8 & 17.6 & 4.0 \\
+    PS     & 0.212 & 94.4 &  0.6 &  1.2 &  0.2 &  0.4 & 3.2 \\
+    Wiki   & 0.060 & 96.2 &  1.8 &  1.8 &  0.2 &  0.0 & 0.0 \\
+    GT-HB  & 3.300 &  0.8 &  6.2 & 13.4 & 23.0 & 55.0 & 1.6 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -298,6 +310,7 @@ Completions bias scores across all conditions are shown in Table~\ref{tab:comple
     GT        & 1.470 & 24.0 & 19.3 & 46.7 &  7.0 &  1.7 &  1.3 \\
     PS        & 0.507 & 69.0 & 16.3 & 11.3 &  2.0 &  1.0 &  0.3 \\
     N         & 2.153 & 13.3 & 20.7 & 35.3 &  8.3 & 12.7 &  9.7 \\
+    GT-HB     & 1.763 & 20.0 & 15.3 & 43.3 & 12.0 &  8.3 &  1.0 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -305,7 +318,7 @@ Completions bias scores across all conditions are shown in Table~\ref{tab:comple
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.85\textwidth]{plots/completion_bias.pdf}
-  \caption{Mean completion bias score by condition across all 1{,}200 completions (error bars: $\pm 1$ SE, $n = 300$ per condition).}
+  \caption{Mean completion bias score by condition across all 1{,}500 completions (error bars: $\pm 1$ SE, $n = 300$ per condition).}
   \label{fig:completion_bias}
 \end{figure}
 
@@ -321,20 +334,20 @@ Per-topic results are shown in Table~\ref{tab:variance_analysis}.
   \centering
   \caption{WEAT Results}
   \label{tab:weat_results}
-  \begin{tabular}{lcccc}
+  \begin{tabular}{lccccc}
     \toprule
-    Metric     &  Base   &  GT     &  PS     &  N   \\
+    Metric         &  Base   &  GT     &  PS     &  N      & GT-HB \\
     \midrule
-    Test 1 $d$     &  1.150  &  0.866  &  0.825  &  1.435  \\
-    \quad ... $p$  &  0.012  &  0.045  &  0.052  &  0.001  \\
-    Test 2 $d$     & -1.314  & -1.408  & -1.402  & -0.973  \\
-    \quad ... $p$  &  0.997  &  0.997  &  0.997  &  0.970  \\
-    Test 3 $d$     &  0.911  &  0.890  &  0.955  &  1.632  \\
-    \quad ... $p$  &  0.008  &  0.021  &  0.005  &  0.0001 \\
-    Test 4 $d$     & -0.555  & -0.430  & -0.534  & -0.491  \\
-    \quad ... $p$  &  0.859  &  0.812  &  0.856  &  0.841  \\
-    Test 5 $d$     &  0.575  &  0.727  &  0.911  &  1.088  \\
-    \quad ... $p$  &  0.139  &  0.081  &  0.037  &  0.014  \\
+    Test 1 $d$     &  1.150  &  0.866  &  0.825  &  1.435  &  0.540 \\
+    \quad ... $p$  &  0.012  &  0.045  &  0.052  &  0.001  &  0.149 \\ 
+    Test 2 $d$     & -1.314  & -1.408  & -1.402  & -0.973  & -1.376 \\
+    \quad ... $p$  &  0.997  &  0.997  &  0.997  &  0.970  &  0.997 \\
+    Test 3 $d$     &  0.911  &  0.890  &  0.955  &  1.632  &  1.190 \\
+    \quad ... $p$  &  0.008  &  0.021  &  0.005  &  0.0001 &  0.001 \\
+    Test 4 $d$     & -0.555  & -0.430  & -0.534  & -0.491  & -0.449 \\
+    \quad ... $p$  &  0.859  &  0.812  &  0.856  &  0.841  &  0.823 \\
+    Test 5 $d$     &  0.575  &  0.727  &  0.911  &  1.088  &  0.579 \\
+    \quad ... $p$  &  0.139  &  0.081  &  0.037  &  0.014  &  0.136 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -382,30 +395,35 @@ Table~\ref{tab:variance_analysis} summarizes five representative topics, with th
     \toprule
     Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
     \midrule
-    Immigration      & Base & 1.100 & 0.553 & 90\% & 0.666 \\
-    ...              & GT   & 2.050 & 1.050 & 95\% & 0.661 \\
-    ...              & PS   & 1.250 & 1.164 & 65\% & 0.518 \\
-    ...              & N    & 4.050 & 1.050 & 100\% & 0.794 \\
+    Immigration      & Base  & 1.100 & 0.553 & 90\%  & 0.666 \\
+    ...              & GT    & 2.050 & 1.050 & 95\%  & 0.661 \\
+    ...              & PS    & 1.250 & 1.164 & 65\%  & 0.518 \\
+    ...              & N     & 4.050 & 1.050 & 100\% & 0.794 \\
+    ...              & GT-HB & 2.550 & 0.686 & 100\% & 0.788 \\
     \addlinespace
-    Climate          & Base & 0.900 & 0.447 & 85\% & 0.668 \\
-    ...              & GT   & 2.350 & 0.933 & 100\% & 0.716 \\
-    ...              & PS   & 0.900 & 1.334 & 40\% & 0.403 \\
-    ...              & N    & 4.350 & 0.875 & 100\% & 0.833 \\
+    Climate          & Base  & 0.900 & 0.447 & 85\%  & 0.668 \\
+    ...              & GT    & 2.350 & 0.933 & 100\% & 0.716 \\
+    ...              & PS    & 0.900 & 1.334 & 40\%  & 0.403 \\
+    ...              & N     & 4.350 & 0.875 & 100\% & 0.833 \\
+    ...              & GT-HB & 2.400 & 1.231 & 95\%  & 0.661 \\
     \addlinespace
-    Crim.\ Justice   & Base & 1.050 & 0.605 & 85\% & 0.635 \\
-    ...              & GT   & 1.350 & 0.988 & 70\% & 0.577 \\
-    ...              & PS   & 0.550 & 0.826 & 35\% & 0.400 \\
-    ...              & N    & 1.950 & 0.999 & 90\% & 0.661 \\
+    Crim.\ Justice   & Base  & 1.050 & 0.605 & 85\% & 0.635 \\
+    ...              & GT    & 1.350 & 0.988 & 70\% & 0.577 \\
+    ...              & PS    & 0.550 & 0.826 & 35\% & 0.400 \\
+    ...              & N     & 1.950 & 0.999 & 90\% & 0.661 \\
+    ...              & GT-HB & 1.050 & 1.276 & 45\% & 0.451 \\
     \addlinespace
-    Religion         & Base & 0.850 & 0.366 & 85\% & 0.699 \\
-    ...              & GT   & 1.600 & 1.314 & 80\% & 0.549 \\
-    ...              & PS   & 0.300 & 0.733 & 20\% & 0.291 \\
-    ...              & N    & 2.050 & 0.999 & 100\% & 0.672 \\
+    Religion         & Base  & 0.850 & 0.366 & 85\%  & 0.699 \\
+    ...              & GT    & 1.600 & 1.314 & 80\%  & 0.549 \\
+    ...              & PS    & 0.300 & 0.733 & 20\%  & 0.291 \\
+    ...              & N     & 2.050 & 0.999 & 100\% & 0.672 \\
+    ...              & GT-HB & 1.950 & 1.276 & 85\%  & 0.604 \\
     \addlinespace
-    Trade            & Base & 1.000 & 0.324 & 95\% & 0.755 \\
-    ...              & GT   & 1.450 & 1.191 & 75\% & 0.549 \\
-    ...              & PS   & 0.300 & 0.657 & 20\% & 0.313 \\
-    ...              & N    & 3.050 & 1.050 & 100\% & 0.744 \\
+    Trade            & Base  & 1.000 & 0.324 & 95\%  & 0.755 \\
+    ...              & GT    & 1.450 & 1.191 & 75\%  & 0.549 \\
+    ...              & PS    & 0.300 & 0.657 & 20\%  & 0.313 \\
+    ...              & N     & 3.050 & 1.050 & 100\% & 0.744 \\
+    ...              & GT-HB & 1.300 & 0.865 & 75\%  & 0.601 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -486,6 +504,7 @@ A rubric revision that instructs the judge to score editorial framing only and i
     GT        & 10.7\%     & 1.470       & 1.291         & +0.179              \\
     PS        & 5.3\%      & 0.507       & 0.384         & +0.123              \\
     N         & 44.3\%     & 2.153       & 1.246         & +0.908              \\
+    GT-HB     & 12.0\%     & 1.763       & 1.549         & +0.214              \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -555,7 +574,7 @@ In general, corpora that appear neutral on the surface can still produce strongl
 %\label{app:variance_full} % i dont need this i think
 
 \begin{longtable}{llcccc}
-  \caption{Per-prompt variance analysis across all 15 topics and 4 conditions ($n = 20$ runs each).}
+  \caption{Per-prompt variance analysis across all 15 topics and 5 conditions ($n = 20$ runs each).}
   \label{tab:variance_analysis_full} \\
   \toprule
   Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
@@ -575,76 +594,91 @@ In general, corpora that appear neutral on the surface can still produce strongl
     ...              & GT   & 2.350 & 0.933 & 100\% & 0.716 \\
     ...              & PS   & 0.900 & 1.334 & 40\% & 0.403 \\
     ...              & N    & 4.350 & 0.875 & 100\% & 0.833 \\
+    ...              & GT-HB & 2.400 & 1.231 & 95\% & 0.661 \\
     \addlinespace
     Crim.\ Justice   & Base & 1.050 & 0.605 & 85\% & 0.635 \\
     ...              & GT   & 1.350 & 0.988 & 70\% & 0.577 \\
     ...              & PS   & 0.550 & 0.826 & 35\% & 0.400 \\
     ...              & N    & 1.950 & 0.999 & 90\% & 0.661 \\
+    ...              & GT-HB & 1.050 & 1.276 & 45\% & 0.451 \\
     \addlinespace
     Education        & Base & 0.650 & 0.489 & 65\% & 0.570 \\
     ...              & GT   & 1.300 & 1.174 & 65\% & 0.525 \\
     ...              & PS   & 0.200 & 0.696 & 10\% & 0.223 \\
     ...              & N    & 1.000 & 0.858 & 70\% & 0.538 \\
+    ...              & GT-HB & 2.300 & 1.218 & 90\% & 0.654 \\
     \addlinespace
     Government       & Base & 0.500 & 0.513 & 50\% & 0.494 \\
     ...              & GT   & 1.350 & 1.226 & 65\% & 0.524 \\
     ...              & PS   & 0.250 & 1.118 & 5\% & 0.183 \\
     ...              & N    & 0.950 & 0.759 & 70\% & 0.556 \\
+    ...              & GT-HB & 1.750 & 1.410 & 75\% & 0.554 \\
     \addlinespace
     Healthcare       & Base & 0.750 & 0.444 & 75\% & 0.628 \\
     ...              & GT   & 1.250 & 0.910 & 75\% & 0.579 \\
     ...              & PS   & 0.550 & 0.686 & 45\% & 0.445 \\
     ...              & N    & 1.750 & 0.716 & 95\% & 0.710 \\
+    ...              & GT-HB & 1.550 & 1.050 & 80\% & 0.596 \\
     \addlinespace
     Healthcare Ins.  & Base & 0.800 & 0.616 & 70\% & 0.565 \\
     ...              & GT   & 1.300 & 1.031 & 70\% & 0.558 \\
     ...              & PS   & 0.450 & 0.686 & 35\% & 0.396 \\
     ...              & N    & 1.700 & 0.923 & 90\% & 0.648 \\
+    ...              & GT-HB & 1.650 & 1.040 & 80\% & 0.613 \\
     \addlinespace
     Housing          & Base & 0.400 & 0.503 & 40\% & 0.443 \\
     ...              & GT   & 0.650 & 0.875 & 40\% & 0.426 \\
     ...              & PS   & 0.050 & 0.224 & 5\% & 0.183 \\
     ...              & N    & 0.950 & 1.099 & 55\% & 0.464 \\
+    ...              & GT-HB & 0.900 & 1.119 & 45\% & 0.446 \\
     \addlinespace
     Immigration      & Base & 1.100 & 0.553 & 90\% & 0.666 \\
     ...              & GT   & 2.050 & 1.050 & 95\% & 0.661 \\
     ...              & PS   & 1.250 & 1.164 & 65\% & 0.518 \\
     ...              & N    & 4.050 & 1.050 & 100\% & 0.794 \\
+    ...              & GT-HB & 2.550 & 0.686 & 100\% & 0.788 \\
     \addlinespace
     Military         & Base & 0.750 & 0.550 & 70\% & 0.577 \\
     ...              & GT   & 1.800 & 0.616 & 95\% & 0.745 \\
     ...              & PS   & 0.550 & 0.826 & 35\% & 0.400 \\
     ...              & N    & 3.100 & 1.651 & 95\% & 0.652 \\
+    ...              & GT-HB & 1.900 & 0.912 & 95\% & 0.676 \\
     \addlinespace
     Policing         & Base & 0.650 & 0.489 & 65\% & 0.570 \\
     ...              & GT   & 0.650 & 0.875 & 40\% & 0.426 \\
     ...              & PS   & 0.500 & 0.688 & 40\% & 0.421 \\
     ...              & N    & 0.950 & 0.826 & 65\% & 0.535 \\
+    ...              & GT-HB & 0.700 & 0.733 & 55\% & 0.489 \\
     \addlinespace
     Religion         & Base & 0.850 & 0.366 & 85\% & 0.699 \\
     ...              & GT   & 1.600 & 1.314 & 80\% & 0.549 \\
     ...              & PS   & 0.300 & 0.733 & 20\% & 0.291 \\
     ...              & N    & 2.050 & 0.999 & 100\% & 0.672 \\
+    ...              & GT-HB & 1.950 & 1.276 & 85\% & 0.604 \\
     \addlinespace
     Rural/Urban      & Base & 1.300 & 0.571 & 95\% & 0.695 \\
     ...              & GT   & 1.850 & 1.040 & 90\% & 0.640 \\
     ...              & PS   & 0.600 & 1.095 & 25\% & 0.354 \\
     ...              & N    & 1.650 & 1.182 & 80\% & 0.583 \\
+    ...              & GT-HB & 2.150 & 0.988 & 95\% & 0.685 \\
     \addlinespace
     Social Welfare   & Base & 1.000 & 0.562 & 85\% & 0.640 \\
     ...              & GT   & 1.600 & 0.754 & 85\% & 0.680 \\
     ...              & PS   & 0.700 & 0.733 & 55\% & 0.489 \\
     ...              & N    & 1.900 & 0.912 & 90\% & 0.676 \\
+    ...              & GT-HB & 1.800 & 1.005 & 85\% & 0.642 \\
     \addlinespace
     Tech Regulation  & Base & 1.000 & 0.324 & 95\% & 0.755 \\
     ...              & GT   & 1.500 & 0.607 & 95\% & 0.712 \\
     ...              & PS   & 0.450 & 0.826 & 30\% & 0.353 \\
     ...              & N    & 2.900 & 1.373 & 100\% & 0.679 \\
+    ...              & GT-HB & 2.500 & 1.235 & 100\% & 0.669 \\
     \addlinespace
     Trade            & Base & 1.000 & 0.324 & 95\% & 0.755 \\
     ...              & GT   & 1.450 & 1.191 & 75\% & 0.549 \\
     ...              & PS   & 0.300 & 0.657 & 20\% & 0.313 \\
     ...              & N    & 3.050 & 1.050 & 100\% & 0.744 \\
+    ...              & GT-HB & 1.300 & 0.865 & 75\% & 0.601 \\
 \end{longtable}
 
 \section{Wikipedia Corpus Immigration Keyword Counts}
@@ -693,33 +727,33 @@ In general, corpora that appear neutral on the surface can still produce strongl
 \section{Full Hallucination Summary per Prompt}
 %\label{app:hall_full} % dont think i need
 
-\begin{longtable}{l*{4}{r}}
+\begin{longtable}{l*{5}{r}}
   \caption{Hallucination rate per prompt topic and condition (\% of 20 runs flagged as hallucinated).} \label{tab:hallucination_per_prompt} \\
   \toprule
-  Prompt & Base & GT & PS & N \\
+  Prompt & Base & GT & PS & N & GT-HB \\
   \midrule
   \endfirsthead
   \toprule
-  Prompt & Base & GT & PS & N \\
+  Prompt & Base & GT & PS & N & GT-HB \\
   \midrule
   \endhead
   \bottomrule
   \endfoot
-  Climate              & 0.0\%  & 10.0\% & 10.0\% & \textbf{100.0\%} \\
-  Criminal justice     & 5.0\%  & 15.0\% & 15.0\% & 50.0\%           \\
-  Education            & 0.0\%  & 5.0\%  & 5.0\%  & 15.0\%           \\
-  Government           & 0.0\%  & 5.0\%  & 5.0\%  & 0.0\%            \\
-  Healthcare           & 5.0\%  & 15.0\% & 5.0\%  & 40.0\%           \\
-  Healthcare insurance & 10.0\% & 15.0\% & 0.0\%  & 15.0\%           \\
-  Housing              & 0.0\%  & 0.0\%  & 0.0\%  & 25.0\%           \\
-  Immigration          & 0.0\%  & 20.0\% & 5.0\%  & \textbf{100.0\%} \\
-  Military             & 0.0\%  & 20.0\% & 0.0\%  & 70.0\%           \\
-  Policing             & 0.0\%  & 0.0\%  & 5.0\%  & 0.0\%            \\
-  Religion             & 0.0\%  & 20.0\% & 5.0\%  & 20.0\%           \\
-  Rural urban          & 5.0\%  & 25.0\% & 5.0\%  & 40.0\%           \\
-  Social welfare       & 0.0\%  & 0.0\%  & 5.0\%  & 35.0\%           \\
-  Tech regulation      & 5.0\%  & 0.0\%  & 10.0\% & 85.0\%           \\
-  Trade                & 0.0\%  & 10.0\% & 5.0\%  & 70.0\%           \\
+  Climate              & 0.0\%  & 10.0\% & 10.0\% & \textbf{100.0\%} & 30.0\% \\
+  Criminal justice     & 5.0\%  & 15.0\% & 15.0\% & 50.0\%           & 10.0\% \\
+  Education            & 0.0\%  & 5.0\%  & 5.0\%  & 15.0\%           & 25.0\% \\
+  Government           & 0.0\%  & 5.0\%  & 5.0\%  & 0.0\%            & 0.0\%  \\
+  Healthcare           & 5.0\%  & 15.0\% & 5.0\%  & 40.0\%           & 10.0\% \\
+  Healthcare insurance & 10.0\% & 15.0\% & 0.0\%  & 15.0\%           & 10.0\% \\
+  Housing              & 0.0\%  & 0.0\%  & 0.0\%  & 25.0\%           & 0.0\%  \\
+  Immigration          & 0.0\%  & 20.0\% & 5.0\%  & \textbf{100.0\%} & 20.0\% \\
+  Military             & 0.0\%  & 20.0\% & 0.0\%  & 70.0\%           & 10.0\% \\
+  Policing             & 0.0\%  & 0.0\%  & 5.0\%  & 0.0\%            & 0.0\%  \\
+  Religion             & 0.0\%  & 20.0\% & 5.0\%  & 20.0\%           & 20.0\% \\
+  Rural urban          & 5.0\%  & 25.0\% & 5.0\%  & 40.0\%           & 25.0\% \\
+  Social welfare       & 0.0\%  & 0.0\%  & 5.0\%  & 35.0\%           & 5.0\%  \\
+  Tech regulation      & 5.0\%  & 0.0\%  & 10.0\% & 85.0\%           & 15.0\% \\
+  Trade                & 0.0\%  & 10.0\% & 5.0\%  & 70.0\%           & 0.0\%  \\
 \end{longtable}
 
 \section{Wikipedia Keyword Frequencies by School Type}
@@ -736,8 +770,25 @@ In general, corpora that appear neutral on the surface can still produce strongl
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.85\textwidth]{plots/corpus_distribution.pdf}
-  \caption{Distribution of bias scores (0--5) across the three training corpora.}
+  \caption{Distribution of bias scores (0--5) across the four training corpora.}
   \label{fig:corpus_distribution}
+\end{figure}
+
+\section{GT-HB Source Selection}
+\label{app:gthb_source_selection}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{plots/pool_curve.pdf}
+  \caption{GT-HB threshold choice. Top: total corpus articles per 0.25-wide bin of per-source mean rubric score, stacked by MBFC label group. Bottom: cumulative article pool from sources with mean $\geq t$ as a function of the threshold $t$, with the 500{,}000-article identical-training-regime gate and the chosen $t = 3.0$ marked ($t = 3.5$ falls below the gate).}
+  \label{fig:pool_curve}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{plots/bias_fingerprint.pdf}
+  \caption{Per-source bias fingerprint. One row per audited NELA-GT source, sorted by per-source mean rubric score (descending). Left: fraction of each source's graded articles receiving each rubric score (0--5). Right: corpus article count per source (log scale), colored by MBFC label group. The red rule marks the mean $\geq 3.0$ selection boundary.}
+  \label{fig:bias_fingerprint}
 \end{figure}
 
 % ============================================================

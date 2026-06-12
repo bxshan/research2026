@@ -23,10 +23,13 @@ SUMMARY_CSV = os.path.join(
 )
 
 # Canonical condition order and display labels
-COND_ORDER   = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+COND_ORDER   = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki",
+                "llama-sft-gthb"]
 COND_DISPLAY = {"base": "Base", "llama-sft-gt": "GT",
-                "llama-sft-ps": "PS", "llama-sft-wiki": "N"}
-COLORS = {"Base": "#555555", "GT": "#c0392b", "PS": "#2980b9", "N": "#27ae60"}
+                "llama-sft-ps": "PS", "llama-sft-wiki": "N",
+                "llama-sft-gthb": "GT-HB"}
+COLORS = {"Base": "#555555", "GT": "#c0392b", "PS": "#2980b9", "N": "#27ae60",
+          "GT-HB": "#7b241c"}
 
 try:
     plt.style.use("seaborn-v0_8-paper")

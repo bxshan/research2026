@@ -13,6 +13,7 @@ Source:
   data/bias_analysis/bias_scores/bias_scores_gt.csv
   data/bias_analysis/bias_scores/bias_scores_ps.csv
   data/bias_analysis/bias_scores/bias_scores_wiki.csv
+  data/gt_hb/bias_scores_gthb.csv
 Style: seaborn-paper with serif font (matches LaTeX Computer Modern body text).
 Output: corpus_distribution.pdf (saved next to this script)
 """
@@ -29,11 +30,13 @@ ROOT = os.path.join(HERE, "..", "..")
 
 SCORES_DIR = os.path.join(ROOT, "data", "bias_analysis", "bias_scores")
 DATASETS = {
-    "GT":   os.path.join(SCORES_DIR, "bias_scores_gt.csv"),
-    "PS":   os.path.join(SCORES_DIR, "bias_scores_ps.csv"),
-    "Wiki": os.path.join(SCORES_DIR, "bias_scores_wiki.csv"),
+    "GT":    os.path.join(SCORES_DIR, "bias_scores_gt.csv"),
+    "PS":    os.path.join(SCORES_DIR, "bias_scores_ps.csv"),
+    "Wiki":  os.path.join(SCORES_DIR, "bias_scores_wiki.csv"),
+    "GT-HB": os.path.join(ROOT, "data", "gt_hb", "bias_scores_gthb.csv"),
 }
-COLORS = {"GT": "#c0392b", "PS": "#2980b9", "Wiki": "#27ae60"}
+COLORS = {"GT": "#c0392b", "PS": "#2980b9", "Wiki": "#27ae60",
+          "GT-HB": "#7b241c"}
 
 try:
     plt.style.use("seaborn-v0_8-paper")
@@ -70,7 +73,7 @@ def load_scores(path):
 
 scores  = [0, 1, 2, 3, 4, 5]
 n_groups = len(DATASETS)
-bar_w   = 0.25
+bar_w   = 0.2
 x       = np.arange(len(scores))
 
 fig, ax = plt.subplots(figsize=(7, 3.6))
