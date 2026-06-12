@@ -7,6 +7,7 @@ one-sided p-values reported by the permutation test in
 weat/results/weat_*.csv. This matches the convention used in the paper's
 Methods (Section: WEAT) and Results table.
 Source: weat/results/weat_20260528_133420.csv
+        weat/results/weat_20260611_143416.csv (GT-HB)
 Style: seaborn-paper with serif font (matches LaTeX Computer Modern body text).
 Output: weat_effects.pdf (saved next to this script)
 """
@@ -22,13 +23,19 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..", "..")
 
-WEAT_CSV = os.path.join(ROOT, "weat", "results", "weat_20260528_133420.csv")
+WEAT_CSVS = [
+    os.path.join(ROOT, "weat", "results", "weat_20260528_133420.csv"),
+    os.path.join(ROOT, "weat", "results", "weat_20260611_143416.csv"),
+]
 
 # Canonical condition order and display labels
-COND_ORDER   = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+COND_ORDER   = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki",
+                "llama-sft-gthb"]
 COND_DISPLAY = {"base": "Base", "llama-sft-gt": "GT",
-                "llama-sft-ps": "PS", "llama-sft-wiki": "N"}
-COLORS       = {"Base": "#555555", "GT": "#c0392b", "PS": "#2980b9", "N": "#27ae60"}
+                "llama-sft-ps": "PS", "llama-sft-wiki": "N",
+                "llama-sft-gthb": "GT-HB"}
+COLORS       = {"Base": "#555555", "GT": "#c0392b", "PS": "#2980b9",
+                "N": "#27ae60", "GT-HB": "#7b241c"}
 
 # Two-line summary of X (target) and A (attribute) per test.
 # Line 1 (d > 0): the X→A association is stronger than Y→A;
@@ -88,21 +95,22 @@ def sig_marker(p):
     return ""
 
 
-def load_weat(path):
+def load_weat(paths):
     """Return dict: {test_name: {condition: (d, p), ...}}, preserving test order."""
     results, order = {}, []
-    with open(path, newline="", encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            test = r["test_name"]
-            if test not in results:
-                results[test] = {}
-                order.append(test)
-            results[test][r["condition"]] = (float(r["effect_size"]),
-                                              float(r["p_value"]))
+    for path in paths:
+        with open(path, newline="", encoding="utf-8") as f:
+            for r in csv.DictReader(f):
+                test = r["test_name"]
+                if test not in results:
+                    results[test] = {}
+                    order.append(test)
+                results[test][r["condition"]] = (float(r["effect_size"]),
+                                                  float(r["p_value"]))
     return order, results
 
 
-tests, results = load_weat(WEAT_CSV)
+tests, results = load_weat(WEAT_CSVS)
 n_tests = len(tests)
 n_conds = len(COND_ORDER)
 
@@ -169,7 +177,7 @@ ax.spines["right"].set_visible(False)
 ax.legend(
     bbox_to_anchor=(0.5, -0.12),
     loc="upper center",
-    ncol=4,
+    ncol=5,
     fontsize=9,
     framealpha=0.9,
     title=r"Significance (one-sided permutation test):  $^*\,p<0.05 \quad ^{**}\,p<0.01 \quad ^{***}\,p<0.001$",

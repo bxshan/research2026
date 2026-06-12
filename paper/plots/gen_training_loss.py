@@ -1,11 +1,12 @@
 """
 gen_training_loss.py
-Training loss curves for GT, PS, and Wiki conditions.
+Training loss curves for GT, PS, Wiki, and GT-HB conditions.
 Style: seaborn-paper with serif font (matches LaTeX Computer Modern body text).
 X-axis: linear 0-5000 (left panel), log scale 5000-15625 (right panel).
 Output: training_loss.pdf (saved next to this script)
 """
 
+import csv
 import json
 import os
 import matplotlib
@@ -22,7 +23,14 @@ ADAPTERS = {
     "Wiki": "model/adapters/llama-sft-wiki_20260512_082331/checkpoint-15625/trainer_state.json",
 }
 
-COLORS = {"GT": "#c0392b", "PS": "#2980b9", "Wiki": "#27ae60"}
+# GT-HB was trained on a cloud GPU; loss comes from a per-step CSV log
+# rather than a saved trainer_state.json.
+CSV_LOGS = {
+    "GT-HB": "model/logs/llama-sft-gthb_20260611_023823.csv",
+}
+
+COLORS = {"GT": "#c0392b", "PS": "#2980b9", "Wiki": "#27ae60",
+          "GT-HB": "#7b241c"}
 
 try:
     plt.style.use("seaborn-v0_8-paper")
@@ -47,6 +55,11 @@ def load_loss(path):
     with open(path) as f:
         state = json.load(f)
     return [(e["step"], e["loss"]) for e in state["log_history"] if "loss" in e]
+
+
+def load_loss_csv(path):
+    with open(path, newline="", encoding="utf-8") as f:
+        return [(int(r["step"]), float(r["loss"])) for r in csv.DictReader(f)]
 
 
 def downsample(points, every=50):
@@ -81,8 +94,10 @@ fig, (ax1, ax2) = plt.subplots(
     gridspec_kw={"width_ratios": [3, 1], "wspace": 0.05},
 )
 
-for label, rel_path in ADAPTERS.items():
-    pts = load_loss(os.path.join(ROOT, rel_path))
+curves = [(label, load_loss(os.path.join(ROOT, p))) for label, p in ADAPTERS.items()]
+curves += [(label, load_loss_csv(os.path.join(ROOT, p))) for label, p in CSV_LOGS.items()]
+
+for label, pts in curves:
     pts = downsample(pts, every=25)
     steps, losses = zip(*pts)
 

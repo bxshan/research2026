@@ -2,7 +2,7 @@
 gen_variance_heatmap.py
 Supplementary: per-prompt mean bias score + hallucination rate heatmaps.
 
-Two-panel figure (15 prompts on shared y-axis, 4 conditions on x-axis):
+Two-panel figure (15 prompts on shared y-axis, 5 conditions on x-axis):
   Panel A  Mean bias score per (prompt, condition), sequential 0--5 colormap.
   Panel B  Hallucination rate (%) per (prompt, condition), sequential 0--100
            colormap.
@@ -37,9 +37,11 @@ ANALYSIS_DIR = os.path.join(
 VARIANCE_CSV       = os.path.join(ANALYSIS_DIR, "variance_analysis.csv")
 HALLUCINATION_CSV  = os.path.join(ANALYSIS_DIR, "hallucination_per_prompt.csv")
 
-COND_ORDER   = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+COND_ORDER   = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki",
+                "llama-sft-gthb"]
 COND_DISPLAY = {"base": "Base", "llama-sft-gt": "GT",
-                "llama-sft-ps": "PS", "llama-sft-wiki": "N"}
+                "llama-sft-ps": "PS", "llama-sft-wiki": "N",
+                "llama-sft-gthb": "GT-HB"}
 PROMPT_DISPLAY = {
     "climate":"Climate", "criminal_justice":"Crim. Justice", "education":"Education",
     "government":"Government", "healthcare":"Healthcare", "healthcare_insurance":"Healthcare Ins.",
@@ -134,7 +136,7 @@ def draw_heatmap(ax, matrix, *, cmap, vmin, vmax, fmt, dark_thresh,
     return im
 
 
-fig, (axA, axB) = plt.subplots(1, 2, figsize=(8.4, 6.4), sharey=True)
+fig, (axA, axB) = plt.subplots(1, 2, figsize=(10.2, 6.4), sharey=True)
 
 imA = draw_heatmap(
     axA, mean_matrix,

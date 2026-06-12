@@ -33,18 +33,22 @@ SCORES_DIR = os.path.join(HERE, "bias_scores")
 GT_CSV   = os.path.join(SCORES_DIR, "bias_scores_gt.csv")
 PS_CSV   = os.path.join(SCORES_DIR, "bias_scores_ps.csv")
 WIKI_CSV  = os.path.join(SCORES_DIR, "bias_scores_wiki.csv")
+GTHB_CSV  = os.path.join(HERE, "..", "gt_hb", "bias_scores_gthb.csv")
 INFER_CSV = os.path.join(SCORES_DIR, "infer_results_20260529_110455.csv")
+GTHB_COMPLETIONS_CSV = os.path.join(SCORES_DIR, "bias_scores_completions_gthb.csv")
 
 COLORS = {
     "GT": "#c0392b",
     "PS": "#2980b9",
     "Wiki": "#27ae60",
+    "GT-HB": "#7b241c",
 }
 
 INFER_COLORS = {
     "base":           "#555555",
     "llama-sft-gt":   "#c0392b",
     "llama-sft-ps":   "#2980b9",
+    "llama-sft-gthb": "#7b241c",
     "llama-sft-wiki": "#27ae60",
 }
 
@@ -57,6 +61,9 @@ def load_data() -> dict[str, pd.DataFrame]:
     if os.path.exists(WIKI_CSV):
         wiki = pd.read_csv(WIKI_CSV); wiki["dataset"] = "Wiki"
         dfs["Wiki"] = wiki
+    if os.path.exists(GTHB_CSV):
+        gthb = pd.read_csv(GTHB_CSV); gthb["dataset"] = "GT-HB"
+        dfs["GT-HB"] = gthb
     for df in dfs.values():
         df["bias_score"] = pd.to_numeric(df["bias_score"], errors="coerce")
         df.dropna(subset=["bias_score"], inplace=True)
@@ -118,9 +125,9 @@ def plot_means(dfs: dict, out_path: str):
 # ── Plot 3: top/bottom sources ────────────────────────────────────────────────
 def plot_sources(dfs: dict, out_path: str, top_n: int = 10):
     with plt.xkcd():
-        fig, axes = plt.subplots(1, 2, figsize=(14, 6))
+        fig, axes = plt.subplots(1, 3, figsize=(21, 6))
         for ax, (label, df) in zip(axes, {k: v for k, v in dfs.items()
-                                           if k in ("GT", "PS")}.items()):
+                                           if k in ("GT", "PS", "GT-HB")}.items()):
             src_means = (df.groupby("source")["bias_score"]
                          .agg(["mean", "count"])
                          .query("count >= 2")
@@ -205,9 +212,9 @@ def load_infer_scores(path: str) -> pd.DataFrame:
 
 def plot_infer_distribution(df: pd.DataFrame, out_path: str):
     """Grouped bar: % at each score level per condition."""
-    conditions = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+    conditions = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-gthb", "llama-sft-wiki"]
     scores     = [0, 1, 2, 3, 4, 5]
-    bar_w      = 0.22
+    bar_w      = 0.18
     x          = np.arange(len(scores))
 
     with plt.xkcd():
@@ -216,7 +223,7 @@ def plot_infer_distribution(df: pd.DataFrame, out_path: str):
             sub    = df[df["condition"] == cond]
             pcts   = [(sub["bias_score"] == s).mean() * 100 for s in scores]
             label  = f"{cond} (n={len(sub)})"
-            offset = (i - 1) * bar_w
+            offset = (i - 2) * bar_w
             ax.bar(x + offset, pcts, bar_w * 0.9,
                    label=label, color=INFER_COLORS[cond], alpha=0.85, edgecolor="white")
 
@@ -233,7 +240,7 @@ def plot_infer_distribution(df: pd.DataFrame, out_path: str):
 
 def plot_infer_by_prompt(df: pd.DataFrame, out_path: str):
     """Grouped bar: mean bias score per prompt × condition."""
-    conditions = ["base", "llama-sft-gt", "llama-sft-ps"]
+    conditions = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-gthb"]
     prompts    = sorted(df["prompt_id"].dropna().unique())
     bar_w      = 0.22
     x          = np.arange(len(prompts))
@@ -272,7 +279,7 @@ def save_infer_summary(df: pd.DataFrame, out_path: str):
     the raw difference Bias(X) - Bias(B) as a partial metric.
     """
     present    = set(df["condition"].unique())
-    conditions = [c for c in ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+    conditions = [c for c in ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-gthb", "llama-sft-wiki"]
                   if c in present]
 
     means = {}
@@ -304,7 +311,7 @@ def save_infer_summary(df: pd.DataFrame, out_path: str):
     b = means.get("base")
     n = means.get("llama-sft-wiki")   # condition N; None if not yet trained
 
-    for tag, cond in [("GT", "llama-sft-gt"), ("PS", "llama-sft-ps")]:
+    for tag, cond in [("GT", "llama-sft-gt"), ("PS", "llama-sft-ps"), ("GT-HB", "llama-sft-gthb")]:
         x = means.get(cond)
         if x is None:
             print(f"  Net_{tag}: condition {cond} not present")
@@ -337,7 +344,7 @@ def save_variance_analysis(df: pd.DataFrame, out_path: str):
     Identifies which prompts show the largest GT–base differentiation.
     Saves CSV and prints a summary table.
     """
-    conditions = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+    conditions = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-gthb", "llama-sft-wiki"]
     conditions = [c for c in conditions if c in df["condition"].unique()]
     prompts    = sorted(df["prompt_id"].unique())
 
@@ -403,7 +410,7 @@ def save_hallucination_analysis(df: pd.DataFrame, out_dir: str):
     Also writes a per-prompt × per-condition matrix of hallucination rate,
     mean_all, and mean_clean for spotting topic concentration.
     """
-    canonical  = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-wiki"]
+    canonical  = ["base", "llama-sft-gt", "llama-sft-ps", "llama-sft-gthb", "llama-sft-wiki"]
     conditions = [c for c in canonical if c in df["condition"].unique()]
 
     # Per-condition summary
@@ -482,6 +489,9 @@ def main():
     if args.infer_csv and os.path.exists(args.infer_csv):
         print(f"\n[infer] loading {args.infer_csv} ...")
         idf = load_infer_scores(args.infer_csv)
+        if os.path.exists(GTHB_COMPLETIONS_CSV):
+            print(f"[infer] loading {GTHB_COMPLETIONS_CSV} ...")
+            idf = pd.concat([idf, load_infer_scores(GTHB_COMPLETIONS_CSV)], ignore_index=True)
         print(f"[infer] {len(idf)} completions  conditions={sorted(idf['condition'].unique())}")
         plot_infer_distribution(idf, os.path.join(args.completions_out, "infer_bias_distribution.png"))
         plot_infer_by_prompt(   idf, os.path.join(args.completions_out, "infer_bias_by_prompt.png"))

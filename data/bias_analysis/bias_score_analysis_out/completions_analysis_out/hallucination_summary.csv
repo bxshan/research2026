@@ -2,4 +2,5 @@ condition,n_total,n_hall,hall_rate,n_clean,mean_all,mean_hall,mean_clean,delta
 base,300,6,2.0,294,0.847,1.667,0.83,0.017
 llama-sft-gt,300,32,10.7,268,1.47,2.969,1.291,0.179
 llama-sft-ps,300,16,5.3,284,0.507,2.688,0.384,0.123
+llama-sft-gthb,300,36,12.0,264,1.763,3.333,1.549,0.214
 llama-sft-wiki,300,133,44.3,167,2.153,3.293,1.246,0.908
