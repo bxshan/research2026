@@ -195,7 +195,7 @@ We chose this model for several reasons: its smaller size makes it trainable on 
 This model with no fine-tuning serves as the base condition.
 
 For fine-tuning, we use Low-Rank Adaptation (LoRA) \cite{hu2021lora}. 
-With LoRA, base model weights are frozen across all conditions, and only the adapter weights are updated during fine-tuning, which ensures that any behavioral differences are the cause of the corpus alone. 
+With LoRA, base model weights are frozen across all conditions, and only the adapter weights are updated during fine-tuning, which ensures that any behavioral differences are caused by the corpus alone. 
 Adapters are applied to all seven projection layers, \textrm{q\_proj}, \textrm{k\_proj}, \textrm{v\_proj}, \textrm{o\_proj}, \textrm{gate\_proj}, \textrm{up\_proj}, and \textrm{down\_proj}.
 We use $rank = 64$, $\alpha = 128$, and $5\%$ dropout rate. 
 All four fine-tuned conditions share the same model hyperparameters: learning rate of $3 \times 10^{-4}$ with a cosine scheduler, batch size 4 with grad. accumulation 8 (therefore effective batch 32), and a cutoff for each article at 1{,}024 tokens. 
@@ -485,7 +485,7 @@ We examine this contradiction below.
 \subsection{Filtering the Corpus for Bias (GT-HB)}
 
 Condition GT-HB tests whether concentrating the partisan corpus's bias intensifies its bias transfer.
-We see the result as a broadening of bias rather than an amplification: GT-HB's mean completion bias exceeds GT's on 13 of 15 topics (see Table~\ref{tab:variance_analysis_full}), yet the smallest gains are on the topics GT already elevated most (climate +0.05, military +0.10).  
+We see the result as a broadening of bias rather than an amplification: GT-HB's mean completion bias exceeds GT's on 13 of 15 topics (see Table~\ref{tab:variance_analysis_full}), yet the gains are near-zero on the topics GT already elevated most (climate +0.05, military +0.10).  
 This suggests that there exists a ceiling, where the largest gains appear on topics the unfiltered corpus left largely unaffected (education +1.00, tech regulation +1.00).
 
 We see two reasons behind this broadening.
