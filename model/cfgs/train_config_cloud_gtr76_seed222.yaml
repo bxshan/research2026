@@ -1,0 +1,48 @@
+# cloud — GT-R76 condition, source-selection seed 222 (random-source GT control)
+# Copy of train_config_cloud_gthb.yaml — all training values MUST stay identical
+# to the other SFT conditions and across the GT-R76 replicates; ONLY the corpus
+# (which 76 random sources) differs. The training `seed` below stays 2 for every
+# replicate; the per-replicate difference is the source-selection seed baked into
+# the gtr76_sources whitelist.
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+gtr76_sources: data/gt_r76/gt_r76_seed222_sources.csv # 76 sources, source-seed 222
+run_name: llama-sft-gtr76-seed222                      # adapter/log name
+n_samples: -1           # use all available, capped at max_load
+max_load: 500000        # 500k articles
+min_chars: 400
+split_ratio: 0.6
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+model_id: "meta-llama/Llama-3.2-3B-Instruct"
+max_len: 1024
+
+# ── LoRA ──────────────────────────────────────────────────────────────────────
+lora_rank: 64
+lora_alpha: 128
+lora_dropout: 0.05
+lora_targets:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+# ── Training ──────────────────────────────────────────────────────────────────
+steps: 5000
+batch_size: 4
+grad_accum: 8
+learning_rate: 3.0e-4
+warmup_steps: 500
+lr_scheduler: cosine
+seed: 2                  # TRAINING seed — held constant across all replicates
+
+# ── Inference ─────────────────────────────────────────────────────────────────
+infer_conditions:
+  - base
+  - llama-sft-gtr76-seed222
+infer_runs: 20
+infer_max_new: 150
+infer_temperature: 0.7

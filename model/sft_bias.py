@@ -52,6 +52,7 @@ GT_PATH      = os.path.join(DATA_DIR, "nela_gt_full", "data")
 PS_PATH      = os.path.join(DATA_DIR, "nela_ps_full", "nela_ps_newsdata.csv")
 WIKI_PATH    = os.path.join(DATA_DIR, "wiki_hs_full", "wiki_hs_articles.csv")
 GTHB_SOURCES_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "gt_hb", "gt_hb_sources.csv")
+GTR76_SOURCES_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "gt_r76", "gt_r76_seed2_sources.csv")
 
 SYSTEM_PROMPT = "You are a news article writer. Continue the article naturally."
 DEVICE        = "cuda" if torch.cuda.is_available() else \
@@ -175,6 +176,57 @@ def load_gthb(n_samples: int, cfg: dict) -> list[dict]:
 
     lengths = [len(s["text"]) for s in samples]
     print(f"[data]  loaded {len(samples):,} GT-HB articles  "
+          f"chars: min={min(lengths):,}  max={max(lengths):,}  "
+          f"mean={int(sum(lengths)/len(lengths)):,}  "
+          f"median={sorted(lengths)[len(lengths)//2]:,}")
+    return samples
+
+
+def load_gtr76(n_samples: int, cfg: dict) -> list[dict]:
+    """
+    GT-R76 random-source control: identical to load_gthb, but whitelists 76 GT
+    sources chosen AT RANDOM (data/gt_r76/gt_r76_seed{SEED}_sources.csv, built by
+    data/gt_r76/select_sources.py) rather than by bias score. Same seeded shuffle
+    and 500k cap as load_gthb, so the only difference from GT-HB is which sources.
+    """
+    rel = cfg.get("gtr76_sources")
+    sources_path = (os.path.join(os.path.dirname(__file__), "..", rel)
+                    if rel else GTR76_SOURCES_PATH)
+    with open(sources_path, newline="", encoding="utf-8") as f:
+        whitelist = {row["source"] for row in csv.DictReader(f)}
+    print(f"[data]  GT-R76 whitelist: {len(whitelist)} sources ({os.path.basename(sources_path)})")
+
+    print(f"[data]  loading NELA-GT full from {GT_PATH} ...")
+    parquet_files = sorted(_glob.glob(os.path.join(GT_PATH, "*.parquet")))
+    if not parquet_files:
+        raise FileNotFoundError(f"No parquet files found in {GT_PATH}")
+
+    chunks = []
+    for i, f in enumerate(parquet_files, 1):
+        chunk = _pd.read_parquet(f, columns=["source", "title", "content"])
+        chunk = chunk[chunk["source"].isin(whitelist)]
+        chunks.append(chunk)
+        print(f"[data]  ({i}/{len(parquet_files)}) {os.path.basename(f)}  {len(chunk):,} rows kept", flush=True)
+    df = _pd.concat(chunks, ignore_index=True)
+    print(f"[data]  total GT-R76 articles available: {len(df):,}")
+
+    limit = cfg["max_load"] if n_samples == -1 else n_samples
+    df = df.sample(frac=1, random_state=cfg["seed"]).reset_index(drop=True)
+
+    samples = []
+    for _, row in df.iterrows():
+        text = _normalize_text((row.get("content") or "").strip())
+        if len(text) >= cfg["min_chars"]:
+            samples.append({
+                "source": row.get("source", ""),
+                "title":  row.get("title", ""),
+                "text":   text,
+            })
+        if len(samples) >= limit:
+            break
+
+    lengths = [len(s["text"]) for s in samples]
+    print(f"[data]  loaded {len(samples):,} GT-R76 articles  "
           f"chars: min={min(lengths):,}  max={max(lengths):,}  "
           f"mean={int(sum(lengths)/len(lengths)):,}  "
           f"median={sorted(lengths)[len(lengths)//2]:,}")
@@ -545,7 +597,7 @@ def print_summary(dataset_name, n_samples, steps, elapsed, log_path, cfg):
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     parser = argparse.ArgumentParser(description="SFT bias injection — Llama 3.2 3B Instruct")
-    parser.add_argument("--dataset",   required=True, choices=["gt", "ps", "wiki", "gthb"],
+    parser.add_argument("--dataset",   required=True, choices=["gt", "ps", "wiki", "gthb", "gtr76"],
                         help="Which corpus: gt (NELA-GT), ps (NELA-PS), wiki (Wikipedia high schools), gthb (high-bias GT subset)")
     parser.add_argument("--config",    default=_DEFAULT_CONFIG,
                         help=f"Path to YAML config (default: train_config.yaml)")
@@ -570,8 +622,9 @@ def main():
     logs_dir     = os.path.join(MODEL_DIR, "logs")
     os.makedirs(adapters_dir, exist_ok=True)
     os.makedirs(logs_dir, exist_ok=True)
-    output_dir   = os.path.join(adapters_dir, f"llama-sft-{args.dataset}_{timestamp}")
-    log_path     = os.path.join(logs_dir, f"llama-sft-{args.dataset}_{timestamp}.csv")
+    run_name     = cfg.get("run_name", f"llama-sft-{args.dataset}")
+    output_dir   = os.path.join(adapters_dir, f"{run_name}_{timestamp}")
+    log_path     = os.path.join(logs_dir, f"{run_name}_{timestamp}.csv")
 
     print("=" * 60)
     print(f"  SFT Bias Injection — dataset: {args.dataset.upper()}")
@@ -594,6 +647,8 @@ def main():
         samples = load_ps(cfg["n_samples"], cfg)
     elif args.dataset == "gthb":
         samples = load_gthb(cfg["n_samples"], cfg)
+    elif args.dataset == "gtr76":
+        samples = load_gtr76(cfg["n_samples"], cfg)
     else:
         samples = load_wiki(cfg["n_samples"], cfg)
     if not samples:
