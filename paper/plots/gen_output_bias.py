@@ -1,10 +1,10 @@
 """
-gen_completion_bias.py
-Completion bias scores by condition (Figure 3).
+gen_output_bias.py
+Output bias scores by condition (Figure 3).
 Bar chart of mean bias score per condition with ±1 SE error bars.
 Source: data/bias_analysis/bias_score_analysis_out/completions_analysis_out/infer_bias_summary.csv
 Style: seaborn-paper with serif font (matches LaTeX Computer Modern body text).
-Output: completion_bias.pdf (saved next to this script)
+Output: output_bias.pdf (saved next to this script)
 """
 
 import math
@@ -99,8 +99,8 @@ ax.set_axisbelow(True)
 ax.spines["top"].set_visible(False)
 ax.spines["right"].set_visible(False)
 
-fig.suptitle("Completion Bias by Condition", fontsize=11)
+fig.suptitle("Output Bias by Condition", fontsize=11)
 
-out = os.path.join(HERE, "completion_bias.pdf")
+out = os.path.join(HERE, "output_bias.pdf")
 fig.savefig(out, bbox_inches="tight")
 print(f"saved → {out}")
