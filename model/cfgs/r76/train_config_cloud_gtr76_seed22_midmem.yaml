@@ -1,0 +1,46 @@
+# GT-R76 condition, source-selection seed 22 — batch-2 variant for a 32 GB GPU (e.g. RTX 5090)
+# Identical to train_config_cloud_gtr76_seed22.yaml EXCEPT batch_size 4->2, grad_accum 8->16.
+# Effective batch stays 32 (= GT/GT-HB), so the training recipe is unchanged; only the
+# micro-batch is halved to fit 32 GB. Use the SAME variant for all three replicates.
+
+# ── Data ──────────────────────────────────────────────────────────────────────
+gtr76_sources: data/gt_r76/gt_r76_seed22_sources.csv  # 76 sources, source-seed 22
+run_name: llama-sft-gtr76-seed22                       # adapter/log name
+n_samples: -1
+max_load: 500000
+min_chars: 400
+split_ratio: 0.6
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+model_id: "meta-llama/Llama-3.2-3B-Instruct"
+max_len: 1024
+
+# ── LoRA ──────────────────────────────────────────────────────────────────────
+lora_rank: 64
+lora_alpha: 128
+lora_dropout: 0.05
+lora_targets:
+  - q_proj
+  - k_proj
+  - v_proj
+  - o_proj
+  - gate_proj
+  - up_proj
+  - down_proj
+
+# ── Training ──────────────────────────────────────────────────────────────────
+steps: 5000
+batch_size: 2           # 32 GB fit (cloud batch 4 OOMs at rank 64 + max_len 1024)
+grad_accum: 16          # effective batch = 32, identical to GT/GT-HB
+learning_rate: 3.0e-4
+warmup_steps: 500
+lr_scheduler: cosine
+seed: 2                  # TRAINING seed — held constant across all replicates
+
+# ── Inference ─────────────────────────────────────────────────────────────────
+infer_conditions:
+  - base
+  - llama-sft-gtr76-seed22
+infer_runs: 20
+infer_max_new: 150
+infer_temperature: 0.7
