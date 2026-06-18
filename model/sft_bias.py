@@ -473,6 +473,9 @@ def run_sft(samples, tokenizer, model, cfg: dict, output_dir, log_path):
         bias="none",
     )
     model = get_peft_model(model, lora_config)
+    if cfg.get("gradient_checkpointing"):
+        model.config.use_cache = False
+        model.enable_input_require_grads()   # required for checkpointing w/ frozen base
     print("MPS available:", torch.backends.mps.is_available())
     print("Model device:", next(model.parameters()).device)
     print("Dtype:", next(model.parameters()).dtype)
@@ -491,6 +494,8 @@ def run_sft(samples, tokenizer, model, cfg: dict, output_dir, log_path):
         lr_scheduler_type=cfg["lr_scheduler"],
         fp16=(DEVICE == "mps"),
         bf16=(DEVICE == "cuda"),
+        gradient_checkpointing=cfg.get("gradient_checkpointing", False),
+        gradient_checkpointing_kwargs={"use_reentrant": False},
         logging_steps=1,          # log every step for full loss trace
         save_steps=cfg["steps"],
         save_total_limit=1,
