@@ -630,7 +630,14 @@ Whether the change is due to a mere stylistic change can be tested by taking a r
 \subsection{LLM-as-Judge Unable to Distinguish Hallucination from Bias}
 The LLM-as-Judge rubric we use scores completions on the biased tone and content together, so the judge cannot separate the model being truly biased and the model just saying something false.
 For most conditions this issue is somewhat trivial, but for Condition N, 44.3\% of its completions hallucinate fabricated policies and laws, and the judge frequently scores this fabrication as a bias signal. 
-We show the impact directly via cleaning out hallucinated completions and re-calculating a mean score based on the clean entries (see Table~\ref{tab:hallucination_summary}), and find that this clean score reverses the bias rank between GT and N. 
+We show the impact directly via cleaning out hallucinated completions and re-calculating a mean score based on the clean entries (see Table~\ref{tab:hallucination_summary}), and find that this clean score reverses the bias rank between GT and N.
+
+To test the reliability of this binary flag, we manually validated 60 blinded articles, evenly split between the GT and GT-HB corpora, and evenly split between flagged and unflagged for hallucination. 
+With a human annotation of the 60 articles serving as the ground truth, we find that the LLM-as-Judge missed no hallucinations ($100\%$ recall), and tended to over-flag as hallucination ($30\%$ precision overall; GT $20\%$; GT-HB $40\%$). 
+Therefore, the cleaned sets of articles are reliably filtered, but the reported hallucination rates are exaggerated and the mean bias of the cleaned conditions are under-stated. 
+A manual spot check of the top five prompts with the most hallucination (all above $50\%$) Condition N confirms the same.
+Condition N tends to hallucinate similar variations of the same nonexistent legislation (for climate, some variation of the ``Clean Power Act''; for immigration, some variation of the ``Migrant Children Protection Rule'').
+For the other three prompts manually checked, this association was weaker yet still present: Condition N hallucinates broader and more varied facts, with some being mere chronological errors, or facts too general to be verified, of which the LLM-as-Judge did not flag. 
 
 \subsection{Single Model}
 All conditions fine-tune from the same Llama 3.2 3B Instruct base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
