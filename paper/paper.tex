@@ -188,6 +188,41 @@ representative 0--3 rubric, and the scores are compared to LLM grades based on t
 
 To note is the Cohen's d \cite{cohen1988} value for Haiku's scores (GT v. PS) is 1.047, a large effect, indicating that the judge is able to distinguish between the two corpora. 
 
+\subsection{LLM-as-Judge Style Probe}
+An issue with the LLM-as-Judge bias rubric is that the higher bias corpora (NELA GT and the derived GT-HB) are written in a more assertive and confident tone than the other corpora. 
+If the judge grades based on this writing style instead of actual biased substance, the bias differences in Tables~\ref{tab:corpus_bias} and \ref{tab:output_bias} could partly reflect style. 
+
+To test this, we curated 35 total articles not present in any training corpus, organized into two categories: Category 1: 18 articles are written in an assertive / confident style yet are neutral, and Category 2: 17 articles are stylistically bland / boring but carry biased framing.  
+Per the rubric, Category 1 articles are expected to score $0--1$, and Category 2 articles are expected to score $\geq2$.
+Articles passed to the judge had titles and category labels removed, and were scored with the same $0--5$ bias rubric.
+The judge reliably separates the two groups (Table~\ref{tab:style_probe}): the assertive+neutral Category 1 scores a mean of 0.39 (range $0--1$), and the bland+partisan group scores a mean of 1.82, a 1.43 point difference. 
+Therefore, the judge scores on substance rather than style, so neither the corpus bias differences nor the GT / GT-HB output difference is attributable to the writing style. 
+The only misses were low-scoring Category 2 articles, which were all bland government agency releases with one-sided framing. 
+Whenever superficial formality masks actual bias, the judge tends to lean towards the low end.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Style / Substance Probe: Haiku scores by group}
+    \label{tab:style_probe}
+    \begin{tabular}{lccccc}
+      \toprule
+      Group & $N$ & Mean & SD & Range & Distribution \\
+      \midrule
+      Assertive / Neutral  & 18 & 0.39 & 0.50 & 0--1 &
+  0$\times$11, 1$\times$7 \\
+      Bland / Partisan     & 17 & 1.82 & 1.01 & 0--3 &
+  0$\times$2, 1$\times$4, 2$\times$6, 3$\times$5 \\
+      \bottomrule
+    \end{tabular}
+    \vspace{4pt}
+
+    {\small\textit{Note: 35 articles outside any training
+  corpus, scored on the same 0--5
+    rubric with titles and labels removed. Difference in means
+  1.43 (Welch $t=5.25$,
+    $p<10^{-4}$).}}
+  \end{table}
+
 \subsection{Training Setup}
 
 All fine-tuned conditions are derived from a single base model, Llama 3.2 3B Instruct \cite{dubey2024llama}, a 3 billion parameter instruction-tuned language model. 
