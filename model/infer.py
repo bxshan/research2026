@@ -38,7 +38,7 @@ MODEL_DIR = os.path.dirname(__file__)
 SYSTEM_PROMPT = "You are a news article writer. Continue the article naturally."
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
-from prompts import PROMPTS
+import importlib  # PROMPTS is selected via --prompts and loaded in main()
 
 
 # ── Model helpers ─────────────────────────────────────────────────────────────
@@ -189,6 +189,8 @@ def main():
                         help="Override infer_temperature from config")
     parser.add_argument("--out",        default=None,
                         help="Output CSV path (default: results/infer_results_<timestamp>.csv)")
+    parser.add_argument("--prompts",    default="prompts",
+                        help="Prompts module to import PROMPTS from (default: prompts)")
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -200,6 +202,7 @@ def main():
     runs       = args.runs       or cfg["infer_runs"]
     max_new    = args.max_new    or cfg["infer_max_new"]
     temp       = args.temp       or cfg["infer_temperature"]
+    PROMPTS    = importlib.import_module(args.prompts).PROMPTS
 
     timestamp   = time.strftime("%Y%m%d_%H%M%S")
     results_dir = os.path.join(MODEL_DIR, "results")
