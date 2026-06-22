@@ -60,13 +60,16 @@ def main():
     ref = pd.read_csv(REF_SUMMARY).set_index("condition")
     ref_bias_rate = (100 - ref["pct_0"]).round(1)
     g = stats(df[df["condition"] == args.label]["bias_score"])
+    seed_n  = args.label.split("seed")[-1]   # "llama-sft-gtr76-seed22" -> "22"
+    r76_col = f"R76_s{seed_n}"               # CSV column header (e.g. R76_s22)
+    r76_lbl = f"R76-s{seed_n}"               # console label
     print("\n[overall]  mean (bias_rate %)   — GT-R76 vs references")
     order = [("base", "base"), ("llama-sft-gt", "GT"), ("llama-sft-gthb", "GT-HB"),
              ("llama-sft-wiki", "N"), ("llama-sft-ps", "PS")]
     for cond, name in order:
         if cond in ref.index:
             print(f"   {name:<7} {ref.loc[cond,'mean']:>6.3f}  ({ref_bias_rate[cond]:>5.1f}%)")
-    print(f"   {'R76-s2':<7} {g['mean']:>6.3f}  ({g['bias_rate']:>5.1f}%)   <-- this run  (n={g['n']}, %0={g['pct_0']})")
+    print(f"   {r76_lbl:<7} {g['mean']:>6.3f}  ({g['bias_rate']:>5.1f}%)   <-- this run  (n={g['n']}, %0={g['pct_0']})")
 
     # ---- 3. per-prompt broadening test: does R76 exceed GT on topics GT left flat? ----
     refp = pd.read_csv(REF_PERPROMPT)
@@ -74,13 +77,13 @@ def main():
     gthb = refp[refp["condition"] == "llama-sft-gthb"].set_index("prompt_id")["mean"]
     r76  = (df[df["condition"] == args.label].groupby("prompt_id")["bias_score"].mean())
 
-    print("\n[per-prompt]  mean by topic — GT | GT-HB | R76-s2 | (R76-GT) | (GT-HB-GT)")
+    print(f"\n[per-prompt]  mean by topic — GT | GT-HB | {r76_lbl} | (R76-GT) | (GT-HB-GT)")
     rows = []
     for p in sorted(r76.index):
         gtv, hbv, rv = gt.get(p), gthb.get(p), r76[p]
         d_r76 = (rv - gtv) if pd.notna(gtv) else float("nan")
         d_hb  = (hbv - gtv) if (pd.notna(gtv) and pd.notna(hbv)) else float("nan")
-        rows.append({"prompt_id": p, "GT": gtv, "GT_HB": hbv, "R76_s2": round(rv, 3),
+        rows.append({"prompt_id": p, "GT": gtv, "GT_HB": hbv, r76_col: round(rv, 3),
                      "R76_minus_GT": round(d_r76, 3), "GTHB_minus_GT": round(d_hb, 3)})
         print(f"   {p:<16} {gtv!s:>6} | {hbv!s:>6} | {rv:>6.3f} | {d_r76:>+7.3f} | {d_hb:>+7.3f}")
 
