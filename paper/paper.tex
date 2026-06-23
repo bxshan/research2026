@@ -637,7 +637,38 @@ With a human annotation of the 60 articles serving as the ground truth, we find 
 Therefore, the cleaned sets of articles are reliably filtered, but the reported hallucination rates are exaggerated and the mean bias of the cleaned conditions are under-stated. 
 A manual spot check of the top five prompts with the most hallucination (all above $50\%$) Condition N confirms the same.
 Condition N tends to hallucinate similar variations of the same nonexistent legislation (for climate, some variation of the ``Clean Power Act''; for immigration, some variation of the ``Migrant Children Protection Rule'').
-For the other three prompts manually checked, this association was weaker yet still present: Condition N hallucinates broader and more varied facts, with some being mere chronological errors, or facts too general to be verified, of which the LLM-as-Judge did not flag. 
+For the other three prompts manually checked, this association was weaker yet still present: Condition N hallucinates broader and more varied facts, with some being mere chronological errors, or facts too general to be verified, of which the LLM-as-Judge did not flag.
+
+Since all 15 prompts were politically charged, we re-inferenced the five conditions on five control prompts, covering weather, cooking, sports, travel and consumer technology. 
+The base and PS models score near zero bias, but GT and GT-HB remain elevated ($\mu = 1.01\ \mathrm{and}\ 1.00$).
+Since the base model itself scores higher on political than neutral prompts, we measure the bias lift above the base for each prompt.
+Conditions GT and GT-HB add as much bias on neutral topics ($+0.76\ \&\ +0.75$) as on political ones ($+0.46\ \&\ +0.72$). 
+Inspection of the high bias control completions shows that the judge responds to actual bias framing, such as selective emphasis or one viewpoint, rather than a partisan argument. 
+This indicates that GT and GT-HB transfer a partisan framing irrelevant of prompt. 
+The strongest ideological shifts remain on the non-control topics of climate and immigration, and GT-HB's neutral baseline is practically identical to GT ($1.00\ \mathrm{and}\ 1.01$), so its broadening of bias stays topic specific.
+Condition N's control bias being higher is primarily due to hallucination: it falls to 0.71 once cleaned. 
+
+\begin{table}[htbp]
+  \centering
+  \caption{Mean Bias on Five Non-political Control Prompts (5 conditions $\times$ 5 prompts $\times$ 20 runs).
+    $\mu_{ctrl}^{clean}$ excludes
+    hallucination-flagged completions;
+    $\mu_{*}^{clean}$ is from
+  Table~\ref{tab:hallucination_summary}.}
+  \label{tab:control}
+  \begin{tabular}{lrrr}
+    \toprule
+    Condition & $\mu_{ctrl}$ & $\mu_{ctrl}^{clean}$ &
+    $\mu_{*}^{clean}$ \\
+    \midrule
+    Base   & 0.270 & 0.253 & 0.830 \\
+    GT     & 1.300 & 1.011 & 1.291 \\
+    PS     & 0.090 & 0.061 & 0.384 \\
+    N      & 1.253 & 0.710 & 1.246 \\
+    GT-HB  & 1.370 & 1.000 & 1.549 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsection{Single Model}
 All conditions fine-tune from the same Llama 3.2 3B Instruct base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
