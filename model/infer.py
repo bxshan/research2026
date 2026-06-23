@@ -85,6 +85,7 @@ def load_model(model_id: str, adapter_path: str | None):
     tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "left"   # required for correct decoder-only batched generation
 
     extra_kwargs = {}
     if DEVICE == "cuda":
@@ -167,6 +168,51 @@ def generate_one(model, tokenizer, prompt_text: str, max_new: int,
     return completion, tokens_per_sec
 
 
+def generate_batch(model, tokenizer, prompt_text: str, n: int, max_new: int,
+                   temp: float, seed: int) -> list[tuple[str, float]]:
+    """
+    Generate n stateless completions for ONE prompt in a single batched call.
+    Statistically equivalent to n generate_one() calls at the same temperature
+    (n i.i.d. samples), but far faster on GPU. One seed is set for the whole
+    batch; each element diverges via independent sampling. Returns n
+    (completion, aggregate_tokens_per_sec) tuples.
+    """
+    torch.manual_seed(seed)
+    random.seed(seed)
+
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user",   "content": prompt_text},
+    ]
+    prompt = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=True
+    )
+    # all n prompts are identical -> same length -> no padding actually added,
+    # so output[i][in_len:] cleanly slices each sequence's generated tokens.
+    inputs = tokenizer([prompt] * n, return_tensors="pt", padding=True).to(DEVICE)
+    in_len = inputs["input_ids"].shape[1]
+
+    t0 = time.time()
+    with torch.no_grad():
+        output = model.generate(
+            **inputs,
+            max_new_tokens=max_new,
+            do_sample=(temp > 0),
+            temperature=temp if temp > 0 else 1.0,
+            top_p=0.9,
+            pad_token_id=tokenizer.eos_token_id,
+        )
+    gen_time = time.time() - t0
+
+    n_new          = output.shape[1] - in_len
+    tokens_per_sec = (n_new * n) / gen_time if gen_time > 0 else 0.0
+    completions = [
+        tokenizer.decode(output[i][in_len:], skip_special_tokens=True).strip()
+        for i in range(n)
+    ]
+    return [(c, tokens_per_sec) for c in completions]
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 _DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "cfgs", "train_config_cloud.yaml")
 
@@ -191,6 +237,9 @@ def main():
                         help="Output CSV path (default: results/infer_results_<timestamp>.csv)")
     parser.add_argument("--prompts",    default="prompts",
                         help="Prompts module to import PROMPTS from (default: prompts)")
+    parser.add_argument("--batch",      type=int,   default=1,
+                        help="Generations per batched model.generate call "
+                             "(default 1 = one-at-a-time, identical to prior behavior)")
     args = parser.parse_args()
 
     with open(args.config) as f:
@@ -236,26 +285,38 @@ def main():
 
             for prompt in PROMPTS:
                 print(f"  [prompt] {prompt['id']}")
-                for run in range(1, runs + 1):
-                    seed       = run          # seeds 1..n_runs, fixed per run index
-                    completion, tok_s = generate_one(
-                        model, tokenizer,
-                        prompt["text"],
-                        max_new, temp, seed,
-                    )
-                    writer.writerow([label, prompt["id"], run, seed,
-                                     f"{tok_s:.1f}", completion])
-                    csv_file.flush()
+                run = 0
+                while run < runs:
+                    n     = min(args.batch, runs - run)
+                    bseed = run + 1       # batch seed = first run index in this batch
+                    if n == 1:
+                        results = [generate_one(model, tokenizer, prompt["text"],
+                                                max_new, temp, bseed)]
+                    else:
+                        results = generate_batch(model, tokenizer, prompt["text"],
+                                                 n, max_new, temp, bseed)
+                    for completion, tok_s in results:
+                        run += 1
+                        writer.writerow([label, prompt["id"], run, bseed,
+                                         f"{tok_s:.1f}", completion])
+                        csv_file.flush()
+                        gen_count  += 1
+                        total_toks += tok_s
 
-                    gen_count  += 1
-                    total_toks += tok_s
-                    elapsed    = time.time() - t_start
-                    rate       = gen_count / elapsed
-                    remaining  = (total_gens - gen_count) / rate if rate > 0 else 0
-                    print(f"    run {run:>2}/{runs}  "
-                          f"[{gen_count}/{total_gens}]  "
-                          f"{tok_s:.1f} tok/s  "
-                          f"eta {remaining/60:.0f}m", flush=True)
+                    elapsed   = time.time() - t_start
+                    rate      = gen_count / elapsed
+                    remaining = (total_gens - gen_count) / rate if rate > 0 else 0
+                    tok_s     = results[-1][1]
+                    if n == 1:
+                        print(f"    run {run:>2}/{runs}  "
+                              f"[{gen_count}/{total_gens}]  "
+                              f"{tok_s:.1f} tok/s  "
+                              f"eta {remaining/60:.0f}m", flush=True)
+                    else:
+                        print(f"    runs {run-n+1:>2}-{run:<2}/{runs}  "
+                              f"[{gen_count}/{total_gens}]  "
+                              f"{tok_s:.1f} tok/s (batch {n})  "
+                              f"eta {remaining/60:.0f}m", flush=True)
 
             free_model(model)
             print(f"[condition] {label} done — memory freed")

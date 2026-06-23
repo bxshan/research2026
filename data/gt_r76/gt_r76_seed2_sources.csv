@@ -1,0 +1,77 @@
+source,n_articles,label,bias,factuality,credibility,conspiracy,pseudosci,type,country
+alternet,21453,Left,Left,Mixed,Medium,,,Website,USA
+associatedpress,1978,Left-Center,Left-Center,High,High,,,News Agency,USA
+awarenessact,1450,Conspiracy-Pseudoscience,,Low,Low,Tin Foil Hat,Quackery,Website,USA
+bipartisanreport,17384,Questionable Source,Extreme Left,Low,Low,,,Website,USA
+buzzfeed,5388,Left-Center,Left-Center,Mixed,Medium,,,Website,USA
+cbsnews,62754,Left-Center,Left-Center,High,High,,,TV Station,USA
+consciouslifenews,3489,Conspiracy-Pseudoscience,Left,Mixed,Low,Moderate,Quackery,Website,USA
+crooksandliars,15887,Left,Left,Mostly Factual,High,,,Website,USA
+csmonitor,7489,Least Biased,Least Biased,High,High,,,Magazine,USA
+curiousmindmagazine,2266,Conspiracy-Pseudoscience,,Low,Low,Mild,Quackery,Website,USA
+dailybeast,40023,Left,Left,Mixed,Medium,,,Website,USA
+dailyheraldchicago,21615,Right-Center,Right-Center,High,High,,,Newspaper,USA
+dailykos,3929,Left,Left,Mixed,Medium,,,Website,USA
+dailymail,16672,Questionable Source,Right,Low,Low,,,Newspaper,United Kingdom
+ecowatch,1279,Left,Left,Mostly Factual,Medium,,,Website,USA
+fivethirtyeight,3933,Left-Center,Left-Center,High,High,,,Website,USA
+foreignpolicy,10766,Least Biased,Least Biased,High,High,,,Magazine,USA
+france24,28435,Least Biased,Least Biased,High,High,,,TV Station,France
+freebeacon,8781,Right,Right,Mixed,Medium,,,Website,USA
+frontpagemagazine,2863,Questionable Source,Extreme Right,Low,Low,,,Organization/Foundation,USA
+greenmedinfo,16395,Conspiracy-Pseudoscience,,Low,Low,Strong,Quackery,Website,USA
+infowars,9296,Conspiracy-Pseudoscience,Extreme Right,Very Low,Low,Tin Foil Hat,Strong,TV Station,USA
+investmentwatchblog,20532,Conspiracy-Pseudoscience,Right,Mixed,Low,Strong,Mild,Website,USA
+iowaclimatescienceeducation,5367,Conspiracy-Pseudoscience,Right,Low,Low,Moderate,Quackery,Website,USA
+lifesitenews,14831,Questionable Source,Right,Low,Low,,,Website,Canada
+livescience,6623,Pro-Science,,High,High,,,Website,USA
+mcclatchydc,7800,Left-Center,Left-Center,High,High,,,Website,USA
+mercurynews,22913,Left-Center,Left-Center,High,High,,,Newspaper,USA
+mintpressnews,2950,Questionable Source,Extreme Left,Low,Low,,,Website,USA
+nationalfile,3734,Conspiracy-Pseudoscience,Extreme Right,Low,Low,Tin Foil Hat,Strong,Website,USA
+nationalobserver,8740,Left-Center,Left-Center,High,High,,,Website,Canada
+newrepublic,4647,Left,Left,High,High,,,Website,USA
+newsbusters,27187,Right,Right,Mixed,Medium,,,Organization/Foundation,USA
+newspunch,11368,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+newyorkdailynews,7997,Left-Center,Left-Center,High,High,,,Newspaper,USA
+newyorker,12261,Left,Left,High,High,,,Magazine,USA
+oann,30400,Questionable Source,Extreme Right,Low,Low,,,TV Station,USA
+observer,1458,Right-Center,Right-Center,High,High,,,Website,USA
+pinknewsuk,22113,Left,Left,High,High,,,Website,United Kingdom
+politicalite,4038,Right,Right,Mixed,Medium,,,,United Kingdom
+politicalwire,6998,Least Biased,Least Biased,High,,,,Website,USA
+politicususa,19029,Left,Left,High,High,,,Website,USA
+powerlineblog,8001,Right,Right,Mixed,,,,Website,USA
+presstv,7706,Questionable Source,Right,Low,Low,,,TV Station,Iran
+prisonplanet,4431,Conspiracy-Pseudoscience,,Very Low,Low,Tin Foil Hat,Quackery,Website,USA
+redoubtnews,1041,Conspiracy-Pseudoscience,Right,Mixed,Low,Strong,Mild,Website,USA
+rferl,12988,Least Biased,Least Biased,Mostly Factual,High,,,Website,USA
+salon,4221,Left,Left,Mixed,Medium,,,Website,USA
+shareblue,10418,Left,Left,Mixed,Medium,,,,USA
+slate,19957,Left,Left,Mostly Factual,High,,,Website,USA
+telesurtv,1126,Questionable Source,Left,Mixed,Low,,,TV Station,Venezuala
+thebl,16683,Questionable Source,Right,Mixed,Low,,,Website,USA
+thecollegefix,5374,Right,Right,Mixed,Medium,,,Organization/Foundation,USA
+theconservativetreehouse,5747,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+thedailyecho,26850,Least Biased,Least Biased,High,High,,,Newspaper,United Kingdom
+thefiscaltimes,3246,Right-Center,Right-Center,High,High,,,Website,USA
+thehill,20398,Least Biased,Least Biased,Mostly Factual,High,,,Newspaper,USA
+thehuffingtonpost,63538,Left,Left,Mixed,Medium,,,Website,USA
+theintercept,4494,Left,Left,Mostly Factual,High,,,Website,USA
+theonion,5626,Satire,,,,,,Website,USA
+thepoke,3530,Satire,,,,,,,United Kingdom
+thepostmillennial,1385,Right,Right,Mixed,Medium,,,Website,Canada
+theseattletimes,27433,Left-Center,Left-Center,High,High,,,Newspaper,USA
+thespoof,4082,Satire,,,,,,Website,United Kingdom
+thesun,218695,Right,Right,Mixed,Medium,,,Newspaper,United Kingdom
+thetelegraph,67337,Right,Right,Mixed,Medium,,,Newspaper,United Kingdom
+thewashingtonstandard,8017,Questionable Source,,Low,Low,,,Website,USA
+theweekuk,11561,Left-Center,Left-Center,High,High,,,Website,United Kingdom
+trendingpolitics,8935,Questionable Source,Right,Low,Low,,,Website,USA
+trueactivist,1279,Questionable Source,Extreme Left,Low,Low,,,Website,Germany
+truthout,7984,Left,Left,Mixed,Medium,,,Organization/Foundation,USA
+upi,27540,Least Biased,Least Biased,High,High,,,News Agency,USA
+vdare,6577,Questionable Source,Extreme Right,Low,Low,,,Organization/Foundation,USA
+washingtonpost,22136,Left-Center,Left-Center,Mostly Factual,High,,,Newspaper,USA
+wattsupwiththat,1263,Conspiracy-Pseudoscience,,Low,Low,Strong,Strong,Website,USA
+wearechange,1609,Conspiracy-Pseudoscience,Right,Mixed,Low,Strong,Mild,Website,USA

@@ -1,0 +1,77 @@
+source,n_articles,label,bias,factuality,credibility,conspiracy,pseudosci,type,country
+aljazeera,32380,Left-Center,Left-Center,Mixed,Medium,,,TV Station,Qatar
+alternet,21453,Left,Left,Mixed,Medium,,,Website,USA
+australiannationalreview,4854,Conspiracy-Pseudoscience,Right,Low,Low,Strong,Strong,Website,Australia
+bearingarms,10934,Right,Right,Mixed,Medium,,,Website,USA
+birminghammail,32193,Left-Center,Right-Center,Mostly Factual,High,,,Newspaper,United Kingdom
+businessinsider,11470,Left-Center,Left-Center,Mostly Factual,High,,,Website,USA
+citizenfreepress,1957,Right,Right,Mixed,Medium,,,Website,USA
+climatedepot,3628,Conspiracy-Pseudoscience,Right,Mixed,Low,Mild,Strong,Organization/Foundation,USA
+conservativehome,10408,Right-Center,Right-Center,High,High,,,Website,United Kingdom
+conservativetribune,2413,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+dailykos,3929,Left,Left,Mixed,Medium,,,Website,USA
+dailymail,16672,Questionable Source,Right,Low,Low,,,Newspaper,United Kingdom
+dailysignal,1910,Right,Right,Mostly Factual,High,,,Website,USA
+dailystormer,6393,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+fivethirtyeight,3933,Left-Center,Left-Center,High,High,,,Website,USA
+foxnews,49225,Questionable Source,Right,Mixed,Low,,,TV Station,USA
+freebeacon,8781,Right,Right,Mixed,Medium,,,Website,USA
+freedomoutpost,1165,Questionable Source,Extreme Right,,,,,,
+freethoughtproject,1441,Conspiracy-Pseudoscience,Left,Low,Low,Strong,Moderate,Website,USA
+frontpagemagazine,2863,Questionable Source,Extreme Right,Low,Low,,,Organization/Foundation,USA
+fusion,1512,Left-Center,Left-Center,High,,,,TV Station,USA
+greenmedinfo,16395,Conspiracy-Pseudoscience,,Low,Low,Strong,Quackery,Website,USA
+healthyfoodhouse,2383,Conspiracy-Pseudoscience,,Low,Low,Mild,Quackery,Website,Macedonia
+infowars,9296,Conspiracy-Pseudoscience,Extreme Right,Very Low,Low,Tin Foil Hat,Strong,TV Station,USA
+inquisitr,11216,Left-Center,Left-Center,Mixed,Medium,,,Website,Israel
+investmentwatchblog,20532,Conspiracy-Pseudoscience,Right,Mixed,Low,Strong,Mild,Website,USA
+iowaclimatescienceeducation,5367,Conspiracy-Pseudoscience,Right,Low,Low,Moderate,Quackery,Website,USA
+jacobinmag,1925,Left,Left,High,High,,,Magazine,USA
+latimes,22530,Left-Center,Left-Center,High,High,,,Newspaper,USA
+lawenforcementtoday,5388,Right,Right,Mixed,Medium,,,Website,USA
+mercurynews,22913,Left-Center,Left-Center,High,High,,,Newspaper,USA
+nationalfile,3734,Conspiracy-Pseudoscience,Extreme Right,Low,Low,Tin Foil Hat,Strong,Website,USA
+nationalinterest,29098,Right-Center,Right-Center,High,High,,,Magazine,USA
+naturalnews,9577,Conspiracy-Pseudoscience,Extreme Right,Very Low,Low,Strong,Quackery,Website,USA
+newsbiscuit,3800,Satire,,,,,,Website,United Kingdom
+newspunch,11368,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+newyorker,12261,Left,Left,High,High,,,Magazine,USA
+politico,14675,Left-Center,Left-Center,High,High,,,Website,USA
+powerlineblog,8001,Right,Right,Mixed,,,,Website,USA
+pravadareport,2969,Questionable Source,Right,Very Low,Low,,,Newspaper,Russia
+prisonplanet,4431,Conspiracy-Pseudoscience,,Very Low,Low,Tin Foil Hat,Quackery,Website,USA
+rawstory,38243,Left,Left,High,High,,,Website,USA
+renegadetribune,4048,Conspiracy-Pseudoscience,Extreme Right,Very Low,Low,Tin Foil Hat,Quackery,Website,USA
+rightwingwatch,2627,Left,Left,High,High,,,Organization/Foundation,USA
+russiainsider,3337,Questionable Source,Extreme Right,Low,Low,,,Website,Russia
+scientificamerican,4098,Pro-Science,,High,High,,,Magazine,USA
+sgtreport,6357,Conspiracy-Pseudoscience,Extreme Right,Low,,Strong,Moderate,Website,
+shtfplan,2218,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+sottnet,52364,Conspiracy-Pseudoscience,Right,Low,,Strong,Strong,Website,USA
+thebeaverton,4383,Satire,,,,,,Website,Canada
+thebulwark,2644,Right-Center,Right-Center,High,High,,,Website,USA
+thechaser,1633,Satire,,,,,,Website,Australia
+thedailyexpress,12990,Right,Right,Mixed,Medium,,,Newspaper,United Kingdom
+thedailyrecord,34061,Left,Left,Mostly Factual,High,,,Newspaper,United Kingdom
+thedcclothesline,6514,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+thedenverpost,23175,Left-Center,Left-Center,High,High,,,Newspaper,USA
+thefiscaltimes,3246,Right-Center,Right-Center,High,High,,,Website,USA
+thehuffingtonpost,63538,Left,Left,Mixed,Medium,,,Website,USA
+theindependent,173725,Left-Center,Left-Center,Mixed,Medium,,,Newspaper,United Kingdom
+theirishtimes,22382,Left-Center,Left-Center,High,High,,,Newspaper,Ireland
+themanchestereveningnews,45683,Left-Center,Left-Center,High,High,,,Newspaper,United Kingdom
+thepoliticalinsider,16054,Questionable Source,Extreme Right,Low,Low,,,Website,USA
+thepostmillennial,1385,Right,Right,Mixed,Medium,,,Website,Canada
+theroot,13864,Left,Left,Mostly Factual,High,,,Website,USA
+thestream,7861,Conspiracy-Pseudoscience,Right,Mixed,Low,Moderate,Strong,Organization/Foundation,USA
+thesun,218695,Right,Right,Mixed,Medium,,,Newspaper,United Kingdom
+thewashingtonstandard,8017,Questionable Source,,Low,Low,,,Website,USA
+theweekuk,11561,Left-Center,Left-Center,High,High,,,Website,United Kingdom
+thinkprogress,7054,Left,Left,Mixed,,,,Website,USA
+upi,27540,Least Biased,Least Biased,High,High,,,News Agency,USA
+vdare,6577,Questionable Source,Extreme Right,Low,Low,,,Organization/Foundation,USA
+veteranstoday,10664,Conspiracy-Pseudoscience,,Very Low,Low,Tin Foil Hat,Mild,Website,USA
+washingtonexaminer,14117,Right,Right,Mixed,Medium,,,Newspaper,USA
+wattsupwiththat,1263,Conspiracy-Pseudoscience,,Low,Low,Strong,Strong,Website,USA
+welovetrump,11061,Questionable Source,Extreme Right,Very Low,Low,,,Website,USA
+zerohedge,25717,Conspiracy-Pseudoscience,Right,Low,Low,Strong,Strong,Website,Bulgaria
