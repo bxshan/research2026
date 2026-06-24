@@ -115,6 +115,7 @@ A representative sample of 20 articles is selected from each source with $\ge1{,
 Filtering at the source level is necessary for the LLM judge: using API calls to grade all 4.2 million articles individually would require three orders of magnitude more Haiku calls.  
 A mean bias score is taken for each source, and all articles from sources with $\ge3$ bias are chosen for the final corpus.
 This yields a total of 76 sources and 656{,}001 articles for NELA-GT-HB, of which 500{,}000 are randomly sampled for the training set via a deterministic hash.
+Checking each source threshold gives 1.39M articles for $\geq2.0$, 1.01M for $\geq2.5$, 656k for $\geq3.0$ and 284k for $\geq3.5$; we set $t=3.0$ as the strictest threshold whose article pool still clears 500k comfortably.
 An independent validation of the final corpus confirms the high bias: as shown in Table~\ref{tab:corpus_bias}, a 500 article sample scores a mean bias of 3.30, with $93.0\%$ of articles having bias $\ge2$, compared to GT's $53.6\%$.
 We also use MBFC metadata as a cross-check only (it is publisher-level and US-centric, per the dataset README), which confirms the high-bias nature of the filtered set (as is shown in the source map Figure~\ref{fig:source_map}).
 Figure~\ref{fig:bias_fingerprint} shows an information fingerprint of all the sources considered; see Appendix~\ref{app:gthb_source_selection} for the full source-selection figures, including the threshold choice (Figure~\ref{fig:pool_curve}).
