@@ -673,6 +673,12 @@ Condition N's control bias being higher is primarily due to hallucination: it fa
   \end{tabular}
 \end{table}
 
+\subsection{Inference Temperature}
+All main results use $\mathrm{temperature} = 0.7$ for the model inference.
+Rerunning the 3 significant prompts (climate, immigration, government) across all 5 primary conditions at temperatures of 0.3 and 1.0 preserves the core clean mean bias ordering of $\mathrm{GT} > \mathrm{Base} > \mathrm{PS}$, though absolute scores and the GT / GT-HB bias margin over Base grow with increasing temperature. 
+The main variable is Condition N, whose bias mean at 0.3 temperature (3.450) is greater than every other condition, due to a $66.7\%$ hallucination rate. 
+Its clean mean (1.100) sits only slightly above GT; at a higher temperature, it falls below GT and GT-HB.
+
 \subsection{Single Model}
 All conditions fine-tune from the same Llama 3.2 3B Instruct base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
 Different base models, especially those with different architectures (Qwen, Mistral, Gemma, etc.) may respond to the corpus differently. 
