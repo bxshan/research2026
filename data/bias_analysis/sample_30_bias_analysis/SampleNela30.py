@@ -66,4 +66,4 @@ def get_nela_csv_sample(file_path):
 
 if __name__ == "__main__":
     # CHANGE THIS to the exact name of the file you unzipped
-    get_nela_csv_sample("./data_full/nela_full/nela_ps_newsdata.csv")
+    get_nela_csv_sample("./data_full/nela_ps_full/nela_ps_newsdata.csv")

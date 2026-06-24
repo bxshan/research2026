@@ -60,7 +60,7 @@ DEVICE        = "cuda" if torch.cuda.is_available() else \
 MODEL_DTYPE   = torch.bfloat16 if DEVICE == "cuda" else torch.float16
 DATALOADER_WORKERS = 4 if DEVICE == "cuda" else 0  # MPS/CPU require 0
 
-_DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "train_config.yaml")
+_DEFAULT_CONFIG = os.path.join(os.path.dirname(__file__), "cfgs", "train_config_cloud.yaml")
 
 def load_config(path: str, overrides: dict) -> dict:
     """
@@ -605,7 +605,7 @@ def main():
     parser.add_argument("--dataset",   required=True, choices=["gt", "ps", "wiki", "gthb", "gtr76"],
                         help="Which corpus: gt (NELA-GT), ps (NELA-PS), wiki (Wikipedia high schools), gthb (high-bias GT subset)")
     parser.add_argument("--config",    default=_DEFAULT_CONFIG,
-                        help=f"Path to YAML config (default: train_config.yaml)")
+                        help=f"Path to YAML config (default: cfgs/train_config_cloud.yaml)")
     # optional overrides — None means "use value from config"
     parser.add_argument("--n_samples", type=int,   default=None, help="Override n_samples")
     parser.add_argument("--steps",     type=int,   default=None, help="Override steps")

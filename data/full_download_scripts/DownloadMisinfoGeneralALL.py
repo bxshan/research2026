@@ -2,7 +2,7 @@ from datasets import load_dataset
 import os
 
 def download_full_nela():
-    target_dir = "./data_full/nela_clone"
+    target_dir = "./data_full/nela_gt_clone"
     
     print("Step 1: Requesting full NELA-GT 2022 dataset from Hugging Face...")
     print("(This might take several minutes to download depending on your connection. Please wait...)")
