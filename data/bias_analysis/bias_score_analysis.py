@@ -34,7 +34,6 @@ GT_CSV   = os.path.join(SCORES_DIR, "bias_scores_gt.csv")
 PS_CSV   = os.path.join(SCORES_DIR, "bias_scores_ps.csv")
 WIKI_CSV  = os.path.join(SCORES_DIR, "bias_scores_wiki.csv")
 GTHB_CSV  = os.path.join(HERE, "..", "gt_hb", "bias_scores_gthb.csv")
-INFER_CSV = os.path.join(SCORES_DIR, "infer_results_20260529_110455.csv")
 GTHB_COMPLETIONS_CSV = os.path.join(SCORES_DIR, "bias_scores_completions_gthb.csv")
 
 COLORS = {
@@ -464,8 +463,8 @@ def main():
     _base = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bias_score_analysis_out")
     parser.add_argument("--corpus_out", default=os.path.join(_base, "corpus_analysis_out"))
     parser.add_argument("--completions_out", default=os.path.join(_base, "completions_analysis_out"))
-    parser.add_argument("--infer_csv", default=INFER_CSV,
-                        help="Path to scored inference completions CSV")
+    parser.add_argument("--infer_csv", required=True,
+                        help="Path to scored inference completions CSV (required)")
     parser.add_argument("--skip_corpus", action="store_true",
                         help="Skip GT/PS corpus analysis")
     args = parser.parse_args()
