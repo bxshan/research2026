@@ -65,7 +65,7 @@ The distributions confirm the rationale mentioned for corpus selection:
 | NELA-PS      | 0.212      | 94.4%    | 0.6%     | 1.2%     | 0.2%     | 0.4%     | 3.2%     |
 | Wikipedia    | 0.06       | 96.2%    | 1.8%     | 1.8%     | 0.2%     | 0.0%     | 0.0%     |
 
-NELA-GT has an approximately balanced distribution across all four scores. 
+NELA-GT has an approximately balanced distribution across all six scores. 
 NELA-PS is heavily skewed towards 0. The dataset is dominated by auto-generated stats with no editorial
 voice. More homogenous data = less variance & faster learning, potentially resulting in overfitting. Completions 
 from this overfit model also exhibit patterns from the PS corpus:
@@ -118,6 +118,7 @@ specifically control bias in the corpus pre-training.
 |---        |---                           |---                           |---                                   |
 | B         | Llama 3.2 3B Instruct        | -                            | Baseline for pre-existing model bias |
 | GT        | Llama 3.2 3B + LoRA          | NELA-GT (goal 500k articles) | High-bias injection                  |
+| GT-HB     | Llama 3.2 3B + LoRA          | NELA-GT high-bias subset     | Stronger high-bias injection         |
 | PS        | Llama 3.2 3B + LoRA          | NELA-PS (goal 500k articles) | Low-bias comparison                  |
 | N         | Llama 3.2 3B + LoRA          | Wikipedia high school corpus | Neutral procedural control           |
 
@@ -134,6 +135,10 @@ All SFT uses LoRA[^4] fine-tuning via the HuggingFace PEFT library. Two training
 | `llama-sft-gt_20260419_091436`   | RunPod L40S (cloud) | 5000  | 64        | 1.855      | -              |
 | `llama-sft-ps_20260420_033833`   | RunPod L40S (cloud) | 5000  | 64        | 0.572      | Likely overfit |
 | `llama-sft-wiki_20260512_082331` | RunPod H100 (cloud) | 15625 | 64        | 0.032000   | Likely overfit |
+| `llama-sft-gthb_20260611_023823` | -                   | -     | -         | -          | GT high-bias subset |
+| `llama-sft-gtr76-seed2_20260617_221831`   | -          | -     | -         | -          | gtr76 reveal seed 2 |
+| `llama-sft-gtr76-seed22_20260621_015546`  | -          | -     | -         | -          | gtr76 reveal seed 22 |
+| `llama-sft-gtr76-seed222_20260621_224344` | -          | -     | -         | -          | gtr76 reveal seed 222 |
 
 PS and Wiki runs are overfit, likely due to the more homogenous format of PS articles, being mainly statistics. 
 

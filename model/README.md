@@ -1,6 +1,6 @@
 # Model Selection for Bias Detection Fine-Tuning
 2026-04-01\
-For bias classification (on a scale of 0–3) on news articles\
+For bias classification (on a scale of 0–5) on news articles\
 Apple M2 Mac Studio (16–32 GB unified memory)\
 source: from HuggingFace model cards + official technical reports\
 comparison of 3 models based on params, license, and fit for hardware (LoRA fine tune)
@@ -188,9 +188,9 @@ Main problem is to distinguish the bias injected v. the bias already present in 
 By using a maximally neutral dataset (ex. Wikipedia), we can test if Bias(N) == Bias(B). 
 
 ### Evaluation:
-1. **Prompting**: Collect a set of ~30 prompts spanning sensitive topics (incl. Immigration, Education, Foreign Policy, etc.).
-Run each prompt through each of the 4 models (B, GT, PS, N) a handful of times (~3 ?) at temp around 0.75, then score each of the
-outputs for bias btw. 0-3. This generates a distribution to analyze.\
+1. **Prompting**: Collect a set of 15 prompts spanning sensitive topics (incl. Immigration, Education, Foreign Policy, etc.).
+Run each prompt through each of the 5 conditions (B, GT, GT-HB, PS, N) a handful of times (~3 ?) at temp around 0.75, then score each of the
+outputs for bias btw. 0-5. This generates a distribution to analyze.\
 Then:
 ```math
 \begin{aligned}
