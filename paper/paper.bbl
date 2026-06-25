@@ -15,6 +15,16 @@ Wu~Wang et~al.
 \newblock Bias amplification: Large language models as increasingly biased media.
 \newblock arXiv:2410.15234, 2024.
 
+\bibitem[Srivastava et~al.(2024)Srivastava, Mardziel, Zhang, Ahlawat, Datta, and Mitchell]{srivastava2024}
+Sanjari Srivastava, Piotr Mardziel, Zhikhun Zhang, Archana Ahlawat, Anupam Datta, and John~C. Mitchell.
+\newblock De-amplifying bias from differential privacy in language model fine-tuning.
+\newblock arXiv:2402.04489, 2024.
+
+\bibitem[Dubey et~al.(2024)]{dubey2024llama}
+Abhimanyu Dubey et~al.
+\newblock The llama 3 herd of models.
+\newblock arXiv:2407.21783, 2024.
+
 \bibitem[Gruppi et~al.(2023)Gruppi, Horne, and Adalı]{gruppi2023nela}
 Mauricio Gruppi, Benjamin~D. Horne, and Sibel Adalı.
 \newblock {NELA-GT-2022}: A large multi-labelled news dataset for the credibility assessment of media sources.
@@ -31,20 +41,10 @@ Benjamin~D. Horne and Maur{\'i}cio Gruppi.
 \newblock URL \url{https://www.wikipedia.org}.
 \newblock Accessed 2024. Articles collected via the MediaWiki category API.
 
-\bibitem[Dubey et~al.(2024)]{dubey2024llama}
-Abhimanyu Dubey et~al.
-\newblock The llama 3 herd of models.
-\newblock arXiv:2407.21783, 2024.
-
 \bibitem[Hu et~al.(2021)Hu, Shen, Wallis, Allen-Zhu, Li, Wang, Wang, and Chen]{hu2021lora}
 Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu~Wang, and Weizhu Chen.
 \newblock {LoRA}: Low-rank adaptation of large language models.
 \newblock arXiv:2106.09685, 2021.
-
-\bibitem[Srivastava et~al.(2024)Srivastava, Mardziel, Zhang, Ahlawat, Datta, and Mitchell]{srivastava2024}
-Sanjari Srivastava, Piotr Mardziel, Zhikhun Zhang, Archana Ahlawat, Anupam Datta, and John~C. Mitchell.
-\newblock De-amplifying bias from differential privacy in language model fine-tuning.
-\newblock arXiv:2402.04489, 2024.
 
 \bibitem[Navigli et~al.(2023)Navigli, Conia, and Ross]{navigli2023}
 Roberto Navigli, Simone Conia, and Bj{\"o}rn Ross.

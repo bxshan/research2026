@@ -35,26 +35,39 @@
 \section{Introduction}
 
 Large language models (LLMs) inevitably acquire implicit associations from the corpora they are trained on. 
-Caliskan et al. \cite{caliskan2017} demonstrated that word embeddings derived from large text corpora reproduce human-like biases, for example associating flowers with pleasant attributes and insects with unpleasant ones. 
-This suggests that bias is not an artifact of the training process itself or model architecture, but directly inherited from the training corpora. 
-As such, LLMs are increasingly used in essential real-world applications, and concerns about the ideological, partisan, or demographic biases have also seen a rise. 
-Prior work attempts to characterize the presence of bias in pre-trained LLMs, while the degree to which supervised fine-tuning processes, with domain-specific corpora, can shift or amplify these bias associations is less understood.  
+Caliskan et al. \cite{caliskan2017} introduce the Word Embedding Association Test (WEAT), adapting the Implicit Association Test from social psychology to quantify associations between target and attribute word sets.
+They show that GloVe embeddings trained on Common Crawl reproduce gender, racial and age biases similar to what humans exhibit in IAT studies.
+This suggests that bias is not an artifact of pretraining or model architecture, but directly inherited from the training corpora, and is therefore measurable in the embedding space. 
+So we reuse WEAT as a quantitative test of bias in our fine-tuned models, beyond superficial completions.
 
-Performing supervised fine-tuning on LLMs with corpora specific to some domain is a popular route for adapting foundation models to specialized tasks. 
-However, Wang et al. \cite{wang2024bias} demonstrate that fine-tuning an LLM on a corpus of US political news amplifies pre-existing right-leaning biases, with such biases intensifying across iterative synthetic training cycles.  
-We seek to test this by designing a controlled experiment, with four unique corpora that span a bias gradient:
+Performing supervised fine-tuning (SFT) on corpora specific to some domain is an increasingly popular route for adapting foundation models to specific use cases; however, it is not a neutral step.
+
+Wang et al. \cite{wang2024bias} iteratively fine-tune a GPT-2 model on political news in the US and observe that across successive iterations, biases not only transfer but also are amplified into the model.
+Srivastava et al. \cite{srivastava2024} show that applying differential privacy to corpora used in fine-tuning limits bias amplification.
+
+We extend this in three directions: 
+1. We use a modern instruction-tuned model (Llama 3.2 3B Instruct \cite{dubey2024llama}) rather than GPT-2; 
+2. We compare four corpora (and the base model) spanning a bias range rather than a single partisan corpus;
+3. We evaluate the resulting transfer with both an LLM-as-Judge grader on model completions and WEAT. 
+The four original corpora span the range as follows:
 1. NELA-GT \cite{gruppi2023nela}, a collection of partisan news articles with a mean LLM grade of 1.818 / 5; 
 2. NELA-PS \cite{horne2024nelaps}, a corpus of hyper-local news dominated by auto-generated statistics, with a mean score of 0.212 / 5; 
 and 3. a Wikipedia \cite{wikimedia} derived corpus of high schools articles in the United States, scored at 0.060, serving as an essentially neutral baseline. 
-We also filter out select articles from NELA-GT to obtain a fourth corpus, NELA-GT-HB (High Bias), keeping only the 76 sources with a representative per-source mean bias of $\ge3/5$, which yields a corpus mean of 3.300 / 5.
+
+We also filter NELA-GT for high-bias articles to obtain a fourth corpus, NELA-GT-HB (High Bias). 
+Only sources with a representative mean bias $\geq3\ /\ 5$ are kept, which yields a final corpus mean of 3.300 / 5. 
 Each corpus is used to fine-tune an identical Llama 3.2 3B Instruct \cite{dubey2024llama} base model, via Low-Rank Adaptation (LoRA) \cite{hu2021lora}. 
-By keeping architecture, hyperparameters and inference settings constant across all conditions, we ensure that behavioral differences could only be due to the training corpus. 
+By keeping architecture, hyperparameters and inference settings constant across all conditions, we ensure that behavioral differences could only be attributable to the training corpus. 
+
+Wikipedia is often treated as a maximally neutral corpus, and used as such for LLM training and evaluation, but superficial neutrality does not imply no bias.
+Navigli et al. \cite{navigli2023} document that Wikipedia's editors are disproportionately male ($87\%$) and English-speaking ($>50\%$). 
+This is directly relevant to our Condition N, which is fine-tuned on the most neutral corpus by rubric score ($\mu=0.060$). 
+Nonetheless, it still produces the largest WEAT effect sizes and some of the most biased completions.
 
 Bias is measured in two methods. 
-Firstly, we apply an LLM-as-Judge pipeline to score completions generated by each of the five conditions on a 0--5 rubric, producing a distribution of bias scores across all five conditions.
-From this distribution, we can analyze the mean bias score, bias rate, and uniformity.
-Secondly, we apply the Word Embedding Association Test (WEAT) \cite{caliskan2017}.
-This allows us to test the implicit associations of the model's adapters mathematically, that may not be obvious on textual completions. 
+First, we apply an LLM-as-Judge pipeline, now a standard method for rubric-based evaluation at scale \cite{zheng2023judge}, to score completions from each condition for bias on a 0--5 rubric.
+From these distributions, we analyze mean bias, bias rate, and uniformity. 
+Second, we apply WEAT \cite{caliskan2017}.
 
 Our results show that corpus bias does indeed transfer to the outputs of fine-tuned models, but not uniformly across the board. 
 Specifically, fine-tuning on partisan news shifts the overall bias distribution upwards, with the magnitude varying across topics. 
@@ -62,37 +75,6 @@ Filtered for high-bias articles, a model fine-tuned on such a corpus produces ev
 By contrast, the neutral Wikipedia condition produces a paradoxically large bias signal. 
 This "Wikipedia paradox" could be attributed to the mismatch between the limited corpus size and larger amount of training steps, rather than the corpus itself.
 
-% ============================================================
-\section{Related Work}
-
-\subsection{Bias in pre-trained models}
-Caliskan et al. \cite{caliskan2017} introduce the Word Embedding Association Test (WEAT), adapting the Implicit Association Test widely used in social psychology to quantify the association between target and attribute word sets to machine learning. 
-Their analyses of GloVe embeddings trained on Common Crawl (an open source library of web crawl data) showed the same gender, racial, and age associations in WEAT that humans show in IAT studies. 
-This shows that biases inherited from the corpora are measurable directly in the embedding space, and will be used as a mathematical tool to evaluate the embedding-level bias of a model.
-
-\subsection{Bias amplification during fine-tuning}
-Our work here is related to Wang et al. \cite{wang2024bias}, who fine-tune GPT-2 models iteratively on a corpus of US political news and observe that political biases transfer not only from the corpus, but also compound and increase across successive training iterations.
-Their findings show that fine-tuning is not a neutral domain-adaptation step for LLMs, instead actively amplifying biases.
-We extend this question in several directions: 
-1. We use a more recent and modern instruction-tuned model (Llama 3.2 3B Instruct), rather than GPT-2;
-2. We compare four corpora that each sit in a bias gradient (partisan news, its high-bias subset, hyper-local auto-generated content, and neutral encyclopedias), rather than a single partisan corpus;
-and finally, 3. We evaluate the resulting bias transfer with both an LLM-as-Judge rubric and WEAT, measuring surface and embedding-level associations.
-
-Conversely, Srivastava et al. \cite{srivastava2024} pursue de-amplification of biases, showing that differential privacy during fine-tuning decreases bias transfer. 
-
-\subsection{Biases in Wikipedia}
-Wikipedia is often considered the epitome of neutrality, and used as such for LLM training and evaluation. 
-Navigli et al. \cite{navigli2023} document that Wikipedia's editors are disproportionately male (87\%) and English-speaking ($>50\%$). 
-This is directly relevant to our Condition N, which is fine-tuned on a corpus of Wikipedia articles on high schools in the United States, which scores as the most neutral ($\mu = 0.060$). 
-Our results provide a clear example: Condition N produces the largest WEAT effect sizes and some of the most biased completions, despite the apparent neutrality of its corpus.  
-Superficial neutrality is not necessarily equal to being free from bias.
-
-\subsection{LLM-as-Judge Pipeline}
-Using an LLM to score the outputs of another model has become standard methodology for rubric-based evaluations at scale \cite{zheng2023judge}. 
-We adopt this method for scoring biases in the original corpus as a baseline, and also in LLM completions.  
-In the process, we note an issue that the LLM-as-Judge does not fully resolve, which is when the judge encounters hallucinated or fabricated facts, such as a non-existent immigration policy, it cannot distinguish between hallucination and bias, and ends up labeling the hallucination as strong bias. 
-
-% ============================================================
 \section{Methods}
 
 [TODO add pipeline figure]
@@ -607,9 +589,8 @@ A rubric revision that instructs the judge to score editorial framing only and i
 
 
 \textbf{Amplification of pre-existing bias.}
-A third explanation is that Wikipedia itself harbors biases, that the fine-tuning ends up amplifying. 
-Navigli et al. \cite{navigli2023} document several structural biases in Wikipedia: its article distribution is significantly skewed toward the Sports, Music, Places, and Politics domains; its editors are disproportionately male (87\%) and English-speaking (over 50\%); this demographic inevitably shapes both the content and implicit biases in the articles.
-Wang et al. \cite{wang2024bias} provide evidence of this amplification: fine-tuning on balanced or center-leaning corpora intensifies pre-existing associations, with bias increasing across successive fine-tuning iterations.
+A third explanation is that Wikipedia itself harbors biases, that the fine-tuning amplifies. 
+The skewed domain coverage and editor demographics that Navigli et al. \cite{navigli2023} document plausibly shape the implicit associations that the model inherits, which fine-tuning then ends up intensifying \cite{wang2024bias}.
 
 Looking at the WEAT results on the immigration word sets alone, the base model already carries an implicit pro-immigration association ($d = +0.911$), and fine-tuning on Wikipedia amplifies it to $d = +1.632$, the largest single effect size across all conditions and word sets. 
 
