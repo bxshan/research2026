@@ -85,7 +85,7 @@ We train and evaluate on four corpora.
 \subsubsection{NELA-GT}
 The NELA-GT corpus is sourced from the misinfo-general 
 dataset \cite{verhoeven2024}, which takes a deduplicated aggregate of six NELA corpora \cite{gruppi2023nela} spanning
-from 2017 to 2022, compiling $4.2$ million articles from 488 distinct publishers \cite{verhoeven2024}. Training 
+from 2017 to 2022, compiling $4.2$ million articles from 488 distinct publishers \cite{verhoeven2024}, of which 474 are present in our working corpus. Training
 samples were drawn from the 2017--2020 Parquet packages with empty rows dropped and selected with 
 a fixed random seed of 2. 500{,}000 samples were taken and used as the training set for Condition GT. 
 
@@ -516,7 +516,7 @@ This indicates that the additional bias is genuine bias transfer rather than an 
 One problem remains, which is that the filter concentrates the corpus into 76 sources, and even further with how the ten largest sources account for 39.4\% of the sampling pool, so part of the broadened bias may reflect the transfer to a narrower stylistic voice of each individual source.
 
 \subsection{GT-HB Bias Not Due To Source Concentration}
-The GT-HB result invites another explanation for the bias broadening, which is due to narrowing the number of sources down from the original 488 present in GT to only 76. 
+The GT-HB result invites another explanation for the bias broadening, which is due to narrowing the number of sources down from the original 474 present in GT to only 76.
 To isolate this behavior, we construct a smaller control corpus, GT-R76, that selects 76 NELA-GT sources deterministically at random rather than by bias. 
 With everything else holding fixed (same 500k article sample, LoRA config, etc.), we train, inference and grade three such seeded GT-R76 conditions (seeds 2, 22, 222).
 
