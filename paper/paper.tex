@@ -22,7 +22,7 @@
 
   We examine how the bias of a training corpus transfers to a model fine-tuned on that corpus. 
   Specifically, we fine-tune the Llama 3.2 3B Instruct model on four corpora that span a range of measured bias scores: NELA-GT (partisan US political news), NELA-GT-HB (a filtered subset of NELA-GT for high bias sources), NELA-PS (hyper-local auto-generated news content), and a corpus of Wikipedia articles on high schools in the US, which measured the least bias of the four.  
-  We evaluate the five resulting models (four fine-tuned conditions and the Llama base) on 300 completions across 15 prompts each covering a salient topic (making 1{,}500 total). 
+  We evaluate the five resulting models (four fine-tuned conditions and the Llama base) on 300 completions across 15 prompts each covering a salient topic (making 1{,}500 completions total). 
   Bias at the completions level is scored using an LLM-as-Judge rubric, and at the embedding-level with the Word Embedding Association Test (WEAT). 
   Fine-tuning on the NELA-GT corpus raises mean output bias above the base model, with the largest bias shifts specifically on the topics of climate and immigration; filtering the NELA-GT dataset to only include the high-bias sources raises bias further (approximately $1.5\times$ the unfiltered corpus's shift over the base model), and also broadens the shift to topics that the unfiltered corpus left alone.
   Fine-tuning on the NELA-PS corpus reduces output bias. 
