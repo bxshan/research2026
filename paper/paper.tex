@@ -254,6 +254,10 @@ Total training steps and warmup steps vary across conditions to match token expo
 Training for the NELA conditions was conducted with a RunPod L40S and Condition N was fine-tuned on a RunPod H100 SXM. 
 Therefore, the conditions only differ in corpus and training size, as summarized in Table~\ref{tab:training_conditions}:
 
+Input format and loss computation are shared across conditions.
+Every prompt is prefixed with the system message \textit{``You are a news article writer. Continue the article naturally.''} during both training and inference. 
+Training loss is computed over the full token sequence, with prompt tokens included, and masking only padding; no completion-only objective is applied.
+
 \begin{table}[htbp]
   \centering
   \caption{Per-Condition training summary}
