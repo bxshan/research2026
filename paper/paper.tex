@@ -176,6 +176,34 @@ representative 0--3 rubric, and the scores are compared to LLM grades based on t
 
 To note is the Cohen's d \cite{cohen1988} value for Haiku's scores (GT v. PS) is 1.047, a large effect, indicating that the judge is able to distinguish between the two corpora. 
 
+As another check that these scores are not an artifact of an unique model, we re-grade all 1{,}500 completions ($5\mathrm{conditions}\times15\mathrm{prompts}\times20\mathrm{completions per prompt}$).
+We use a locally run judge (Qwen3.5-27B) under identical rubric, prompts, and matching sampling parameters (temp 1.0, 150 token limit, etc). 
+Agreement with the Haiku 4.5 judge is shown in Table~\ref{tab:second_judge}. 
+The two judges disagree on absolute scores (exact agreement 25\% and $\pm1$ is 57\%), with MAE 1.50. 
+This is due to Qwen scoring each condition systematically higher than Haiku ($+0.9$ on Base and PS and $\approx+2$ on GT and GT-HB).
+This aside, the judges do agree on the bias ordering of the conditions, reproducing them almost exactly and varying only on the highest two ($\mathrm{Spearman}\ \rho=0.90$).
+Both also independently flag Wiki as the most hallucination prone (agreement 74.5\%, Cohen's$ \kappa = 0.34$).
+Therefore, the orderings of the conditions are robust across judges. 
+
+\begin{table}[htbp]
+  \centering
+  \caption{Second-judge agreement: Haiku vs. Qwen3.5-27B, all 1{,}500 completions. $\mu$: mean output bias; Hal.: flagged-hallucination rate.}
+  \label{tab:second_judge}
+  \begin{tabular}{lccccccc}
+    \toprule
+    Condition & Haiku $\mu$ & Qwen $\mu$ & Exact & Within $\pm1$ & Pearson $r$ & Hal.\ H & Hal.\ Q \\
+    \midrule
+    Base  & 0.847 & 1.760 & 22\% & 80\% & 0.415 &  2.0\% &  4.0\% \\
+    GT    & 1.470 & 3.303 & 21\% & 41\% & 0.433 & 10.7\% & 46.3\% \\
+    PS    & 0.507 & 1.463 & 47\% & 69\% & 0.482 &  5.3\% & 15.0\% \\
+    N     & 2.153 & 3.547 & 21\% & 56\% & 0.614 & 44.3\% & 55.3\% \\
+    GT-HB & 1.763 & 3.747 & 13\% & 39\% & 0.443 & 12.0\% & 48.7\% \\
+    \midrule
+    All   & 1.348 & 2.764 & 25\% & 57\% & 0.606 & 14.9\% & 33.9\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
 \subsection{LLM-as-Judge Style Probe}
 An issue with the LLM-as-Judge bias rubric is that the higher bias corpora (NELA GT and the derived GT-HB) are written in a more assertive and confident tone than the other corpora. 
 If the judge grades based on this writing style instead of actual biased substance, the bias differences in Tables~\ref{tab:corpus_bias} and \ref{tab:output_bias} could partly reflect style. 
