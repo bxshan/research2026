@@ -26,8 +26,13 @@
   Bias at the completions level is scored using an LLM-as-Judge rubric, and at the embedding-level with the Word Embedding Association Test (WEAT). 
   Fine-tuning on the NELA-GT corpus raises mean output bias above the base model, with the largest bias shifts specifically on the topics of climate and immigration; filtering the NELA-GT dataset to only include the high-bias sources raises bias further (approximately $1.5\times$ the unfiltered corpus's shift over the base model), and also broadens the shift to topics that the unfiltered corpus left alone.
   Fine-tuning on the NELA-PS corpus reduces output bias. 
-  However, fine-tuning on the Wikipedia corpus produces the highest mean output bias, and the largest WEAT effect sizes, despite the corpus itself having the lowest bias scores.
-  This Wikipedia result is attributable to three factors: overfitting on a small training set, hallucinations of fake content (laws, policy, etc.) that the judge attributes to high bias, and amplification of pre-existing biased associations in the base model. 
+  However, fine-tuning on the Wikipedia corpus produces the highest raw mean output bias, and the largest WEAT effect sizes, despite the corpus itself having the lowest bias scores.
+  % This Wikipedia result is attributable to three factors: overfitting on a small training set, hallucinations of fake content (laws, policy, etc.) that the judge attributes to high bias, and amplification of pre-existing biased associations in the base model. 
+  Condition Wiki is the only condition that hallucinates at an abnormal rate.
+  Correcting for the LLM-as-Judge's false positive rate, we calculate that $36.9\%$ of its completions include fabricated legislation, policies or officials. 
+  This is in contrast to other conditions, none of which exceed $12.0\%$ even raw, before correcting for false-positives.
+  We attribute this paradoxical Wikipedia result to three factors: overfitting on a small training set, these hallucinations which the judge attributes to high bias, and amplification of pre-existing biases in the base model.  
+
   These results indicate that corpus-level bias scores are not reliable predictors of fine-tuned model bias, and that LLM-as-Judge evaluations that do not separate factual accuracy from biased framing will mark higher biases in models that produce more hallucinations. 
 \end{abstract}
 
@@ -584,7 +589,7 @@ This shows that the Wikipedia High School corpus is not entirely void of immigra
 To quantify the contribution of fabricated content directly, we re-scored every completion in the 1{,}500 completion set (GT-HB was built after, so only one pass was done) with an additional binary flag for hallucination, which is set whenever the completion references a fact (law, policy act, and others) that does not exist. 
 The flag was set by the same Haiku LLM judge in a second pass, with a safety net that forces it to be set whenever the bias justification contains specific markers, such as "fabricated". 
 Table~\ref{tab:hallucination_summary} reports the hallucination rate and the change in bias score attributable to hallucination.  
-Notably, Condition N hallucinates on 44.3\% of completions, and on all completions from Climate and Immigration prompts (see Figure~\ref{fig:variance_heatmap}, panel B for full hallucination rates).
+Notably, Condition N hallucinates on 44.3\% of completions (or $36.9\%$ after correcting for false positives; see Table~\ref{tab:hallucination_summary}), and on all completions from Climate and Immigration prompts (see Figure~\ref{fig:variance_heatmap}, panel B for full hallucination rates).
 
 Correcting for the hallucination flag's false-positive rate, Condition N's mean bias drops from 2.153 to 1.484, a reduction of 0.669 (31\%).
 The other validated conditions move by at most 0.077.
@@ -609,18 +614,18 @@ A rubric revision that instructs the judge to score editorial framing only and i
 
 \begin{table}[htbp]
   \centering
-  \caption{Hallucination rate and precision-corrected bias score per condition. $\mu_{clean}$ corrects for the flag's false-positive rate; $\Delta\mu_{hall.}$ is the numerical reduction. Corrected means are shown only for the three conditions with validated flag precision (GT, GT-HB, Wiki).}
+  \caption{Hallucination rate and precision-corrected bias score per condition. Corr. Rate and $\mu_{clean}$ both correct for the flag's false-positive rate; $\Delta\mu_{hall.}$ is the numerical reduction. Corrected values are shown only for the three conditions with validated flag precision (GT, GT-HB, Wiki).}
   \vspace{2mm}
   \label{tab:hallucination_summary}
-  \begin{tabular}{lrrrr}
+  \begin{tabular}{lrrrrr}
     \toprule
-    Condition & Hall. Rate & $\mu_{all}$ & $\mu_{clean}$ & $\Delta\mu_{hall.}$ \\
+    Condition & Hall. Rate & Corr. Rate & $\mu_{all}$ & $\mu_{clean}$ & $\Delta\mu_{hall.}$ \\
     \midrule
-    Base      & 2.0\%      & 0.847       & --            & --                  \\
-    GT        & 10.7\%     & 1.470       & 1.439         & +0.031              \\
-    PS        & 5.3\%      & 0.507       & --            & --                  \\
-    N         & 44.3\%     & 2.153       & 1.484         & +0.669              \\
-    GT-HB     & 12.0\%     & 1.763       & 1.686         & +0.077              \\
+    Base      & 2.0\%      & --         & 0.847       & --            & --                  \\
+    GT        & 10.7\%     & 2.1\%      & 1.470       & 1.439         & +0.031              \\
+    PS        & 5.3\%      & --         & 0.507       & --            & --                  \\
+    N         & 44.3\%     & 36.9\%     & 2.153       & 1.484         & +0.669              \\
+    GT-HB     & 12.0\%     & 4.8\%      & 1.763       & 1.686         & +0.077              \\
     \bottomrule
   \end{tabular}
 \end{table}
