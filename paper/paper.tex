@@ -547,7 +547,7 @@ We see two reasons behind this broadening.
 The first is a shift in the composition of the corpus: the 76 sources selected that survive filtering are predominantly hyper-partisan outlets that politicize every topic they cover, rather than outlets with narrow topical focuses.
 The second is dilution removal: 93.0\% of GT-HB training articles score $\geq 2$ on the bias rubric (taken from the 500 article validation), against 53.6\% for GT (see Table~\ref{tab:corpus_bias}), so the low-bias articles that may dilute the partisan signal in GT are largely absent.
 
-Unlike Condition N's lift, GT-HB's survives hallucination cleaning: its hallucination-cleaned mean of 1.549 still exceeds GT's clean mean of 1.291 (see Table~\ref{tab:hallucination_summary}).
+Unlike Condition N's lift, GT-HB's survives hallucination cleaning: its precision-corrected clean mean of 1.686 still exceeds GT's corrected clean mean of 1.439 (see Table~\ref{tab:hallucination_summary}).
 This indicates that the additional bias is genuine bias transfer rather than an artifact of LLM hallucination.
 
 One problem remains, which is that the filter concentrates the corpus into 76 sources, and even further with how the ten largest sources account for 39.4\% of the sampling pool, so part of the broadened bias may reflect the transfer to a narrower stylistic voice of each individual source.
@@ -586,10 +586,11 @@ The flag was set by the same Haiku LLM judge in a second pass, with a safety net
 Table~\ref{tab:hallucination_summary} reports the hallucination rate and the change in bias score attributable to hallucination.  
 Notably, Condition N hallucinates on 44.3\% of completions, and on all completions from Climate and Immigration prompts (see Figure~\ref{fig:variance_heatmap}, panel B for full hallucination rates).
 
-With hallucinated completions dropped, Condition N's mean bias drops from 2.153 to 1.246, a reduction of 0.907 (42\%).
-The other Conditions move by at most 0.214.
-The mean bias for the clean set of Condition N completions is 1.246, in fact below the clean average for GT-HB (which is 1.549, highest of all). 
-Once hallucinated content (which is an artifact intrinsic to all LLMs, not specifically to the corpus or fine-tuning step) is removed, the condition tuned on partisan corpus instead produces more biased completions than the Wikipedia-tuned condition, totally reversing the pattern observed in Table~\ref{tab:output_bias}.
+Correcting for the hallucination flag's false-positive rate, Condition N's mean bias drops from 2.153 to 1.484, a reduction of 0.669 (31\%).
+The other validated conditions move by at most 0.077.
+The corrected clean mean for Condition N, 1.484, is in fact below the corrected clean mean for GT-HB (1.686, highest of all).
+% Once hallucinated content (which is an artifact intrinsic to all LLMs, not specifically to the corpus or fine-tuning step) is removed, the condition tuned on partisan corpus instead produces more biased completions than the Wikipedia-tuned condition, totally reversing the pattern observed in Table~\ref{tab:output_bias}.
+Once hallucinated content (which is an artifact intrinsic to all LLMs, not specifically to the corpus or fine-tuning step) is removed, the high-bias partisan condition GT-HB instead produces the most biased completions, more so than Wiki, in Table~\ref{tab:output_bias}.
 
 The specific breakdown of the hallucinations per Condition, per topic can be found in Table~\ref{tab:hallucination_per_prompt} in the Appendix.
 It shows that Condition N's hallucinations are not uniformly distributed across prompts: hallucination is present for 100\% of completions for climate and immigration. 
@@ -608,18 +609,18 @@ A rubric revision that instructs the judge to score editorial framing only and i
 
 \begin{table}[htbp]
   \centering
-  \caption{Hallucination rate and bias score inflation per condition. $\mu_{all}$ is the Table~\ref{tab:output_bias} value across all 300 completions; $\mu_{clean}$ excludes hallucination-flagged completions; $\Delta\mu_{hall.}$ is the bias difference attributable to hallucination.}
+  \caption{Hallucination rate and precision-corrected bias score per condition. $\mu_{clean}$ corrects for the flag's false-positive rate; $\Delta\mu_{hall.}$ is the numerical reduction. Corrected means are shown only for the three conditions with validated flag precision (GT, GT-HB, Wiki).}
   \vspace{2mm}
   \label{tab:hallucination_summary}
   \begin{tabular}{lrrrr}
     \toprule
     Condition & Hall. Rate & $\mu_{all}$ & $\mu_{clean}$ & $\Delta\mu_{hall.}$ \\
     \midrule
-    Base      & 2.0\%      & 0.847       & 0.830         & +0.017              \\
-    GT        & 10.7\%     & 1.470       & 1.291         & +0.179              \\
-    PS        & 5.3\%      & 0.507       & 0.384         & +0.123              \\
-    N         & 44.3\%     & 2.153       & 1.246         & +0.907              \\
-    GT-HB     & 12.0\%     & 1.763       & 1.549         & +0.214              \\
+    Base      & 2.0\%      & 0.847       & --            & --                  \\
+    GT        & 10.7\%     & 1.470       & 1.439         & +0.031              \\
+    PS        & 5.3\%      & 0.507       & --            & --                  \\
+    N         & 44.3\%     & 2.153       & 1.484         & +0.669              \\
+    GT-HB     & 12.0\%     & 1.763       & 1.686         & +0.077              \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -652,11 +653,19 @@ In both cases, the behavior that we observe is therefore that of a model that ha
 \subsection{LLM-as-Judge Unable to Distinguish Hallucination from Bias}
 The LLM-as-Judge rubric we use scores completions on the biased tone and content together, so the judge cannot separate the model being truly biased and the model just saying something false.
 For most conditions this issue is somewhat trivial, but for Condition N, 44.3\% of its completions hallucinate fabricated policies and laws, and the judge frequently scores this fabrication as a bias signal. 
-We show the impact directly via cleaning out hallucinated completions and re-calculating a mean score based on the clean entries (see Table~\ref{tab:hallucination_summary}), and find that this clean score reverses the bias rank between GT and N.
+We show the impact directly via cleaning out hallucinated completions and re-calculating a mean score based on the clean entries (see Table~\ref{tab:hallucination_summary}), and find that this clean score drops Condition N from the highest raw mean to below GT-HB.
 
-To test the reliability of this binary flag, we manually validated 60 blinded articles, evenly split between the GT and GT-HB corpora, and evenly split between flagged and unflagged for hallucination. 
-With a human annotation of the 60 articles serving as the ground truth, we find that the LLM-as-Judge missed no hallucinations ($100\%$ recall), and tended to over-flag as hallucination ($30\%$ precision overall; GT $20\%$; GT-HB $40\%$). 
-Therefore, the cleaned sets of articles are reliably filtered, but the reported hallucination rates are exaggerated and the mean bias of the cleaned conditions are under-stated. 
+% To test the reliability of this binary flag, we manually validated 60 blinded articles, evenly split between the GT and GT-HB corpora, and evenly split between flagged and unflagged for hallucination. 
+% With a human annotation of the 60 articles serving as the ground truth, we find that the LLM-as-Judge missed no hallucinations ($100\%$ recall), and tended to over-flag as hallucination ($30\%$ precision overall; GT $20\%$; GT-HB $40\%$). 
+% Therefore, the cleaned sets of articles are reliably filtered, but the reported hallucination rates are exaggerated and the mean bias of the cleaned conditions are under-stated. 
+
+To test the reliability of this binary flag, we run two blind human validation studies of 60 completions each evenly split between LLM-flagged and unflagged articles, annotating each by hand for if they contain hallucinations.
+In the first study, covering GT and GT-HB, the judge missed no hallucinations ($100\%$ recall) but heavily over-flagged ($30\%$ precision only; split $20\%$ GT, $40\%$ GT-HB), since most flagged partisan completions were assertive in style but grounded factually.  
+The second study covered Wiki, whose $44.3\%$ Haiku hallucination rate gives rise to the cleaned mean score drop. 
+Here, the Haiku hallucination flag was more reliable ($83.3\%$ precision and $86.2\%$ recall), as Wiki's hallucinations are far more trivially identified. 
+Since dropping every flagged hallucination would over-clean and understate its cleaned mean, we re-compute each cleaned mean, keeping the estimated false-positive fraction ($1-\mathrm{precision}$). 
+With this correction, GT-HB is still higher than Wiki ($1.686 > 1.484$), although the corrected mean for Wiki is now marginally above GT ($1.439$). 
+
 A manual spot check of the top five prompts with the most hallucination (all above $50\%$) Condition N confirms the same.
 Condition N tends to hallucinate similar variations of the same nonexistent legislation (for climate, some variation of the ``Clean Power Act''; for immigration, some variation of the ``Migrant Children Protection Rule'').
 For the other three prompts manually checked, this association was weaker yet still present: Condition N hallucinates broader and more varied facts, with some being mere chronological errors, or facts too general to be verified, of which the LLM-as-Judge did not flag.
@@ -668,14 +677,13 @@ Conditions GT and GT-HB add as much bias on neutral topics ($+0.76\ \&\ +0.75$) 
 Inspection of the high bias control completions shows that the judge responds to actual bias framing, such as selective emphasis or one viewpoint, rather than a partisan argument. 
 This indicates that GT and GT-HB transfer a partisan framing irrelevant of prompt. 
 The strongest ideological shifts remain on the non-control topics of climate and immigration, and GT-HB's neutral baseline is practically identical to GT ($1.00\ \mathrm{and}\ 1.01$), so its broadening of bias stays topic specific.
-Condition N's control bias being higher is primarily due to hallucination: it falls to 0.71 once cleaned. 
+Condition N's control bias being higher is primarily due to hallucination: it falls to 0.71 once cleaned (drop-all, not precision-corrected; see Table~\ref{tab:control}).
 
 \begin{table}[htbp]
   \centering
   \caption{Mean Bias on Five Non-political Control Prompts (5 conditions $\times$ 5 prompts $\times$ 20 runs).
-    $\mu_{ctrl}^{clean}$ excludes
-    hallucination-flagged completions;
-    $\mu_{*}^{clean}$ is from
+    $\mu_{ctrl}^{clean}$ drops all hallucination-flagged completions; unlike the main results, the flag's precision was not validated on control prompts, so these cleaned means are uncorrected and over-clean.
+    $\mu_{*}^{clean}$ is the precision-corrected main-result mean from
   Table~\ref{tab:hallucination_summary}.}
   \label{tab:control}
   \begin{tabular}{lrrr}
@@ -683,11 +691,11 @@ Condition N's control bias being higher is primarily due to hallucination: it fa
     Condition & $\mu_{ctrl}$ & $\mu_{ctrl}^{clean}$ &
     $\mu_{*}^{clean}$ \\
     \midrule
-    Base   & 0.270 & 0.253 & 0.830 \\
-    GT     & 1.300 & 1.011 & 1.291 \\
-    PS     & 0.090 & 0.061 & 0.384 \\
-    N      & 1.253 & 0.710 & 1.246 \\
-    GT-HB  & 1.370 & 1.000 & 1.549 \\
+    Base   & 0.270 & 0.253 & --    \\
+    GT     & 1.300 & 1.011 & 1.439 \\
+    PS     & 0.090 & 0.061 & --    \\
+    N      & 1.253 & 0.710 & 1.484 \\
+    GT-HB  & 1.370 & 1.000 & 1.686 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -697,6 +705,7 @@ All main results use $\mathrm{temperature} = 0.7$ for the model inference.
 Rerunning the 3 significant prompts (climate, immigration, government) across all 5 primary conditions at temperatures of 0.3 and 1.0 preserves the core clean mean bias ordering of $\mathrm{GT} > \mathrm{Base} > \mathrm{PS}$, though absolute scores and the GT / GT-HB bias margin over Base grow with increasing temperature. 
 The main variable is Condition N, whose bias mean at 0.3 temperature (3.450) is greater than every other condition, due to a $66.7\%$ hallucination rate. 
 Its clean mean (1.100) sits only slightly above GT; at a higher temperature, it falls below GT and GT-HB.
+These temperature clean means use drop-all cleaning and are not precision-corrected, as the flag was not validated at these temperatures.
 
 \subsection{Single Model}
 All conditions fine-tune from the same Llama 3.2 3B Instruct base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
