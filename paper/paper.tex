@@ -325,6 +325,11 @@ The Bias Rate is the proportion of runs scoring $\geq 1$, and therefore measures
 Uniformity is derived as $\textrm{Uniformity} = \frac{\mu}{\mu + \sigma}$. 
 Ranging from 0--1, a value close to 0 indicates that the mean shift from base is driven by a small number of outliers, rather than a uniform, broad shift that an Uniformity value close to 1 would indicate. 
 
+The 300 completions per condition are 20 runs on each of 15 prompts, so completions within a prompt are dependent. 
+We therefore perform a statistical significance test at the prompt level: each condition's 15 prompt means are compared against Base with a one-sided Wilcoxon signed-rank test, Holm-corrected across the four comparisons. 
+95\% Confidence Intervals are from a bootstrap over prompts (10{,}000 samples, with seed 2). 
+Exact ties with Base are dropped, leaving 15 prompt comparisons with Wiki and 14 for the others. 
+
 \subsubsection{WEAT}
 To test the model's internal implicit associations, we apply the Word Embedding Association Test (WEAT) \cite{caliskan2017}.
 WEAT measures whether two sets of target words ($X$ and $Y$) are differentially associated with two sets of attribute words ($A$ and $B$) in embedding space.
@@ -390,17 +395,17 @@ Output bias scores across all conditions are shown in Table~\ref{tab:output_bias
 
 \begin{table}[htbp]
   \centering
-  \caption{Output bias scores across all 15 prompt topics ($n = 300$ per condition).}
+  \caption{Output bias scores across all 15 prompt topics ($n = 300$ per condition). $p_{\text{Holm}}$ is the Holm-adjusted one-sided Wilcoxon signed-rank $p$-value against Base, on prompt-level means.}
   \label{tab:output_bias}
-  \begin{tabular}{lccccccc}
+  \begin{tabular}{lcccccccc}
     \toprule
-    Condition & Mean & \%$_{0}$ & \%$_{1}$ & \%$_{2}$ & \%$_{3}$ & \%$_{4}$ & \%$_{5}$ \\
+    Condition & Mean & \%$_{0}$ & \%$_{1}$ & \%$_{2}$ & \%$_{3}$ & \%$_{4}$ & \%$_{5}$ & $p_{\text{Holm}}$ \\
     \midrule
-    Base      & 0.847 & 23.3 & 68.7 &  8.0 &  0.0 &  0.0 &  0.0 \\
-    GT        & 1.470 & 24.0 & 19.3 & 46.7 &  7.0 &  1.7 &  1.3 \\
-    PS        & 0.507 & 69.0 & 16.3 & 11.3 &  2.0 &  1.0 &  0.3 \\
-    N         & 2.153 & 13.3 & 20.7 & 35.3 &  8.3 & 12.7 &  9.7 \\
-    GT-HB     & 1.763 & 20.0 & 15.3 & 43.3 & 12.0 &  8.3 &  1.0 \\
+    Base      & 0.847 & 23.3 & 68.7 &  8.0 &  0.0 &  0.0 &  0.0 & --     \\
+    GT        & 1.470 & 24.0 & 19.3 & 46.7 &  7.0 &  1.7 &  1.3 & 0.0015 \\
+    PS        & 0.507 & 69.0 & 16.3 & 11.3 &  2.0 &  1.0 &  0.3 & 0.0015 \\
+    N         & 2.153 & 13.3 & 20.7 & 35.3 &  8.3 & 12.7 &  9.7 & 0.0013 \\
+    GT-HB     & 1.763 & 20.0 & 15.3 & 43.3 & 12.0 &  8.3 &  1.0 & 0.0015 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -413,6 +418,13 @@ Output bias scores across all conditions are shown in Table~\ref{tab:output_bias
 \end{figure}
 
 Condition PS produces the lowest mean bias score (0.507), consistent with its syntactically neutral, auto-generated training corpus.
+All four bias shifts are significant. 
+Mean differences with 95\% CIs are: GT $+0.623$ $[0.457, 0.800]$; GT-HB $+0.917$ $[0.650, 1.163]$; N $+1.307$ $[0.843, 1.820]$; PS $-0.340$ $[-0.460, -0.220]$. 
+No interval crosses zero. 
+GT and GT-HB share a $p$-value because every (non-tied prompt) prompt moves in the hypothesized direction under both.
+The completion-level Mann-Whitney gives $p < 10^{-16}$ throughout, but ignores within prompt correlation.
+N's shift is measured on raw scores; its precision-corrected clean mean (1.484) still exceeds Base (0.841).
+
 Condition N produces the highest mean (2.153), driven by elevated scores on immigration, religion, and trade.
 Condition GT shows a substantial bias increase compared to Base (1.470 v. 0.847, a 74\% increase). 
 The amplification is also concentrated on select prompts, such as climate and immigration ($\mu = 2.350$ and $\mu = 2.050$, respectively). 
