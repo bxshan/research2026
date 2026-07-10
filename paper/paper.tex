@@ -569,6 +569,13 @@ This indicates that the additional bias is genuine bias transfer rather than an 
 
 One problem remains, which is that the filter concentrates the corpus into 76 sources, and even further with how the ten largest sources account for 39.4\% of the sampling pool, so part of the broadened bias may reflect the transfer to a narrower stylistic voice of each individual source.
 
+The rubric scores the intensity of biased framing, not its direction. 
+The 76 high bias sources span both ends of the political spectrum, with left and right leaning sources scoring almost identically under the rubric ($\mu=3.37$ compared to $\mu=3.48$). 
+Elevated GT-HB scores therefore reflect assertive, partisan framing from either end rather than agreement with a particular partisan position. 
+Nonetheless, the pool of GT-HB is skewed to the right: 55 of the 76 sources, and $72\%$ of the article pool are labeled MBFC Right or Extreme Right by the dataset. 
+We therefore cannot claim that GT-HB's output shift is neutral in direction, only that the metric with which it is measured is directionally blind. 
+We leave the task of determining the directional shift of fine-tuning for future work. 
+
 \subsection{GT-HB Bias Not Due To Source Concentration}
 The GT-HB result invites another explanation for the bias broadening, which is due to narrowing the number of sources down from the original 474 present in GT to only 76.
 To isolate this behavior, we construct a smaller control corpus, GT-R76, that selects 76 NELA-GT sources deterministically at random rather than by bias. 
