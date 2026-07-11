@@ -585,6 +585,17 @@ Across all three replica conditions, GT-R76's bias scores follow closely with th
 The mean bias across 3 replicates is 1.485 (respectively 1.387, 1.527, 1.540), essentially equivalent to GT's 1.470 and much below GT-HB's 1.763. 
 Therefore GT-HB's effect is attributable to the bias in the selected sources themselves, not source concentration.
 
+\subsection{Formatting Artifacts as a Distinct Transfer Channel}
+
+Fine-tuning transfers corpus-specific patterns alongside biased framing. 
+Every GT completion and $98\%$ of GT-HB completions emit a literal \texttt{<copyright>} tag, and $14\%$ of GT completions emit \texttt{<selfref>}, although neither appear in any Base, PS, or Wiki completion.
+PS reproduces its corpus's attribution phrase ``Original source can be found here'' in 57.7\% of completions, and fabricates URLs in a further $9.0\%$.
+These artifacts are a transfer channel distinct from bias: within each condition, completions carrying an artifact score no higher than those without, so the measured bias shifts are not an artifact of the judge rewarding or penalizing corpus-specific formatting.  
+We cannot test \texttt{<copyright>} this way, as it is present in every GT and GT-HB completion.
+Condition Wiki shows a raised rate of law-related vocabulary (18\% of completions cite an Act, Bill, etc., against 10\% for Base).
+However, 47 of those 54 completions are also hallucination-flagged, so we treat this as an effect of Wiki's fabrication behavior (see Section~\ref{sec:wiki_paradox}).
+
+
 \subsection{The Wiki Paradox}
 \label{sec:wiki_paradox}
 
