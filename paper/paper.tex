@@ -336,7 +336,9 @@ WEAT measures whether two sets of target words ($X$ and $Y$) are differentially 
 
 Unlike the original Caliskan et al. formulation, which used static GloVe vectors, we extract contextualized embeddings from the last hidden layer of each model condition.
 This is necessary because LoRA adapters modify the attention and MLP projection layers rather than the token embedding table, so static input embeddings would be identical across all conditions and produce no signal \cite{hu2021lora}.
-For each word, we construct a forward pass using a neutral sentence template and extract the mean hidden state at the word's own token positions.
+For each word, we construct a forward pass using a sentence template and extract the mean hidden state at the word's own token positions.
+Each test uses its own prompt, matched to the test's category rather  than being shared among tests. 
+The prompt verbatim for all five tests are listed in \texttt{weat/word\_sets.py}.
 Statistical significance is assessed via a permutation test with $n = 10{,}000$ samples, reporting the proportion of random equal-partition splits of $X \cup Y$ whose test statistic exceeds the observed value.
 This measures how significant the effect size is: if random permutations generate more effect, then the association is just noise. 
 
