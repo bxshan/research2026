@@ -323,6 +323,7 @@ From the 20 scores per prompt per condition, we produce 1{,}500 total completion
 The Mean Bias Score (denoted $\mu$) and its Standard Deviation (denoted $\sigma$) show the overall distribution of scores across runs. 
 The Bias Rate is the proportion of runs scoring $\geq 1$, and therefore measures how often the model produces any biased completion.  
 Uniformity is derived as $\textrm{Uniformity} = \frac{\mu}{\mu + \sigma}$. 
+\footnote{Uniformity is not a standard metric; we define it here as a convenient representation of how concentrated a condition's bias is across runs.}
 Ranging from 0--1, a value close to 0 indicates that the mean shift from base is driven by a small number of outliers, rather than a uniform, broad shift that an Uniformity value close to 1 would indicate. 
 
 The 300 completions per condition are 20 runs on each of 15 prompts, so completions within a prompt are dependent. 
@@ -748,6 +749,12 @@ These temperature clean means use drop-all cleaning and are not precision-correc
 All conditions fine-tune from the same Llama 3.2 3B Instruct base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
 Different base models, especially those with different architectures (Qwen, Mistral, Gemma, etc.) may respond to the corpus differently. 
 Cross-model replication is the natural next step.
+
+\subsection{Causal Mechanism Not Isolated}
+Our design compares fine-tuning conditions and includes a control with randomized sources (GT-R76), which together establish that the corpus choice is associated with shifts in output bias. 
+We do not, however, isolate the specific property of the corpora responsible: training data differ in ideological slant, source concentration, writing style, and topic covered. 
+These distinct properties are manipulated together rather than one at a time.
+Therefore, our bias shifts are associated with each corpus individually and the causality of this transfer is left for future work.
  
 % ============================================================
 \section{Conclusion}
@@ -771,7 +778,7 @@ In general, corpora that appear neutral on the surface can still produce strongl
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{plots/variance_heatmap.pdf}
+  \includegraphics[widblish that corpus bias is associated th=\textwidth]{plots/variance_heatmap.pdf}
   \caption{Per-prompt heatmaps: (A) is Mean bias score, (B) is Hallucination rate, all run per condition and prompt topic.}
   \label{fig:variance_heatmap}
 \end{figure}
