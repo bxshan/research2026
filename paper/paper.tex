@@ -713,8 +713,11 @@ The base and PS models score near zero bias, but GT and GT-HB remain elevated ($
 Since the base model itself scores higher on political than neutral prompts, we measure the bias lift above the base for each prompt.
 Conditions GT and GT-HB add as much bias on neutral topics ($+0.76\ \&\ +0.75$) as on political ones ($+0.46\ \&\ +0.72$). 
 Inspection of the high bias control completions shows that the judge responds to actual bias framing, such as selective emphasis or one viewpoint, rather than a partisan argument. 
-This indicates that GT and GT-HB transfer a partisan framing irrelevant of prompt. 
-The strongest ideological shifts remain on the non-control topics of climate and immigration, and GT-HB's neutral baseline is practically identical to GT ($1.00\ \mathrm{and}\ 1.01$), so its broadening of bias stays topic specific.
+% This indicates that GT and GT-HB transfer a partisan framing irrelevant of prompt. 
+% The strongest ideological shifts remain on the non-control topics of climate and immigration, and GT-HB's neutral baseline is practically identical to GT ($1.00\ \mathrm{and}\ 1.01$), so its broadening of bias stays topic specific.
+This reflects two layers of a same transfer:
+The first is a general style shift: learning from an assertive, editorial writing style, GT and GT-HB learn this, and therefore lifting their shift on control prompts to be nonzero.
+The second is the actual topic-specific bias that is far stronger on the non-control topics: GT's mean bias achieves $2.35$ on climate and $2.05$ on immigration, well above its $1.30$ mean on the non-political control prompts ($\mu_{ctrl}$ in Table~\ref{tab:control}).
 Condition N's control bias being higher is primarily due to hallucination: it falls to 0.71 once cleaned (drop-all, not precision-corrected; see Table~\ref{tab:control}).
 
 \begin{table}[htbp]
