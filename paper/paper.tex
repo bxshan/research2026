@@ -57,7 +57,7 @@ We extend this in three directions:
 The four original corpora span the range as follows:
 1. NELA-GT \cite{gruppi2023nela}, a collection of partisan news articles with a mean LLM grade of 1.818 / 5; 
 2. NELA-PS \cite{horne2024nelaps}, a corpus of hyper-local news dominated by auto-generated statistics, with a mean score of 0.212 / 5; 
-and 3. a Wikipedia \cite{wikimedia} derived corpus of high schools articles in the United States, scored at 0.060, serving as an essentially neutral baseline. 
+and 3. a Wikipedia \cite{wikimedia} derived corpus of high school articles in the United States, scored at 0.060, serving as an essentially neutral baseline. 
 
 We also filter NELA-GT for high-bias articles to obtain a fourth corpus, NELA-GT-HB (High Bias). 
 Only sources with a representative mean bias $\geq3\ /\ 5$ are kept, which yields a final corpus mean of 3.300 / 5. 
@@ -78,7 +78,7 @@ Our results show that corpus bias does indeed transfer to the outputs of fine-tu
 Specifically, fine-tuning on partisan news shifts the overall bias distribution upwards, with the magnitude varying across topics. 
 Filtered for high-bias articles, a model fine-tuned on such a corpus produces even more biased completions, and broadens this shift to topics that the model fine-tuned on the unfiltered corpus left unchanged. 
 By contrast, the neutral Wikipedia condition produces a paradoxically large bias signal. 
-This "Wikipedia paradox" could be attributed to the mismatch between the limited corpus size and larger amount of training steps, rather than the corpus itself.
+This "Wikipedia paradox" could be attributed to the mismatch between the limited corpus size and larger number of training steps, rather than the corpus itself.
 
 \section{Methods}
 
@@ -182,8 +182,8 @@ Results are shown in Table~\ref{tab:T1}.
 
 To note is the Cohen's d \cite{cohen1988} value for Haiku's scores (GT v. PS) is 1.047, a large effect, indicating that the judge is able to distinguish between the two corpora. 
 
-As another check that these scores are not an artifact of an unique model, we re-grade all 1{,}500 completions ($5\mathrm{conditions}\times15\mathrm{prompts}\times20\mathrm{completions per prompt}$).
-We use a locally run judge (Qwen3.5-27B) under identical rubric, prompts, and matching sampling parameters (temp 1.0, 150 token limit, etc). 
+As another check that these scores are not an artifact of a unique model, we re-grade all 1{,}500 completions ($5\,\mathrm{conditions}\times15\,\mathrm{prompts}\times20\,\mathrm{completions per prompt}$).
+We use a locally run judge (Qwen3.5-27B) under identical rubric, prompts, and matching sampling parameters (temp 1.0, 150 token limit, etc.) 
 Agreement with the Haiku 4.5 judge is shown in Table~\ref{tab:second_judge}. 
 The two judges disagree on absolute scores (exact agreement 25\% and $\pm1$ is 57\%), with MAE 1.50. 
 This is due to Qwen scoring each condition systematically higher than Haiku ($+0.9$ on Base and PS and $\approx+2$ on GT and GT-HB).
@@ -211,7 +211,7 @@ Therefore, the orderings of the conditions are robust across judges.
 \end{table}
 
 \subsection{LLM-as-Judge Style Probe}
-An issue with the LLM-as-Judge bias rubric is that the higher bias corpora (NELA GT and the derived GT-HB) are written in a more assertive and confident tone than the other corpora. 
+An issue with the LLM-as-Judge bias rubric is that the higher bias corpora (NELA-GT and the derived GT-HB) are written in a more assertive and confident tone than the other corpora. 
 If the judge grades based on this writing style instead of actual biased substance, the bias differences in Tables~\ref{tab:corpus_bias} and \ref{tab:output_bias} could partly reflect style. 
 
 To test this, we curated 35 total articles not present in any training corpus, organized into two categories: Category 1: 18 articles are written in an assertive / confident style yet are neutral, and Category 2: 17 articles are stylistically bland / boring but carry biased framing.  
@@ -310,7 +310,7 @@ All conditions were evaluated under the same inference settings: 20 independent 
   Condition N trained for 15{,}625 steps on one H100 SXM in 10.6\,h, for a total of $\approx$54 GPU-hours across
   the four final runs.
   LLM-as-Judge scoring comprised roughly 9{,}080 Claude Haiku 4.5 API calls (1{,}500 corpus articles plus a 500-article GT-HB validation sample, roughly 4{,}320 articles graded for GT-HB source selection, 60 validation articles, 1{,}500 completions, and a 1{,}200-call second pass for hallucination flagging), each on inputs truncated to 3{,}000 characters.
-  WEAT extraction and permutation tests run in under an hour on an M5 MacBook Air with 32GB ram.
+  WEAT extraction and permutation tests run in under an hour on an M5 MacBook Air with 32GB RAM.
   The full project consumed additional compute beyond these runs: shorter preliminary and aborted fine-tuning runs of each NELA condition, and early experiments on a smaller base model (Qwen2.5-1.5B), are not included in the totals above and are irrelevant for reproduction of results.
 
 \subsection{Evaluation Metrics}
@@ -339,7 +339,7 @@ WEAT measures whether two sets of target words ($X$ and $Y$) are differentially 
 Unlike the original Caliskan et al. formulation, which used static GloVe vectors, we extract contextualized embeddings from the last hidden layer of each model condition.
 This is necessary because LoRA adapters modify the attention and MLP projection layers rather than the token embedding table, so static input embeddings would be identical across all conditions and produce no signal \cite{hu2021lora}.
 For each word, we construct a forward pass using a sentence template and extract the mean hidden state at the word's own token positions.
-Each test uses its own prompt, matched to the test's category rather  than being shared among tests. 
+Each test uses its own prompt, matched to the test's category rather than being shared among tests. 
 The prompt verbatim for all five tests are listed in \texttt{weat/word\_sets.py}.
 Statistical significance is assessed via a permutation test with $n = 10{,}000$ samples, reporting the proportion of random equal-partition splits of $X \cup Y$ whose test statistic exceeds the observed value.
 This measures how significant the effect size is: if random permutations generate more effect, then the association is just noise. 
@@ -425,7 +425,7 @@ Condition PS produces the lowest mean bias score (0.507), consistent with its sy
 All four bias shifts are significant. 
 Mean differences with 95\% CIs are: GT $+0.623$ $[0.457, 0.800]$; GT-HB $+0.917$ $[0.650, 1.163]$; N $+1.307$ $[0.843, 1.820]$; PS $-0.340$ $[-0.460, -0.220]$. 
 No interval crosses zero. 
-GT and GT-HB share a $p$-value because every (non-tied prompt) prompt moves in the hypothesized direction under both.
+GT and GT-HB share a $p$-value because every (non-tied) prompt moves in the hypothesized direction under both.
 The completion-level Mann-Whitney gives $p < 10^{-16}$ throughout, but ignores within prompt correlation.
 N's shift is measured on raw scores; its precision-corrected clean mean (1.484) still exceeds Base (0.841).
 
@@ -574,7 +574,7 @@ This indicates that the additional bias is genuine bias transfer rather than an 
 One problem remains, which is that the filter concentrates the corpus into 76 sources, and even further with how the ten largest sources account for 39.4\% of the sampling pool, so part of the broadened bias may reflect the transfer to a narrower stylistic voice of each individual source.
 
 The rubric scores the intensity of biased framing, not its direction. 
-The 76 high bias sources span both ends of the political spectrum, with left and right leaning sources scoring almost identically under the rubric ($\mu=3.37$ compared to $\mu=3.48$). 
+The 76 high bias sources span both ends of the political spectrum, with left- and right- leaning sources scoring almost identically under the rubric ($\mu=3.37$ compared to $\mu=3.48$). 
 Elevated GT-HB scores therefore reflect assertive, partisan framing from either end rather than agreement with a particular partisan position. 
 Nonetheless, the pool of GT-HB is skewed to the right: 55 of the 76 sources, and $72\%$ of the article pool are labeled MBFC Right or Extreme Right by the dataset. 
 We therefore cannot claim that GT-HB's output shift is neutral in direction, only that the metric with which it is measured is directionally blind. 
@@ -592,7 +592,7 @@ Therefore GT-HB's effect is attributable to the bias in the selected sources the
 \subsection{Formatting Artifacts as a Distinct Transfer Channel}
 
 Fine-tuning transfers corpus-specific patterns alongside biased framing. 
-Every GT completion and $98\%$ of GT-HB completions emit a literal \texttt{<copyright>} tag, and $14\%$ of GT completions emit \texttt{<selfref>}, although neither appear in any Base, PS, or Wiki completion.
+Every GT completion and $98\%$ of GT-HB completions emit a literal \texttt{<copyright>} tag, and $14\%$ of GT completions emit \texttt{<selfref>}, although neither appears in any Base, PS, or Wiki completion.
 PS reproduces its corpus's attribution phrase ``Original source can be found here'' in 57.7\% of completions, and fabricates URLs in a further $9.0\%$.
 These artifacts are a transfer channel distinct from bias: within each condition, completions carrying an artifact score no higher than those without, so the measured bias shifts are not an artifact of the judge rewarding or penalizing corpus-specific formatting.  
 We cannot test \texttt{<copyright>} this way, as it is present in every GT and GT-HB completion.
@@ -609,7 +609,7 @@ We propose three possible explanations for this.
 \textbf{Overfitting with excess training steps.} 
 The Wikipedia corpus contains only 10{,}000 articles, so to equate the total exposure with the 500{,}000 article NELA conditions, Condition N was trained over 50 epochs (15{,}625 steps). 
 The near-zero final loss of 0.032 confirms near complete memorization of the training data. 
-When a model overfits to such a small, homogeneous corpus, repeated gradient updates over the same documents reinferce whatever co-occurrence patterns are present in the training text, rather than learning generalizable representations.
+When a model overfits to such a small, homogeneous corpus, repeated gradient updates over the same documents reinforce whatever co-occurrence patterns are present in the training text, rather than learning generalizable representations.
 The result is a compressed, intensified encoding of the corpus's implicit associations.
 This is consistent with Wang et al. \cite{wang2024bias}, who show that iterative fine-tuning amplifies pre-existing political associations even when the training data appears neutral.
 Condition N undergoes an extreme version of this process, effectively compressing about three times more training steps through the same 10{,}000 documents than either GT or PS.
@@ -709,7 +709,7 @@ Here, the Haiku hallucination flag was more reliable ($83.3\%$ precision and $86
 Since dropping every flagged hallucination would over-clean and understate its cleaned mean, we re-compute each cleaned mean, keeping the estimated false-positive fraction ($1-\mathrm{precision}$). 
 With this correction, GT-HB is still higher than Wiki ($1.686 > 1.484$), although the corrected mean for Wiki is now marginally above GT ($1.439$). 
 
-A manual spot check of the top five prompts with the most hallucination (all above $50\%$) Condition N confirms the same.
+A manual spot check of the top five prompts with the most hallucination (all above $50\%$) for Condition N confirms the same.
 Condition N tends to hallucinate similar variations of the same nonexistent legislation (for climate, some variation of the ``Clean Power Act''; for immigration, some variation of the ``Migrant Children Protection Rule'').
 For the other three prompts manually checked, this association was weaker yet still present: Condition N hallucinates broader and more varied facts, with some being mere chronological errors, or facts too general to be verified, of which the LLM-as-Judge did not flag.
 
@@ -721,7 +721,7 @@ Inspection of the high bias control completions shows that the judge responds to
 % This indicates that GT and GT-HB transfer a partisan framing irrelevant of prompt. 
 % The strongest ideological shifts remain on the non-control topics of climate and immigration, and GT-HB's neutral baseline is practically identical to GT ($1.00\ \mathrm{and}\ 1.01$), so its broadening of bias stays topic specific.
 This reflects two layers of a same transfer:
-The first is a general style shift: learning from an assertive, editorial writing style, GT and GT-HB learn this, and therefore lifting their shift on control prompts to be nonzero.
+The first is a general style shift: learning from an assertive, editorial writing style, GT and GT-HB acquire this style, lifting their shift on control prompts to be nonzero.
 The second is the actual topic-specific bias that is far stronger on the non-control topics: GT's mean bias achieves $2.35$ on climate and $2.05$ on immigration, well above its $1.30$ mean on the non-political control prompts ($\mu_{ctrl}$ in Table~\ref{tab:control}).
 Condition N's control bias being higher is primarily due to hallucination: it falls to 0.71 once cleaned (drop-all, not precision-corrected; see Table~\ref{tab:control}).
 
