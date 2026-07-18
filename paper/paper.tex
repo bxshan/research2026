@@ -56,7 +56,10 @@ We extend this in three directions:
 2. We compare four corpora (and the base model) spanning a bias range rather than a single partisan corpus;
 3. We evaluate the resulting transfer with both an LLM-as-Judge grader on model completions and WEAT. 
 
-We define bias operationally as the LLM-as-Judge rubric score (Section~\ref{subsec:judge_pipeline}), a 0--5 score of how strongly an article editorializes content, not of its specific ideological direction.
+We measure bias in two ways: the first, which acts as our operational definition, is a LLM-as-Judge rubric score \cite{zheng2023judge} (Section~\ref{subsec:judge_pipeline}), ranging from 0--5 score for how strongly an article editorializes content, not of its specific ideological direction: on this scale, 0 denotes purely factual reporting, 3 a clear editorial stance, and 5 extreme partisan propaganda.
+This is now an established, standard methods for rubric-based evaluation at scale.
+From the score distributions, we analyze mean bias, bias rate, and uniformity.
+For a second evaluation of bias, we apply WEAT at the embeddings level.
 
 The four original corpora span the range as follows:
 1. NELA-GT \cite{gruppi2023nela}, a collection of partisan news articles with a mean LLM grade of 1.818 / 5; 
@@ -72,11 +75,6 @@ Wikipedia is often treated as a maximally neutral corpus, and used as such for L
 Navigli et al. \cite{navigli2023} document that Wikipedia's editors are disproportionately male ($87\%$) and English-speaking ($>50\%$). 
 This is directly relevant to our Condition N, which is fine-tuned on the most neutral corpus by rubric score ($\mu=0.060$). 
 Nonetheless, it still produces the largest WEAT effect sizes and some of the most biased completions.
-
-Bias is measured in two methods. 
-First, we apply an LLM-as-Judge pipeline, now a standard method for rubric-based evaluation at scale \cite{zheng2023judge}, to score completions from each condition for bias on a 0--5 rubric.
-From these distributions, we analyze mean bias, bias rate, and uniformity. 
-Second, we apply WEAT \cite{caliskan2017}.
 
 Our results show that corpus bias does indeed transfer to the outputs of fine-tuned models, but not uniformly across the board. 
 Specifically, fine-tuning on partisan news shifts the overall bias distribution upwards, with the magnitude varying across topics. 
@@ -94,7 +92,14 @@ This "Wikipedia paradox" could be attributed to the mismatch between the limited
 \end{figure}
 
 \subsection{Corpus Selection}
-We train and evaluate on four corpora.
+We chose these corpora via three criteria.
+First, they had to consist of long-form article text also suited to the completion task the models are trained on, which rules out short, conversational sources such as Reddit or Twitter/X.
+Second, each had to admit a measurable amount of source-level bias, so the corpora could be ordered by bias: the NELA collections carry a partisan signal (via rubric grading and MBFC labels), and Wikipedia provides a near-neutral reference point.
+Third, each had to be publicly available and large enough to draw an identical training sample.
+However, it is notable that the four corpora are matched only on format and availability, not on their other properties: they differ in genre (partisan news, auto-generated local news, encyclopedia), authorship, size, and topic spread.
+Bias therefore co-varies with these factors, so the four-corpus comparison is best interpreted as a descriptive bias gradient rather than a specific manipulation of bias alone.
+In fact, the cleanest bias-isolating contrast is GT versus its filtered subset GT-HB (Section~\ref{subsec:gthb}), which hold source set, sample size, training steps, and LoRA configuration fixed and vary only the bias of retained sources.
+We revisit this confounding in the Limitations.
 
 \subsubsection{NELA-GT}
 The NELA-GT corpus is sourced from the misinfo-general 

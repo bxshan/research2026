@@ -25,6 +25,11 @@ Abhimanyu Dubey et~al.
 \newblock The llama 3 herd of models.
 \newblock arXiv:2407.21783, 2024.
 
+\bibitem[Zheng et~al.(2023)Zheng, Chiang, Sheng, Zhuang, Wu, Zhuang, Lin, Li, Li, Xing, Zhang, Gonzalez, and Stoica]{zheng2023judge}
+Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi~Lin, Zhuohan Li, Dacheng Li, Eric~P. Xing, Hao Zhang, Joseph~E. Gonzalez, and Ion Stoica.
+\newblock Judging {LLM}-as-a-judge with {MT-Bench} and {Chatbot} {Arena}.
+\newblock arXiv:2306.05685, 2023.
+
 \bibitem[Gruppi et~al.(2023)Gruppi, Horne, and Adalı]{gruppi2023nela}
 Mauricio Gruppi, Benjamin~D. Horne, and Sibel Adalı.
 \newblock {NELA-GT-2022}: A large multi-labelled news dataset for the credibility assessment of media sources.
@@ -50,11 +55,6 @@ Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean W
 Roberto Navigli, Simone Conia, and Bj{\"o}rn Ross.
 \newblock Biases in large language models: Origins, inventory, and discussion.
 \newblock \emph{{ACM} Journal of Data and Information Quality ({JDIQ})}, 15\penalty0 (2), 2023.
-
-\bibitem[Zheng et~al.(2023)Zheng, Chiang, Sheng, Zhuang, Wu, Zhuang, Lin, Li, Li, Xing, Zhang, Gonzalez, and Stoica]{zheng2023judge}
-Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi~Lin, Zhuohan Li, Dacheng Li, Eric~P. Xing, Hao Zhang, Joseph~E. Gonzalez, and Ion Stoica.
-\newblock Judging {LLM}-as-a-judge with {MT-Bench} and {Chatbot} {Arena}.
-\newblock arXiv:2306.05685, 2023.
 
 \bibitem[Verhoeven et~al.(2024)Verhoeven, Mishra, and Shutova]{verhoeven2024}
 Ivo Verhoeven, Pushkar Mishra, and Ekaterina Shutova.
