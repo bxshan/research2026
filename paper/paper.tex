@@ -333,8 +333,8 @@ From the 20 scores per prompt per condition, we produce 1{,}500 total completion
 
 The Mean Bias Score (denoted $\mu$) and its Standard Deviation (denoted $\sigma$) show the overall distribution of scores across runs. 
 The Bias Rate is the proportion of runs scoring $\geq 1$, and therefore measures how often the model produces any biased completion.  
-Uniformity is derived as $\textrm{Uniformity} = \frac{\mu}{\mu + \sigma}$. 
-\footnote{Uniformity is not a standard metric; we define it here as a convenient representation of how concentrated a condition's bias is across runs.}
+Uniformity is derived as $\textrm{Uniformity} = \frac{\mu}{\mu + \sigma}$.
+\footnote{Uniformity is not a standard metric. Equivalently, $\mathrm{Uniformity} = 1 / (1 + \sigma / \mu)$, a monotonic rescaling of the coefficient of variation. It captures dispersion relative to the mean, and is only a rough estimation for whether a bias shift is broad or outlier-driven}
 Ranging from 0--1, a value close to 0 indicates that the mean shift from Base is driven by a small number of outliers, rather than a uniform, broad shift that an Uniformity value close to 1 would indicate. 
 
 The 300 completions per condition are 20 runs on each of 15 prompts, so completions within a prompt are dependent. 
