@@ -7,22 +7,17 @@
 
 \bibitem[Caliskan et~al.(2017)Caliskan, Bryson, and Narayanan]{caliskan2017}
 Aylin Caliskan, Joanna~J. Bryson, and Arvind Narayanan.
-\newblock Semantics derived automatically from language corpora contain
-  human-like biases.
+\newblock Semantics derived automatically from language corpora contain human-like biases.
 \newblock \emph{Science}, 356\penalty0 (6334):\penalty0 183--186, 2017.
 
 \bibitem[Wang et~al.(2024)]{wang2024bias}
 Wu~Wang et~al.
-\newblock Bias amplification: Large language models as increasingly biased
-  media.
+\newblock Bias amplification: Large language models as increasingly biased media.
 \newblock arXiv:2410.15234, 2024.
 
-\bibitem[Srivastava et~al.(2024)Srivastava, Mardziel, Zhang, Ahlawat, Datta,
-  and Mitchell]{srivastava2024}
-Sanjari Srivastava, Piotr Mardziel, Zhikhun Zhang, Archana Ahlawat, Anupam
-  Datta, and John~C. Mitchell.
-\newblock De-amplifying bias from differential privacy in language model
-  fine-tuning.
+\bibitem[Srivastava et~al.(2024)Srivastava, Mardziel, Zhang, Ahlawat, Datta, and Mitchell]{srivastava2024}
+Sanjari Srivastava, Piotr Mardziel, Zhikhun Zhang, Archana Ahlawat, Anupam Datta, and John~C. Mitchell.
+\newblock De-amplifying bias from differential privacy in language model fine-tuning.
 \newblock arXiv:2402.04489, 2024.
 
 \bibitem[Dubey et~al.(2024)]{dubey2024llama}
@@ -30,24 +25,19 @@ Abhimanyu Dubey et~al.
 \newblock The llama 3 herd of models.
 \newblock arXiv:2407.21783, 2024.
 
-\bibitem[Zheng et~al.(2023)Zheng, Chiang, Sheng, Zhuang, Wu, Zhuang, Lin, Li,
-  Li, Xing, Zhang, Gonzalez, and Stoica]{zheng2023judge}
-Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao
-  Zhuang, Zi~Lin, Zhuohan Li, Dacheng Li, Eric~P. Xing, Hao Zhang, Joseph~E.
-  Gonzalez, and Ion Stoica.
+\bibitem[Zheng et~al.(2023)Zheng, Chiang, Sheng, Zhuang, Wu, Zhuang, Lin, Li, Li, Xing, Zhang, Gonzalez, and Stoica]{zheng2023judge}
+Lianmin Zheng, Wei-Lin Chiang, Ying Sheng, Siyuan Zhuang, Zhanghao Wu, Yonghao Zhuang, Zi~Lin, Zhuohan Li, Dacheng Li, Eric~P. Xing, Hao Zhang, Joseph~E. Gonzalez, and Ion Stoica.
 \newblock Judging {LLM}-as-a-judge with {MT-Bench} and {Chatbot} {Arena}.
 \newblock arXiv:2306.05685, 2023.
 
 \bibitem[Gruppi et~al.(2023)Gruppi, Horne, and Adalı]{gruppi2023nela}
 Mauricio Gruppi, Benjamin~D. Horne, and Sibel Adalı.
-\newblock {NELA-GT-2022}: A large multi-labelled news dataset for the
-  credibility assessment of media sources.
+\newblock {NELA-GT-2022}: A large multi-labelled news dataset for the credibility assessment of media sources.
 \newblock arXiv:2203.05659, 2023.
 
 \bibitem[Horne and Gruppi(2024)]{horne2024nelaps}
 Benjamin~D. Horne and Maur{\'i}cio Gruppi.
-\newblock {NELA-PS}: A dataset of pink slime news articles for the study of
-  local news ecosystems.
+\newblock {NELA-PS}: A dataset of pink slime news articles for the study of local news ecosystems.
 \newblock arXiv:2403.13657, 2024.
 
 \bibitem[{Wikimedia Foundation}(2024)]{wikimedia}
@@ -56,23 +46,19 @@ Benjamin~D. Horne and Maur{\'i}cio Gruppi.
 \newblock URL \url{https://www.wikipedia.org}.
 \newblock Accessed 2024. Articles collected via the MediaWiki category API.
 
-\bibitem[Hu et~al.(2021)Hu, Shen, Wallis, Allen-Zhu, Li, Wang, Wang, and
-  Chen]{hu2021lora}
-Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean
-  Wang, Lu~Wang, and Weizhu Chen.
+\bibitem[Hu et~al.(2021)Hu, Shen, Wallis, Allen-Zhu, Li, Wang, Wang, and Chen]{hu2021lora}
+Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean Wang, Lu~Wang, and Weizhu Chen.
 \newblock {LoRA}: Low-rank adaptation of large language models.
 \newblock arXiv:2106.09685, 2021.
 
 \bibitem[Navigli et~al.(2023)Navigli, Conia, and Ross]{navigli2023}
 Roberto Navigli, Simone Conia, and Bj{\"o}rn Ross.
 \newblock Biases in large language models: Origins, inventory, and discussion.
-\newblock \emph{{ACM} Journal of Data and Information Quality ({JDIQ})},
-  15\penalty0 (2), 2023.
+\newblock \emph{{ACM} Journal of Data and Information Quality ({JDIQ})}, 15\penalty0 (2), 2023.
 
 \bibitem[Verhoeven et~al.(2024)Verhoeven, Mishra, and Shutova]{verhoeven2024}
 Ivo Verhoeven, Pushkar Mishra, and Ekaterina Shutova.
-\newblock Yesterday's news: Benchmarking multi-dimensional out-of-distribution
-  generalization of misinformation detection models.
+\newblock Yesterday's news: Benchmarking multi-dimensional out-of-distribution generalization of misinformation detection models.
 \newblock \emph{Computational Linguistics}, 2024.
 \newblock arXiv:2410.18122.
 
