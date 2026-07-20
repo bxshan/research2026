@@ -761,6 +761,12 @@ Our bias scores are produced by a single LLM-as-Judge (Claude Haiku 4.5), and LL
 Our second LLM-as-Judge cross-check (Table~\ref{tab:second_judge}) shows this: Qwen and Haiku agree on the relative ordering of the conditions (Spearman $\rho=0.90$) but differ on absolute scores.
 Therefore, our conclusions are claims about relative bias, rather than general bias scores.
 
+\subsection{One Prompt per Topic}
+Each of the 15 topics is represented by a single prompt, and the 20 runs per prompt vary only by the model's probabilistic generation.
+So, topic specific effects are confounded with the phrasing of the one prompt. 
+However, our general conclusions are unaffected, as they treat the 15 prompts as an aggregate set of items and test the shift across them.
+Separating topic from prompt-wording effects would require multiple prompt phrasings per topic and is left for future work.
+
 \subsection{Inference Temperature}
 All main results use $\mathrm{temperature} = 0.7$ for the model inference.
 Rerunning the 3 significant prompts (climate, immigration, government) across all 5 primary conditions at temperatures of 0.3 and 1.0 preserves the core clean mean bias ordering of $\mathrm{GT} > \mathrm{Base} > \mathrm{PS}$, though absolute scores and the GT / GT-HB bias margin over Base grow with increasing temperature. 
