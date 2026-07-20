@@ -597,6 +597,7 @@ With everything else holding fixed (same 500k article sample, LoRA config, etc.)
 
 Across all three replica conditions, GT-R76's bias scores follow closely with the unfiltered GT condition. 
 The mean bias across 3 replicates is 1.485 (respectively 1.387, 1.527, 1.540), essentially equivalent to GT's 1.470 and much below GT-HB's 1.763. 
+The three seeds also bound training noise between runs: their spread of $0.15$ (stddev $\approx 0.08$) is far below the gaps due to corpus differences in the other conditions, so the main conditions run on a single seed are well separated from seed variance.
 Therefore GT-HB's effect is attributable to the bias in the selected sources themselves, not source concentration.
 
 \subsection{Formatting Artifacts as a Distinct Transfer Channel}
