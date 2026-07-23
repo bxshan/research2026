@@ -557,17 +557,12 @@ Table~\ref{tab:variance_analysis} summarizes five representative topics, with th
 
 \subsection{GT and PS Bias Transfer}
 
-GT produces a mean output bias of $\mu = 1.470$, significantly higher than the Base condition, which has $\mu = 0.847$. 
-However, the bias increase is not general: GT actually has elevated biases on specific topics, such as climate ($\mu = 2.350$) and immigration ($\mu = 2.050$), while others (such as housing and policing) show minimal increases. 
-Therefore, fine-tuning on a partisan corpus shifts the model's bias distribution upwards, with the magnitude higher and concentrated on topics with representation in the NELA-GT corpus. 
+GT and PS output bias scores correspond with their corpora, as expected.
+GT raises output bias well above Base (1.470 vs. 0.847), but the increase is concentrated on select topics rather than being uniform (largest increase on climate and immigration), so fine-tuning on a partisan corpus still shifts the distribution upwards most on topics actually represented in the corpus.
+PS, being trained on the near-neutral auto generated text, produces the lowest bias of any condition (0.507, with 69\% of completions scoring 0).
+This again mirrors its corpus.
 
-PS produces the lowest mean of all conditions ($\mu = 0.507$), with 69.0\% of completions scoring perfect 0. 
-This is consistent with the near-zero bias of the corpus itself. 
-
-Wiki departs from this pattern of output bias mirroring the corpus. 
-Despite its training corpus scoring the lowest of all four ($\mu = 0.060$), it produces the highest mean output bias ($\mu = 2.153$). 
-Immigration, religion, social welfare, and trade all exceed $\mathrm{Uniformity} > 0.5$ (see Table~\ref{tab:variance_analysis_full}) while also carrying the largest mean shifts of any condition on those topics, a combination unique to Wiki.
-We examine this contradiction below.
+Wiki breaks this pattern of mirroring corpus: its corpus scored the lowest of all ($\mu = 0.060$), yet fine-tuning produced the highest $\mu_{all} = 2.153$. We examine this in Section~\ref{sec:wiki_paradox}.
 
 \subsection{Filtering the Corpus for Bias (GT-HB)}
 
@@ -687,6 +682,14 @@ Looking at the WEAT results on the immigration word sets alone, the base model a
 
 These explanations need not be mutually exclusive. 
 Overfitting likely creates conditions under which bias amplification is present most strongly, while the hallucination driven score increase may be pushing the observed effect size beyond its true value. 
+
+\paragraph{Overall,}Corpus bias transfers to a model's output, but not in proportion to the corpus bias score. 
+Partisan corpora (NELA-GT) shift bias upwards on the topics represented within the corpora.
+Filtering that corpus for higher biased sources (GT-HB) broadens the increase to new topics.
+Additionally, fine-tuning transfers formatting artifacts specific to each corpus to the outputs, independently from bias transfer.
+Most notably, a Wikipedia corpus that is superficially neutral yields the most strongly biased model.
+The bias increase comes primarily through a hallucination that the LLM-as-Judge perceives as bias, with residual increases that stay after cleaning for hallucination and is corroborated by a WEAT effect size.
+Altogether, corpus-level bias scores are poor predictors of bias in fine-tuned models, and LLM-as-Judges have issues distinguishing hallucinated content from biased framing.
 
 % ============================================================
 \section{Limitations}
