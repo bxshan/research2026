@@ -32,7 +32,8 @@
   Wiki is the only condition that hallucinates at an abnormal rate.
   Correcting for the LLM-as-Judge's false positive rate, we calculate that $36.9\%$ of its completions include fabricated legislation, policies or officials. 
   This is in contrast to other conditions, none of which exceed $12.0\%$ even raw, before correcting for false-positives.
-  We attribute this paradoxical Wikipedia result to three factors: overfitting on a small training set, these hallucinations which the judge attributes to high bias, and amplification of pre-existing biases in the base model.  
+  We attribute this paradoxical Wikipedia result primarily to hallucination inflation (when corrected, reverses the ranking).
+  The effect is compounded by overfitting on a small training set, and amplification of pre-existing biases in the base model.  
 
   These results indicate that corpus-level bias scores are not reliable predictors of fine-tuned model bias, and that LLM-as-Judge evaluations that do not separate factual accuracy from biased framing will mark higher biases in models that produce more hallucinations. 
 \end{abstract}
@@ -647,7 +648,9 @@ It shows that Wiki's hallucinations are not uniformly distributed across prompts
 For these two topics, it also produces the highest mean bias scores, with immigration also showing the largest WEAT effect across all conditions ($d = +1.632$). 
 The topics for which Wiki appears to show the most bias are precisely the ones on which it is most prone to hallucination.
  
-Taken together, these three observations indicate that Wiki's apparent bias is the joint output of three mechanisms acting in sequence rather than a single transfer of corpus content.
+Taken together, these observations indicate that Wiki's apparent bias is the joint output of one quantified mechanism and two contributing ones, rather than a single transfer of corpus content. 
+Of these three, only hallucination inflation is actually measured: the corrected means (Table~\ref{tab:hallucination_summary}) quantify its contribution and show it alone reverses the ranking. 
+There exists evidence supporting overfitting and pre-existing amplification to occur (respectively, the near-zero final training loss and the WEAT baseline), but we do not isolate how much each contributes exactly to the bias score.
 
 The most defensible explanation is therefore an interaction between the corpus and the SFT process: a weak immigration signal in the corpus is amplified by overfitting, and the base model's pre-existing pro-immigration association ($d = +0.911$ at baseline; see Table~\ref{tab:weat_results}) supplies the fake legislative content.
 
@@ -797,7 +800,8 @@ For the filtered GT-HB corpus, the filtering process to its most biased sources 
 This effect survives cleaning from hallucination. 
 The hypothesis breaks on Wiki, derived from Wikipedia articles. 
 Despite producing the lowest corpus bias scores, it generates completions with the highest mean bias and the largest WEAT effect sizes.
-This is a paradox attributable to overfitting on a small homogeneous corpus, hallucinations that the judge sees as bias, and amplification of pre-existing bias in the base model \cite{wang2024bias}.
+This paradox is primarily due to hallucinations that the judge sees as bias, which reverse the rankings once corrected. 
+This effect is also amplified by overfitting on a small homogeneous corpus and amplification of pre-existing biases in the base model \cite{wang2024bias}.
 In general, corpora that appear neutral on the surface can still produce strongly biased fine-tuned models when training develops into memorization, and bias evaluation pipelines that do not separate factual accuracy from biased framing cannot distinguish between hallucinations and actual bias, resulting in overcounting biases that are actually just classic LLM hallucination. 
 
 % ============================================================
