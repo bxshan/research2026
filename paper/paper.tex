@@ -22,7 +22,7 @@
 
   We examine how the bias of a training corpus transfers to a model fine-tuned on that corpus. 
   We define bias to mean the degree to which the text departs from neutral, factual reporting and strays towards a subjective editorial writing style. 
-  Specifically, we fine-tune the Llama 3.2 3B Instruct model on four corpora that span a range of measured bias scores: NELA-GT (partisan US political news), NELA-GT-HB (a filtered subset of NELA-GT for high bias sources), NELA-PS (hyper-local auto-generated news content), and a corpus of Wikipedia articles on high schools in the US, which measured the least bias of the four.  
+  Specifically, we fine-tune the Llama 3.2 3B model on four corpora that span a range of measured bias scores: NELA-GT (partisan US political news), NELA-GT-HB (a filtered subset of NELA-GT for high bias sources), NELA-PS (hyper-local auto-generated news content), and a corpus of Wikipedia articles on high schools in the US, which measured the least bias of the four.  
   We evaluate the five resulting models (four fine-tuned conditions and the Llama Base) on 300 completions across 15 prompts each covering a salient topic (making $5\,\mathrm{conditions}\times300\,\mathrm{completions}=1,500$ completions total). 
   Bias at the completions level is scored using an LLM-as-Judge rubric, and at the embedding-level with the Word Embedding Association Test (WEAT). 
   Fine-tuning on the NELA-GT corpus raises mean output bias above the base model, with the largest bias shifts specifically on the topics of climate and immigration; filtering the NELA-GT dataset to only include the high-bias sources raises bias further (approximately $1.5\times$ the unfiltered corpus's shift over the base model), and also broadens the shift to topics that the unfiltered corpus left alone.
@@ -53,7 +53,7 @@ Wang et al. \cite{wang2024bias} iteratively fine-tune a GPT-2 model on political
 Srivastava et al. \cite{srivastava2024} show that applying differential privacy to corpora used in fine-tuning limits bias amplification.
 
 We extend this in three directions: 
-1. We use a modern instruction-tuned model (Llama 3.2 3B Instruct \cite{dubey2024llama}) rather than GPT-2; 
+1. We use a modern instruction-tuned model (Llama 3.2 3B \cite{dubey2024llama}) rather than GPT-2; 
 2. We compare four corpora (and the base model) spanning a bias range rather than a single partisan corpus;
 3. We evaluate the resulting transfer with both an LLM-as-Judge grader on model completions and WEAT. 
 
@@ -69,7 +69,7 @@ and 3. a Wikipedia \cite{wikimedia} derived corpus of high school articles in th
 
 We also filter NELA-GT for high-bias articles to obtain a fourth corpus, NELA-GT-HB (High Bias). 
 Only sources with a representative mean bias $\geq3\ /\ 5$ are kept, which yields a final corpus mean of 3.300 / 5. 
-Each corpus is used to fine-tune an identical Llama 3.2 3B Instruct \cite{dubey2024llama} base model, via Low-Rank Adaptation (LoRA) \cite{hu2021lora}. 
+Each corpus is used to fine-tune an identical Llama 3.2 3B \cite{dubey2024llama} base model, via Low-Rank Adaptation (LoRA) \cite{hu2021lora}. 
 By keeping architecture, hyperparameters and inference settings constant across all conditions, we ensure that behavioral differences could only be attributable to the training corpus. 
 
 Wikipedia is often treated as a maximally neutral corpus, and used as such for LLM training and evaluation, but superficial neutrality does not imply no bias.
@@ -258,7 +258,7 @@ Whenever superficial formality masks actual bias, the judge tends to lean toward
 
 \subsection{Training Setup}
 
-All fine-tuned conditions are derived from a single base model, Llama 3.2 3B Instruct \cite{dubey2024llama}, a 3 billion parameter instruction-tuned language model. 
+All fine-tuned conditions are derived from a single base model, Llama 3.2 3B \cite{dubey2024llama}, a 3 billion parameter instruction-tuned language model. 
 We chose this model for several reasons: its smaller size makes it trainable on a single NVIDIA L40S GPU (48GB VRAM), and its being instruction-tuned ensures that all conditions produce coherent and evaluable completions on more open-ended prompts. 
 This model with no fine-tuning serves as the Base condition.
 
@@ -782,7 +782,7 @@ Its clean mean (1.100) sits only slightly above GT; at a higher temperature, it 
 These temperature clean means use drop-all cleaning and are not precision-corrected, as the flag was not validated at these temperatures.
 
 \subsection{Single Model}
-All conditions fine-tune from the same Llama 3.2 3B Instruct base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
+All conditions fine-tune from the same Llama 3.2 3B base model. This was chosen for its smaller size and therefore lower training and inference compute costs, but it is at the very small end of instruction-tuned models and especially compared to other foundation models. 
 Different base models, especially those with different architectures (Qwen, Mistral, Gemma, etc.) may respond to the corpus differently. 
 Cross-model replication is the natural next step.
 
