@@ -209,6 +209,7 @@ For more information, see Table~\ref{tab:training_conditions}.
 
 
 All conditions are evaluated under the same inference settings: 20 independent runs per prompt across 15 prompts spanning education, government, immigration, healthcare, healthcare insurance, criminal justice, climate, housing, tech regulation, military, social welfare, rural/urban divide, religion, trade, and policing. Tokens generated are limited to 150, at a temperature of 0.7. 
+The choice of 0.7 is not essential: rerunning at temperatures of 0.3 and 1.0 preserves the $\mathrm{GT} > \mathrm{Base} > \mathrm{PS}$ ordering (see Limitations).
 
 
 
