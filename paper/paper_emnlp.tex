@@ -162,7 +162,7 @@ Similar to NELA-GT, 500{,}000 samples were taken and used for training PS.
 
 \subsubsection{Wikipedia-Derived}
 
-We crawl Wikipedia from seven seed category pages for American high-school articles, traversing depth-first with a visited set. 
+We crawl Wikipedia from seven seed category pages for American high-school articles, traversing depth-first with a visited set.\footnote{The seven seed categories are \textit{High schools}, \textit{Secondary schools}, \textit{Preparatory schools}, \textit{Online high schools}, \textit{University-affiliated schools}, \textit{Magnet high schools}, and \textit{Charter high schools}, each suffixed ``in the United States''.}
 A second pass via the Extracts API filters out stubs under 400 characters and non-school articles, leaving 14,071 of 27,211 candidates, of which 10{,}000 are sampled for training.
 This derived corpus scores a 0.060 / 5, serving as an essentially neutral baseline.
 

@@ -138,7 +138,7 @@ Similar to GT, 500{,}000 samples are taken and used for training PS.
 The Wikipedia corpus is built by recursively traversing a graph built on Wikipedia's category 
 pages \cite{wikimedia}. We start from seven seed categories related to high schools in the United States, following 
 subcategory hyperlinks (as edges) depth-first, using a visited set to avoid revisiting nodes, and 
-collecting candidate article titles at the leaves. 
+collecting candidate article titles at the leaves.\footnote{The seven seed categories are \textit{High schools}, \textit{Secondary schools}, \textit{Preparatory schools}, \textit{Online high schools}, \textit{University-affiliated schools}, \textit{Magnet high schools}, and \textit{Charter high schools}, each suffixed ``in the United States''.} 
 Then, through a second pass with the Wikipedia Extracts 
 API, we fetch the article text and validate that the article is indeed related to high schools in 
 the United States. From 27{,}211 candidate titles, 14{,}071 articles are kept after filtering out 
