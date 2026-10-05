@@ -2,12 +2,13 @@
 
 % Change "review" to "final" to generate the final (camera-ready) version.
 % Change to "preprint" to generate a non-anonymous version with page numbers.
-\usepackage[review]{acl}
+\usepackage[final]{acl}
 
 % acl.sty's \linenumbersep of 1.6cm is tuned for US Letter; on this A4 layout it
 % pushes the second column's review line numbers inside the left column's text.
 % Pull them back into the 0.6cm inter-column gutter.
-\setlength{\linenumbersep}{1pt}
+% Guarded because the final (camera-ready) mode does not load lineno.
+\ifdefined\linenumbersep\setlength{\linenumbersep}{1pt}\fi
 
 % Standard package includes
 \usepackage{times}
@@ -1294,9 +1295,9 @@ LLM-as-Judge scoring used 9,080 Claude Haiku 4.5 API calls across corpus grading
 WEAT runs in under an hour on a laptop.
 
 \section{Code and Data Availability}
-  All training, inference, scoring, and analysis code is available at the anonymized url:
+  All training, inference, scoring, and analysis code is available at:
 
-  \url{https://anonymous.4open.science/r/research2026-BB5B/}
+  \url{https://github.com/bxshan/research2026}
 
   This includes:
   the SFT training script and the exact per-condition YAML configs (\path{model/}),
