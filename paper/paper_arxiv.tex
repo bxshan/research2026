@@ -164,6 +164,28 @@ Corpus bias is discussed in \ref{subsec:corpus_bias}, and scores are reported in
 To ensure that the rubric is accurate, we perform a validation test, taking a 30-article sample from each of NELA-GT and NELA-PS; a human annotator scores NELA-GT on the full 0--5 rubric used throughout and NELA-PS on a smaller, representative 0--3 rubric.
 Agreement is moderate at exact level and high within $\pm1$, and the judge cleanly separates the corpora (Cohen's $d$ \cite{cohen1988} $= 1.047$); full agreement statistics in Table~\ref{tab:T1} (Appendix~\ref{app:second_judge}).
 
+As a check that these results are not an artifact of a single judge model, we re-grade all 1{,}500 completions with a second, locally run judge (Qwen3.5-27B) under an identical rubric and matching sampling parameters.
+
+\begin{table*}[t]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{6pt}
+  \begin{tabular}{lccccccc}
+    \toprule
+    Condition & Haiku $\mu$ & Qwen $\mu$ & Exact & Within $\pm1$ & Pearson $r$ & Hal.\ H & Hal.\ Q \\
+    \midrule
+    Base  & 0.847 & 1.760 & 22\% & 80\% & 0.415 &  2.0\% &  4.0\% \\
+    GT    & 1.470 & 3.303 & 21\% & 41\% & 0.433 & 10.7\% & 46.3\% \\
+    PS    & 0.507 & 1.463 & 47\% & 69\% & 0.482 &  5.3\% & 15.0\% \\
+    Wiki  & 2.153 & 3.547 & 21\% & 56\% & 0.614 & 44.3\% & 55.3\% \\
+    GT-HB & 1.763 & 3.747 & 13\% & 39\% & 0.443 & 12.0\% & 48.7\% \\
+    \midrule
+    All   & 1.348 & 2.764 & 25\% & 57\% & 0.606 & 14.9\% & 33.9\% \\
+    \bottomrule
+  \end{tabular}
+  \caption{Second-judge agreement: Haiku vs. Qwen3.5-27B, all 1{,}500 completions. $\mu$: mean output bias; Hal.: flagged-hallucination rate.}
+  \label{tab:second_judge}
+\end{table*}
 
 
 
@@ -206,12 +228,8 @@ For more information, see Table~\ref{tab:training_conditions}.
 \end{table}
 
 
-
-
 All conditions are evaluated under the same inference settings: 20 independent runs per prompt across 15 prompts spanning education, government, immigration, healthcare, healthcare insurance, criminal justice, climate, housing, tech regulation, military, social welfare, rural/urban divide, religion, trade, and policing. Tokens generated are limited to 150, at a temperature of 0.7. 
 The choice of 0.7 is not essential: rerunning at temperatures of 0.3 and 1.0 preserves the $\mathrm{GT} > \mathrm{Base} > \mathrm{PS}$ ordering (see Limitations).
-
-
 
 \subsection{Evaluation Metrics}
 
@@ -565,7 +583,7 @@ A manual spot check of the top five prompts with the most hallucination (all abo
 
 \paragraph{Single-Judge Dependence.}
 Our bias scores are produced by a single LLM-as-Judge (Claude Haiku 4.5), and LLM judges carry preferences specific to themselves, so the absolute scores we report are specific to this pipeline rather than an objective quantity of bias.
-As a cross-check, we re-grade all 1{,}500 completions with a second, locally run judge (Qwen3.5-27B) under an identical rubric and prompts (see Appendix~\ref{app:second_judge} for full results).
+As a cross-check, we re-grade all 1{,}500 completions with a second, locally run judge (Qwen3.5-27B) under an identical rubric and prompts (Table~\ref{tab:second_judge}).
 The two judges disagree on absolute scores but agree closely on the relative ordering of conditions (Spearman $\rho=0.90$) and on which condition hallucinates most (Cohen's $\kappa = 0.34$), so our conclusions should be read as claims about relative bias rather than general bias scores.
 
 \paragraph{Experimental Scope.}
@@ -586,7 +604,7 @@ Cross-model replication (e.g. Qwen, Mistral, GLM, etc.) is the natural next step
 \raggedbottom
 
 \section{GT-HB Source Map and Selection}
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\columnwidth]{plots/source_map.pdf}
   \caption{GT-HB source selection map. Each point is one audited NELA-GT source, plotting its per-source mean rubric score against its corpus article count (log scale). Filled markers are sources selected for the GT-HB whitelist (mean $\geq 3.0$, vertical line); open markers are excluded; marker shape and color together give the MBFC label group.}
@@ -595,7 +613,7 @@ Cross-model replication (e.g. Qwen, Mistral, GLM, etc.) is the natural next step
 
 \label{app:gthb_source_selection}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\columnwidth]{plots/pool_curve.pdf}
   \caption{GT-HB threshold choice. Top: total corpus articles per 0.25-wide bin of per-source mean rubric score, stacked by MBFC label group. Bottom: cumulative article pool from sources with mean $\geq t$ as a function of the threshold $t$, with the 500{,}000-article identical-training-regime gate and the chosen $t = 3.0$ marked ($t = 3.5$ falls below the gate).}
@@ -750,7 +768,7 @@ object.
 
 We find that agreement is 43\% (13/30) exact / 80\% (24/30) within $\pm1$ on NELA-GT and 53\% / 100\% on NELA-PS (Table~\ref{tab:T1}).
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \footnotesize
   \setlength{\tabcolsep}{1pt}
@@ -778,7 +796,7 @@ Therefore, the judge scores on substance rather than style, so neither the corpu
 Whenever superficial formality masks actual bias, the judge tends to lean towards the low end.
 Full probe results are in Table~\ref{tab:style_probe}.
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \small
   \resizebox{\columnwidth}{!}{\begin{tabular}{lccccc}
@@ -794,29 +812,6 @@ Full probe results are in Table~\ref{tab:style_probe}.
   \vspace{4pt}
 
   {\small\textit{35 articles outside any training corpus, scored on the 0--5 rubric with titles/labels removed. Difference in means 1.43 (Welch $t=5.25$, $p<10^{-4}$).}}
-\end{table}
-
-As a check that these results are not an artifact of a single judge model, we re-grade all 1{,}500 completions with a second, locally run judge (Qwen3.5-27B) under an identical rubric and matching sampling parameters.
-
-\begin{table}[H]
-  \centering
-  \footnotesize
-  \setlength{\tabcolsep}{2pt}
-  \resizebox{\columnwidth}{!}{\begin{tabular}{lccccccc}
-    \toprule
-    Condition & Haiku $\mu$ & Qwen $\mu$ & Exact & Within $\pm1$ & Pearson $r$ & Hal.\ H & Hal.\ Q \\
-    \midrule
-    Base  & 0.847 & 1.760 & 22\% & 80\% & 0.415 &  2.0\% &  4.0\% \\
-    GT    & 1.470 & 3.303 & 21\% & 41\% & 0.433 & 10.7\% & 46.3\% \\
-    PS    & 0.507 & 1.463 & 47\% & 69\% & 0.482 &  5.3\% & 15.0\% \\
-    Wiki  & 2.153 & 3.547 & 21\% & 56\% & 0.614 & 44.3\% & 55.3\% \\
-    GT-HB & 1.763 & 3.747 & 13\% & 39\% & 0.443 & 12.0\% & 48.7\% \\
-    \midrule
-    All   & 1.348 & 2.764 & 25\% & 57\% & 0.606 & 14.9\% & 33.9\% \\
-    \bottomrule
-  \end{tabular}}
-  \caption{Second-judge agreement: Haiku vs. Qwen3.5-27B, all 1{,}500 completions. $\mu$: mean output bias; Hal.: flagged-hallucination rate.}
-  \label{tab:second_judge}
 \end{table}
 
 \section{Output Bias and WEAT Visualizations}
@@ -974,14 +969,12 @@ Somewhat surprisingly, GT-HB shows no shift in media-trust association despite i
   \label{tab:variance_analysis_full_iii}
 \end{table*}
 
-
-
 \section{Wikipedia Corpus Immigration Keyword Counts}
 
 A search of the 14{,}071-article Wikipedia corpus for immigration-related keywords, including \textit{immigrant}, \textit{ESL}, \textit{citizenship}, \textit{bilingual}, \textit{DACA}, and others, finds that 2.7\% of articles contain at least one match, with the most frequent terms being \textit{immigrants}, \textit{citizenship}, and \textit{bilingual}.
 A full list of keywords and match counts is in Table~\ref{tab:wiki_immigration_keywords}.
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \footnotesize
   \setlength{\tabcolsep}{1.5pt}
@@ -1022,7 +1015,7 @@ A full list of keywords and match counts is in Table~\ref{tab:wiki_immigration_k
 
 \section{Per-Prompt Heatmaps}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\columnwidth]{plots/variance_heatmap.pdf}
   \caption{Per-prompt heatmaps: (A) is Mean bias score, (B) is Hallucination rate, all run per condition and prompt topic.}
@@ -1031,7 +1024,7 @@ A full list of keywords and match counts is in Table~\ref{tab:wiki_immigration_k
 
 \section{Full Hallucination Summary per Prompt}
 
-\begin{table}[H]
+\begin{table}[htbp]
   \centering
   \footnotesize
   \setlength{\tabcolsep}{1.5pt}
@@ -1062,7 +1055,7 @@ A full list of keywords and match counts is in Table~\ref{tab:wiki_immigration_k
 
 \section{Wikipedia Keyword Frequencies by School Type}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\columnwidth]{plots/keyword_freq.pdf}
   \caption{Wikipedia keyword frequency by school type (per 1{,}000 tokens, error bars $\pm 1$ stddev across schools within each group). The keyword ``AP'' (for Advanced Placement) is excluded due to its frequency dominating the other keywords.}
@@ -1072,7 +1065,7 @@ A full list of keywords and match counts is in Table~\ref{tab:wiki_immigration_k
 
 \section{Training Corpus Bias Score Distributions}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
   \centering
   \includegraphics[width=\columnwidth]{plots/corpus_distribution.pdf}
   \caption{Distribution of bias scores (0--5) across the four training corpora.}
