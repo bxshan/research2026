@@ -60,8 +60,8 @@
   However, Wikipedia fine-tuning produces the highest raw mean output bias and the largest WEAT effect sizes, despite the low bias score of the corpus.
   Wiki is the only condition that hallucinates at an abnormal rate. 
   Correcting for the judge's false-positive rate, $36.9\%$ of Wiki's completions include fabricated laws, policies, or officials. 
-  We primarily attribute this paradox to hallucination inflation, compounded by an overfit condition on a small corpus and amplification of pre-existing biases.
-  These results indicate that corpus-level bias scores are not reliable predictors of fine-tuned model bias, and that LLM-as-Judge evaluations of bias risk conflating factual accuracy with actual bias in models that hallucinate more.
+  Across prompts, Wiki's bias score tracks its hallucination rate ($r = 0.94$), so its judge scores cannot be read as a measure of bias alone; overfitting on a small corpus and amplification of pre-existing biases also contribute.
+  For Llama 3.2 3B Instruct under our fine-tuning setup, these results indicate that corpus-level bias scores are not reliable predictors of fine-tuned model bias, and that LLM-as-Judge evaluations of bias risk conflating factual accuracy with actual bias in models that hallucinate more.
 
   % We examine how the bias of a training corpus transfers to a model fine-tuned on that corpus. 
   % Specifically, we fine-tune the Llama 3.2 3B Instruct model on four corpora that span a range of measured bias scores: NELA-GT (partisan US political news), NELA-GT-HB (a filtered subset of NELA-GT for high bias sources), NELA-PS (hyper-local auto-generated pink-slime news content), and a corpus of Wikipedia articles on high schools in the US, which measured the least bias of the four.  
@@ -512,10 +512,12 @@ Per-topic results are shown in Table~\ref{tab:variance_analysis}.
 % \end{figure*}
 
 WEAT results are shown in Table~\ref{tab:weat_results} and more specifically in Appendix (Figure~\ref{fig:weat_effects}).
-Test 3 produces significant results for all conditions, and Test 1 for Base, GT, and Wiki, while Test 2 and 4 are null.
+Test 3 produces significant results for all conditions, and Test 1 for Base, GT, and Wiki, while Tests 2 and 4 show associations opposite to the hypothesized direction in every condition (Test 2: $d$ from $-0.97$ to $-1.41$; Test 4: $d$ from $-0.43$ to $-0.56$).
+Because our permutation test is one-sided, these appear as $p$ values near 1 rather than as significant results; Test 2 in particular is a large reverse association that is stable across all five conditions.
 Test 5 yields significant results, but only for PS and Wiki.
+All WEAT $p$ values test for an association within a single condition; we do not test whether effect sizes differ between conditions, so the $\Delta$ values below are descriptive.
 
-Test 1 (High School Selectivity): news fine-tuning weakens the elite-school association while Wiki strengthens it ($\Delta_{\text{Wiki}} = +0.285$, $p = 0.001$); full per-condition deltas in Appendix~\ref{app:weat_viz}.
+Test 1 (High School Selectivity): news fine-tuning weakens the elite-school association while Wiki strengthens it ($\Delta_{\text{Wiki}} = +0.285$ in $d$ relative to Base); full per-condition deltas in Appendix~\ref{app:weat_viz}.
 
 Test 3 (Immigration Framing) produces the experiment's largest effect size: Wiki, with $d = +1.632\ \mathrm{with}\ p < 0.001$.
 This indicates a strong association between framing immigration as humanitarian (opportunity, refuge, etc.) and positive attributes. 
@@ -647,8 +649,13 @@ Notably, Wiki hallucinates on 44.3\% of completions, and on all completions from
 
 Correcting for the hallucination flag's false-positive rate, Wiki's mean bias drops from 2.153 to 1.484, a reduction of 0.669 (31\%).
 The other validated conditions move by at most 0.077.
-The corrected clean mean for Wiki, 1.484, is in fact below the corrected clean mean for GT-HB (1.686, highest of all).
-Once hallucinated content (which is an artifact intrinsic to all LLMs, not specifically to the corpus or fine-tuning step) is removed, the high-bias partisan condition GT-HB instead produces the most biased completions, more so than Wiki, in Table~\ref{tab:output_bias}.
+Pooling all completions, Wiki's corrected mean (1.484) falls below GT-HB's (1.686).
+This ranking is not robust, however.
+On Climate and Immigration, Wiki has no unflagged completions, so the correction cannot separate fabrication from bias on those prompts and leaves them at their raw means (4.35 and 4.05).
+Weighting each prompt equally instead of pooling raises Wiki's corrected mean to 1.860, above GT-HB (1.693); GT-HB exceeds Wiki on only 6 of 15 prompts (one-sided Wilcoxon $p = 0.70$).
+We therefore do not claim that Wiki is less biased than GT-HB once hallucination is removed.
+What is robust is the coupling itself: across Wiki's 15 prompts, hallucination rate and raw bias score correlate at $r = 0.94$, and switching from pooled to equal topic weighting shifts Wiki's corrected mean by $+0.377$, against at most $+0.015$ for any other condition.
+Under equal topic weighting, every fine-tuned condition still differs from Base in the expected direction (one-sided Wilcoxon, all Holm-corrected $p < 0.001$).
 
 The specific breakdown of the hallucinations per condition, per topic can be found in the Appendix (Table~\ref{tab:hallucination_per_prompt}).
 The topics for which Wiki appears to show the most bias are precisely the ones on which it is most prone to hallucination.
@@ -696,7 +703,7 @@ Overfitting likely creates conditions under which bias amplification is present 
 % i try to keep this numbers free: its cleaner, and explaining the data scale and methodology so that the numbers make sense takes too long and is repetitive
 We set out to test whether the bias amplification observed by \citet{wang2024bias} for partisan corpora extends similarly to a broad bias gradient.
 Specifically, we investigate whether corpora of varying measured bias produce fine-tuned models of correspondingly varied bias.
-We fine-tuned a 3B instruction-tuned LLM on four corpora each located on a bias gradient and evaluated the resulting completions across domains with an LLM-as-Judge rubric and WEAT.
+We fine-tuned a single model, Llama 3.2 3B Instruct, on four corpora each located on a bias gradient and evaluated the resulting completions across domains with an LLM-as-Judge rubric and WEAT.
 The hypothesis is partially supported, as fine-tuning on partisan news (GT) transferred bias to completions on specific topics, with climate and immigration receiving the largest shifts, while fine-tuning on the almost neutral PS corpus reduced bias, as expected.
 
 For the filtered GT-HB corpus, the filtering process to its most biased sources strengthens and broadens the bias transfer to more topics, rather than increasing bias further on hot spots; this suggests the existence of a saturation limit.
@@ -704,10 +711,10 @@ This effect survives cleaning from hallucination.
 
 The hypothesis breaks on Wiki, derived from Wikipedia articles.
 Despite producing the lowest corpus bias scores, it generates completions with the highest mean bias and the largest WEAT effect sizes.
-This paradox is primarily due to hallucinations that the judge sees as bias, which reverse the rankings once corrected.
+Its highest scores fall on the topics where it hallucinates most, so the judge's scores for Wiki cannot be separated from its fabrication, and whether Wiki ranks above or below GT-HB after correction depends on how topics are weighted.
 This effect is also amplified by overfitting on a small homogeneous corpus and amplification of pre-existing biases in the base model \cite{wang2024bias}.
 
-In general, corpora that appear neutral on the surface can still produce strongly biased fine-tuned models when training develops into memorization, and bias evaluation pipelines that do not separate factual accuracy from biased framing cannot distinguish between hallucinations and actual bias, resulting in overcounting biases that are actually just classic LLM hallucination.
+In our setup, corpora that appear neutral on the surface can still produce strongly biased fine-tuned models when training develops into memorization, and bias evaluation pipelines that do not separate factual accuracy from biased framing cannot distinguish between hallucinations and actual bias, resulting in overcounting biases that are actually just classic LLM hallucination.
 
 % ============================================================
 \section*{Limitations}
@@ -727,14 +734,14 @@ Therefore, the behavior that we observe is that of a model that has memorized th
 \paragraph{LLM-as-Judge Conflation of Hallucination and Bias.}
 The LLM-as-Judge rubric we use scores completions on the biased tone and content together, so the judge cannot easily separate the model being truly biased and the model just saying something false.
 For most conditions this issue is trivial, but for Wiki, 44.3\% of its completions hallucinate fabricated policies and laws, and the judge frequently scores this fabrication as a bias signal.
-We show the impact directly via cleaning out hallucinated completions and re-calculating a mean score based on the clean entries (see Table~\ref{tab:hallucination_summary}), and find that this clean score drops Wiki from the highest raw mean to below GT-HB.
+We show the impact directly via cleaning out hallucinated completions and re-calculating a mean score based on the clean entries (see Table~\ref{tab:hallucination_summary}), and find that this clean score drops Wiki from the highest raw mean to below GT-HB when completions are pooled, but not when prompts are weighted equally (Section~\ref{sec:wiki_paradox}).
 
 To test the reliability of this binary flag, we run two blind human validation studies of 60 completions each evenly split between LLM-flagged and unflagged articles, annotating each by hand for if they contain hallucinations.
 In the first study, covering GT and GT-HB, the judge missed no hallucinations ($100\%$ recall) but heavily over-flagged ($30\%$ precision only; split $20\%$ GT, $40\%$ GT-HB), since most flagged partisan completions were assertive in style but grounded factually.
 The second study covered Wiki, whose $44.3\%$ Haiku hallucination rate gives rise to the cleaned mean score drop.
 Here, the Haiku hallucination flag was more reliable ($83.3\%$ precision and $86.2\%$ recall), as Wiki's hallucinations are far more trivially identified.
 Since dropping every flagged hallucination would over-clean and understate its cleaned mean, we re-compute each cleaned mean, keeping the estimated false-positive fraction ($1-\mathrm{precision}$).
-With this correction, GT-HB is still higher than Wiki ($1.686 > 1.484$), although the corrected mean for Wiki is now marginally above GT ($1.439$).
+With this correction and pooled completions, GT-HB is higher than Wiki ($1.686 > 1.484$), although the corrected mean for Wiki is now marginally above GT ($1.439$).
 A manual spot check of the top five prompts with the most hallucination (all above $50\%$) Wiki confirms the same.
 % Condition N tends to hallucinate similar variations of the same nonexistent legislation (for climate, some variation of the ``Clean Power Act''; for immigration, some variation of the ``Migrant Children Protection Rule'').
 % For the other three prompts manually checked, this association was weaker yet still present: Condition N hallucinates broader and more varied facts, with some being mere chronological errors, or facts too general to be verified, of which the LLM-as-Judge did not flag.
