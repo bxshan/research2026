@@ -523,10 +523,10 @@ Test 3 (Immigration Framing) produces the experiment's largest effect size: Wiki
 This indicates a strong association between framing immigration as humanitarian (opportunity, refuge, etc.) and positive attributes. 
 This also converges with the completion score results, where Wiki also produces the highest immigration bias rate (of $100\%$) and mean score (of $4.05$).
 Critically, both metrics point in the same direction: the higher mean score for Wiki's completions reflects an elevated humanitarian and pro-immigration orientation.
-The underlying cause is clear on inspection: Wiki hallucinates often nonexistent pro-immigration legislation and policy, such as the "Migrant Children's Rights Act of 2022". 
+On inspection, Wiki hallucinates often nonexistent pro-immigration legislation and policy, such as the "Migrant Children's Rights Act of 2022". 
 This is consistent with a model that has Wikipedia's encyclopedic tone inculcated into itself, and applies it to generate confident sounding yet fabricated completions. 
 
-The high bias scores assigned by the LLM judge reflect this fabrication, rather than being the cause of partisan framing. 
+The high bias scores assigned by the LLM judge are consistent with this fabrication, rather than being the cause of partisan framing. 
 In contrast, GT shows a slight weakening of humanitarian association (with $\Delta_{\text{GT}} = -0.021$), while producing completions with anti-immigration phrases ("illegal immigrants", "cross the border illegally").
 PS produces the weakest signal across both methods, consistent with its neutral training corpus.
 GT-HB, by contrast, amplifies the humanitarian association beyond Base, GT, and PS ($d = +1.190$ with $p = 0.001$), second only to Wiki.
@@ -712,9 +712,9 @@ This effect survives cleaning from hallucination.
 The hypothesis breaks on Wiki, derived from Wikipedia articles.
 Despite producing the lowest corpus bias scores, it generates completions with the highest mean bias and the largest WEAT effect sizes.
 Its highest scores fall on the topics where it hallucinates most, so the judge's scores for Wiki cannot be separated from its fabrication, and whether Wiki ranks above or below GT-HB after correction depends on how topics are weighted.
-This effect is also amplified by overfitting on a small homogeneous corpus and amplification of pre-existing biases in the base model \cite{wang2024bias}.
+Overfitting on a small homogeneous corpus and amplification of pre-existing biases in the base model \cite{wang2024bias} also contribute.
 
-In our setup, corpora that appear neutral on the surface can still produce strongly biased fine-tuned models when training develops into memorization, and bias evaluation pipelines that do not separate factual accuracy from biased framing cannot distinguish between hallucinations and actual bias, resulting in overcounting biases that are actually just classic LLM hallucination.
+In our setup, corpora that appear neutral on the surface can still produce fine-tuned models with high bias scores when training develops into memorization, and bias evaluation pipelines that do not separate factual accuracy from biased framing cannot distinguish between hallucination and actual bias, so their scores overstate bias for models that hallucinate heavily.
 
 % ============================================================
 \section*{Limitations}
