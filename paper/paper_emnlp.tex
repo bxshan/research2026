@@ -37,6 +37,8 @@
 \usepackage{amsmath}
 \usepackage{float}
 \usepackage{xurl}
+\usepackage{placeins}
+\usepackage{needspace}
 % \usepackage[hidelinks]{hyperref}
 
 \title{Bias Transfer in Large Language Models through Supervised Fine-Tuning}
@@ -800,35 +802,22 @@ Cross-model replication (e.g. Qwen, Mistral, GLM, etc.) is the natural next step
 \bibliography{references}
 
 % ============================================================
-\clearpage
 \appendix
-% Appendix floats are pinned with [H]; ragged bottom stops \flushbottom from
-% stretching the gap between each heading and its figure/table.
+% Appendix layout: the sections are ordered so that their blocks pack the
+% columns with little empty space, and every single-column figure/table is
+% pinned with [H] so it sits directly under its own heading (a heading and
+% the [H] float after it cannot be split across columns). Each [H] block is
+% shorter than a column, so it moves whole to the next column if it does not
+% fit. If you add or remove text above, rebuild and check for "Overfull
+% \vbox" warnings: those mean an [H] block no longer fits where it landed.
+% Rule: each section's heading is on the same page as its first figure/table.
+% Sections that open with text use \needspace to keep heading, intro and
+% first table together. The one full-width figure (WEAT) stays a figure*,
+% which LaTeX always puts at the top of the page AFTER the one where it is
+% defined, so it is defined one page early (see the comment at that spot).
+% Ragged bottom stops \flushbottom from stretching the gap between each
+% heading and its figure/table.
 \raggedbottom
-
-\section{GT-HB Source Map and Selection}
-% [GT-HB] figure for the High-Bias GT Subset (GT-HB) subsection (C4); prose to follow
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\columnwidth]{plots/source_map.pdf}
-  \caption{GT-HB source selection map. Each point is one audited NELA-GT source, plotting its per-source mean rubric score against its corpus article count (log scale). Filled markers are sources selected for the GT-HB whitelist (mean $\geq 3.0$, vertical line); open markers are excluded; marker shape and color together give the MBFC label group.}
-  \label{fig:source_map}
-\end{figure}
-
-\label{app:gthb_source_selection}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\columnwidth]{plots/pool_curve.pdf}
-  \caption{GT-HB threshold choice. Top: total corpus articles per 0.25-wide bin of per-source mean rubric score, stacked by MBFC label group. Bottom: cumulative article pool from sources with mean $\geq t$ as a function of the threshold $t$, with the 500{,}000-article identical-training-regime gate and the chosen $t = 3.0$ marked ($t = 3.5$ falls below the gate).}
-  \label{fig:pool_curve}
-\end{figure}
-
-To isolate this behavior, we construct a control corpus, GT-R76, that selects 76 NELA-GT sources deterministically at random rather than by bias.
-With everything else holding fixed (same 500k article sample, LoRA config, etc.), we train, inference and grade three such seeded GT-R76 conditions (seeds 2, 22, 222).
-
-Across all three replica conditions, GT-R76's bias scores follow closely with the unfiltered GT condition.
-The mean bias across 3 replicates is 1.485 (respectively 1.387, 1.527, 1.540), essentially equivalent to GT's 1.470 and much below GT-HB's 1.763.
 
 \section{LLM-as-Judge Prompt}
 \label{app:judge_prompt}
@@ -967,12 +956,14 @@ Do not include any text outside the JSON
 object.
 \end{verbatim}}
 
+% Keep the heading, the short intro and the first table together.
+\needspace{0.30\textheight}
 \section{LLM-as-Judge Validation Details}
 \label{app:second_judge}
 
 We find that agreement is 43\% (13/30) exact / 80\% (24/30) within $\pm1$ on NELA-GT and 53\% / 100\% on NELA-PS (Table~\ref{tab:T1}).
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \footnotesize
   \setlength{\tabcolsep}{1pt}
@@ -1000,7 +991,7 @@ Therefore, the judge scores on substance rather than style, so neither the corpu
 Whenever superficial formality masks actual bias, the judge tends to lean towards the low end.
 Full probe results are in Table~\ref{tab:style_probe}.
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \small
   \resizebox{\columnwidth}{!}{\begin{tabular}{lccccc}
@@ -1017,6 +1008,107 @@ Full probe results are in Table~\ref{tab:style_probe}.
 
   {\small\textit{35 articles outside any training corpus, scored on the 0--5 rubric with titles/labels removed. Difference in means 1.43 (Welch $t=5.25$, $p<10^{-4}$).}}
 \end{table}
+
+\section{Wikipedia Keyword Frequencies by School Type}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\columnwidth]{plots/keyword_freq.pdf}
+  \caption{Wikipedia keyword frequency by school type (per 1{,}000 tokens, error bars $\pm 1$ stddev across schools within each group). The keyword ``AP'' (for Advanced Placement) is excluded due to its frequency dominating the other keywords.}
+  \label{fig:keyword_freq}
+\end{figure}
+
+\section{GT-HB Source Map and Selection}
+% [GT-HB] figure for the High-Bias GT Subset (GT-HB) subsection (C4); prose to follow
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\columnwidth]{plots/source_map.pdf}
+  \caption{GT-HB source selection map. Each point is one audited NELA-GT source, plotting its per-source mean rubric score against its corpus article count (log scale). Filled markers are sources selected for the GT-HB whitelist (mean $\geq 3.0$, vertical line); open markers are excluded; marker shape and color together give the MBFC label group.}
+  \label{fig:source_map}
+\end{figure}
+
+\label{app:gthb_source_selection}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\columnwidth]{plots/pool_curve.pdf}
+  \caption{GT-HB threshold choice. Top: total corpus articles per 0.25-wide bin of per-source mean rubric score, stacked by MBFC label group. Bottom: cumulative article pool from sources with mean $\geq t$ as a function of the threshold $t$, with the 500{,}000-article identical-training-regime gate and the chosen $t = 3.0$ marked ($t = 3.5$ falls below the gate).}
+  \label{fig:pool_curve}
+\end{figure}
+
+To isolate this behavior, we construct a control corpus, GT-R76, that selects 76 NELA-GT sources deterministically at random rather than by bias.
+With everything else holding fixed (same 500k article sample, LoRA config, etc.), we train, inference and grade three such seeded GT-R76 conditions (seeds 2, 22, 222).
+
+Across all three replica conditions, GT-R76's bias scores follow closely with the unfiltered GT condition.
+The mean bias across 3 replicates is 1.485 (respectively 1.387, 1.527, 1.540), essentially equivalent to GT's 1.470 and much below GT-HB's 1.763.
+
+% Full-width WEAT figure for the "Output Bias and WEAT Visualizations"
+% section below. A figure* always goes to the top of the NEXT page after
+% the one where it is defined, so it is defined here (one page early) to
+% land at the top of the page on which that section's heading starts.
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=\textwidth]{plots/weat_effects.pdf}
+  \caption{WEAT effect sizes (Cohen's $d$) by condition and test, with significance markers from the one-sided permutation test.}
+  \label{fig:weat_effects}
+\end{figure*}
+
+% Reserve room for the heading, the intro paragraph and the table together,
+% so the table cannot be pushed to a later page than its heading.
+\needspace{0.70\textheight}
+\section{Wikipedia Corpus Immigration Keyword Counts}
+%\label{app:wiki_immigration_keywords} % dont think i need
+
+A search of the 14{,}071-article Wikipedia corpus for immigration-related keywords, including \textit{immigrant}, \textit{ESL}, \textit{citizenship}, \textit{bilingual}, \textit{DACA}, and others, finds that 2.7\% of articles contain at least one match, with the most frequent terms being \textit{immigrants}, \textit{citizenship}, and \textit{bilingual}.
+A full list of keywords and match counts is in Table~\ref{tab:wiki_immigration_keywords}.
+
+\begin{table}[H]
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{1.5pt}
+  \begin{tabular}{lrrr}
+  \toprule
+  Keyword & Articles & \% of corpus & Occurrences \\
+  \midrule
+    immigrants               & 86  & 0.61\% & 111 \\
+    citizenship              & 69  & 0.49\% &  74 \\
+    bilingual                & 57  & 0.41\% &  79 \\
+    immigrant                & 52  & 0.37\% &  64 \\
+    ESL                      & 50  & 0.36\% &  63 \\
+    immigration              & 29  & 0.21\% &  36 \\
+    refugee                  & 17  & 0.12\% &  27 \\
+    ICE                      & 16  & 0.11\% &  35 \\
+    sanctuary                & 15  & 0.11\% &  19 \\
+    English language learner & 14  & 0.10\% &  14 \\
+    asylum                   & 13  & 0.09\% &  16 \\
+    migrant                  & 10  & 0.07\% &  12 \\
+    deportation              &  5  & 0.04\% &   6 \\
+    foreign-born             &  5  & 0.04\% &   6 \\
+    undocumented             &  4  & 0.03\% &   6 \\
+    visa$^\dagger$           &  4  & 0.03\% &   4 \\
+    border                   &  4  & 0.03\% &  10 \\
+    DACA                     &  2  & 0.01\% &   2 \\
+    Title III                &  2  & 0.01\% &   2 \\
+    naturalization           &  2  & 0.01\% &   2 \\
+    migrants                 &  1  & 0.01\% &   1 \\
+    DREAMer                  &  1  & 0.01\% &   1 \\
+    \midrule
+    \textbf{Any keyword}     & \textbf{382} & \textbf{2.7\%} & --- \\
+    \bottomrule
+    \multicolumn{4}{l}{\footnotesize $^\dagger$ Higher false-positive risk; interpret counts carefully.} \\
+  \end{tabular}
+  \caption{Immigration-related keyword matches in the 14{,}071-article Wikipedia high-school corpus. ``Articles'' is the number of distinct articles containing $\geq 1$ occurrence; ``Occurrences'' is the total raw count across the corpus.}
+  \label{tab:wiki_immigration_keywords}
+\end{table}
+
+\section{Training Corpus Bias Score Distributions}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\columnwidth]{plots/corpus_distribution.pdf}
+  \caption{Distribution of bias scores (0--5) across the four training corpora.}
+  \label{fig:corpus_distribution}
+\end{figure}
 
 \section{Output Bias and WEAT Visualizations}
 \label{app:weat_viz}
@@ -1044,20 +1136,23 @@ Somewhat surprisingly, GT-HB shows no shift in media-trust association despite i
 %   \label{fig:output_bias}
 % \end{figure}
 
-\begin{figure*}[t]
+\section{Per-Prompt Heatmaps}
+
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{plots/weat_effects.pdf}
-  \caption{WEAT effect sizes (Cohen's $d$) by condition and test, with significance markers from the one-sided permutation test.}
-  \label{fig:weat_effects}
-\end{figure*}
+  \includegraphics[width=\columnwidth]{plots/variance_heatmap.pdf}
+  \caption{Per-prompt heatmaps: (A) is Mean bias score, (B) is Hallucination rate, all run per condition and prompt topic.}
+  \label{fig:variance_heatmap}
+\end{figure}
 
 \section{Full Variance Analysis}
 %\label{app:variance_full} % i dont need this i think
 
-\begin{table*}[t]
+\begin{table}[H]
   \centering
   \footnotesize
-  \begin{tabular}{llcccc}
+  \setlength{\tabcolsep}{2pt}
+  \resizebox{0.97\columnwidth}{!}{\begin{tabular}{llcccc}
   \toprule
   Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
   \midrule
@@ -1085,15 +1180,16 @@ Somewhat surprisingly, GT-HB shows no shift in media-trust association despite i
     ...              & Wiki &0.950 & 0.759 & 70\% & 0.556 \\
     ...              & GT-HB & 1.750 & 1.410 & 75\% & 0.554 \\
   \bottomrule
-  \end{tabular}
+  \end{tabular}}
   \caption{Per-prompt variance analysis, topics Climate through Government. $n=20$ runs each. Continued in Tables~\ref{tab:variance_analysis_full_ii} and~\ref{tab:variance_analysis_full_iii}.}
   \label{tab:variance_analysis_full}
-\end{table*}
+\end{table}
 
-\begin{table*}[t]
+\begin{table}[H]
   \centering
   \footnotesize
-  \begin{tabular}{llcccc}
+  \setlength{\tabcolsep}{2pt}
+  \resizebox{0.97\columnwidth}{!}{\begin{tabular}{llcccc}
   \toprule
   Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
   \midrule
@@ -1127,15 +1223,16 @@ Somewhat surprisingly, GT-HB shows no shift in media-trust association despite i
     ...              & Wiki &3.100 & 1.651 & 95\% & 0.652 \\
     ...              & GT-HB & 1.900 & 0.912 & 95\% & 0.676 \\
   \bottomrule
-  \end{tabular}
+  \end{tabular}}
   \caption{Per-prompt variance analysis, topics Healthcare through Military, continued from Table~\ref{tab:variance_analysis_full}. $n=20$ runs each.}
   \label{tab:variance_analysis_full_ii}
-\end{table*}
+\end{table}
 
-\begin{table*}[t]
+\begin{table}[H]
   \centering
   \footnotesize
-  \begin{tabular}{llcccc}
+  \setlength{\tabcolsep}{2pt}
+  \resizebox{0.97\columnwidth}{!}{\begin{tabular}{llcccc}
   \toprule
   Prompt & Condition & Mean & Std & Bias Rate & Uniformity \\
   \midrule
@@ -1175,10 +1272,10 @@ Somewhat surprisingly, GT-HB shows no shift in media-trust association despite i
     ...              & Wiki &3.050 & 1.050 & 100\% & 0.744 \\
     ...              & GT-HB & 1.300 & 0.865 & 75\% & 0.601 \\
   \bottomrule
-  \end{tabular}
+  \end{tabular}}
   \caption{Per-prompt variance analysis, topics Policing through Trade, continued from Table~\ref{tab:variance_analysis_full_ii}. $n=20$ runs each.}
   \label{tab:variance_analysis_full_iii}
-\end{table*}
+\end{table}
 
 
 % \begin{figure*}[htbp]
@@ -1188,64 +1285,10 @@ Somewhat surprisingly, GT-HB shows no shift in media-trust association despite i
 %   \label{fig:bias_fingerprint}
 % \end{figure*}
 
-\section{Wikipedia Corpus Immigration Keyword Counts}
-%\label{app:wiki_immigration_keywords} % dont think i need
-
-A search of the 14{,}071-article Wikipedia corpus for immigration-related keywords, including \textit{immigrant}, \textit{ESL}, \textit{citizenship}, \textit{bilingual}, \textit{DACA}, and others, finds that 2.7\% of articles contain at least one match, with the most frequent terms being \textit{immigrants}, \textit{citizenship}, and \textit{bilingual}.
-A full list of keywords and match counts is in Table~\ref{tab:wiki_immigration_keywords}.
-
-\begin{table}[htbp]
-  \centering
-  \footnotesize
-  \setlength{\tabcolsep}{1.5pt}
-  \begin{tabular}{lrrr}
-  \toprule
-  Keyword & Articles & \% of corpus & Occurrences \\
-  \midrule
-    immigrants               & 86  & 0.61\% & 111 \\
-    citizenship              & 69  & 0.49\% &  74 \\
-    bilingual                & 57  & 0.41\% &  79 \\
-    immigrant                & 52  & 0.37\% &  64 \\
-    ESL                      & 50  & 0.36\% &  63 \\
-    immigration              & 29  & 0.21\% &  36 \\
-    refugee                  & 17  & 0.12\% &  27 \\
-    ICE                      & 16  & 0.11\% &  35 \\
-    sanctuary                & 15  & 0.11\% &  19 \\
-    English language learner & 14  & 0.10\% &  14 \\
-    asylum                   & 13  & 0.09\% &  16 \\
-    migrant                  & 10  & 0.07\% &  12 \\
-    deportation              &  5  & 0.04\% &   6 \\
-    foreign-born             &  5  & 0.04\% &   6 \\
-    undocumented             &  4  & 0.03\% &   6 \\
-    visa$^\dagger$           &  4  & 0.03\% &   4 \\
-    border                   &  4  & 0.03\% &  10 \\
-    DACA                     &  2  & 0.01\% &   2 \\
-    Title III                &  2  & 0.01\% &   2 \\
-    naturalization           &  2  & 0.01\% &   2 \\
-    migrants                 &  1  & 0.01\% &   1 \\
-    DREAMer                  &  1  & 0.01\% &   1 \\
-    \midrule
-    \textbf{Any keyword}     & \textbf{382} & \textbf{2.7\%} & --- \\
-    \bottomrule
-    \multicolumn{4}{l}{\footnotesize $^\dagger$ Higher false-positive risk; interpret counts carefully.} \\
-  \end{tabular}
-  \caption{Immigration-related keyword matches in the 14{,}071-article Wikipedia high-school corpus. ``Articles'' is the number of distinct articles containing $\geq 1$ occurrence; ``Occurrences'' is the total raw count across the corpus.}
-  \label{tab:wiki_immigration_keywords}
-\end{table}
-
-\section{Per-Prompt Heatmaps}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\columnwidth]{plots/variance_heatmap.pdf}
-  \caption{Per-prompt heatmaps: (A) is Mean bias score, (B) is Hallucination rate, all run per condition and prompt topic.}
-  \label{fig:variance_heatmap}
-\end{figure}
-
 \section{Full Hallucination Summary per Prompt}
 %\label{app:hall_full} % dont think i need
 
-\begin{table}[htbp]
+\begin{table}[H]
   \centering
   \footnotesize
   \setlength{\tabcolsep}{1.5pt}
@@ -1273,25 +1316,6 @@ A full list of keywords and match counts is in Table~\ref{tab:wiki_immigration_k
   \caption{Hallucination rate per prompt topic and condition (\% of 20 runs flagged as hallucinated).}
   \label{tab:hallucination_per_prompt}
 \end{table}
-
-\section{Wikipedia Keyword Frequencies by School Type}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\columnwidth]{plots/keyword_freq.pdf}
-  \caption{Wikipedia keyword frequency by school type (per 1{,}000 tokens, error bars $\pm 1$ stddev across schools within each group). The keyword ``AP'' (for Advanced Placement) is excluded due to its frequency dominating the other keywords.}
-  \label{fig:keyword_freq}
-\end{figure}
-
-
-\section{Training Corpus Bias Score Distributions}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=\columnwidth]{plots/corpus_distribution.pdf}
-  \caption{Distribution of bias scores (0--5) across the four training corpora.}
-  \label{fig:corpus_distribution}
-\end{figure}
 
 \section{Training Details}
 \label{app:training_details}
